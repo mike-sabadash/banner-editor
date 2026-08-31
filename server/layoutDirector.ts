@@ -21,21 +21,21 @@ export type LayoutDirectorRequest = {
 };
 
 const schema = {
-  type: "object",
+  type: "OBJECT",
   properties: {
-    rationale: { type: "string" },
+    rationale: { type: "STRING" },
     elements: {
-      type: "array",
+      type: "ARRAY",
       items: {
-        type: "object",
+        type: "OBJECT",
         properties: {
-          id: { type: "string" },
-          x: { type: "number" },
-          y: { type: "number" },
-          width: { type: "number" },
-          scale: { type: "number" },
-          fontSize: { type: "number" },
-          visible: { type: "boolean" },
+          id: { type: "STRING" },
+          x: { type: "NUMBER" },
+          y: { type: "NUMBER" },
+          width: { type: "NUMBER" },
+          scale: { type: "NUMBER" },
+          fontSize: { type: "NUMBER" },
+          visible: { type: "BOOLEAN" },
         },
         required: ["id", "x", "y", "width", "scale", "fontSize", "visible"],
       },
@@ -81,9 +81,9 @@ export async function runLayoutDirector(payload: LayoutDirectorRequest) {
   if (!apiKey) throw new Error("GEMINI_API_KEY is not configured on the server");
   const model = process.env.GEMINI_LAYOUT_MODEL || "gemini-2.5-flash-lite";
   const prompt = `You are an expert responsive HTML5 advertising art director. Re-layout an existing banner from MASTER to TARGET without changing copy, assets, element ids, or brand intent. Return only the requested structured JSON.\n\nRules:\n- Coordinates x/y and width are percentages of target artboard.\n- Preserve visual hierarchy and reading order.\n- Background should cover the artboard.\n- Logos should stay clearly visible with safe margins and should not dominate.\n- Headline must remain readable; reduce font size and width when necessary.\n- CTA must be visible and tappable if present.\n- Legal text may shrink but should remain legible; never overlap critical content.\n- Prefer reflow/stacking in portrait and compact compositions in very wide strips.\n- Keep important content inside 4% safe margins when possible.\n- You are refining a deterministic first-pass layout, so make conservative, useful corrections instead of redesigning the campaign.\n\nINPUT:\n${JSON.stringify(payload)}`;
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`, {
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
     body: JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: {
