@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ChevronDown, ChevronRight, CircleCheck, Copy, Download, Eye, EyeOff, GripVertical, Image, Lock, MoreHorizontal, Play, Redo2, RotateCcw, Sparkles, Trash2, Type, Undo2, Unlock, Upload, ZoomIn, ZoomOut } from "lucide-react";
 import { fitPreview, formats, initialElements, platformProfiles, type BannerElement } from "./model";
 
@@ -6,7 +6,11 @@ const clamp=(value:number,min:number,max:number)=>Math.min(max,Math.max(min,valu
 
 export default function App(){
  const [activeFormat,setActiveFormat]=useState("master");
- const [elements,setElements]=useState(initialElements);
+ const [elementsByFormat,setElementsByFormat]=useState<Record<string,BannerElement[]>>(()=>{
+  const saved=localStorage.getItem("banner-editor:format-elements");
+  if(saved){try{return JSON.parse(saved)}catch{localStorage.removeItem("banner-editor:format-elements")}}
+  return Object.fromEntries(formats.map(item=>[item.id,initialElements.map(element=>({...element}))]));
+ });
  const [selectedId,setSelectedId]=useState("headline");
  const [zoom,setZoom]=useState(76);
  const [playing,setPlaying]=useState(false);
@@ -14,10 +18,14 @@ export default function App(){
  const [assets,setAssets]=useState([{id:"product",name:"product.png",group:"primary",type:"image"},{id:"logo",name:"brand-logo.svg",group:"primary",type:"image"},{id:"bg",name:"background.jpg",group:"primary",type:"image"},{id:"texture",name:"texture.png",group:"additional",type:"image"},{id:"font",name:"Manrope.woff2",group:"additional",type:"font"}]);
  const assetInput=useRef<HTMLInputElement>(null);
  const format=formats.find(item=>item.id===activeFormat)!;
- const selected=elements.find(item=>item.id===selectedId)!;
+ const elements=elementsByFormat[activeFormat]??initialElements;
+ const selected=elements.find(item=>item.id===selectedId)??elements[0];
  const preview=useMemo(()=>fitPreview(format.width,format.height),[format]);
  const platform=platformProfiles.find(item=>item.id===platformId)!;
- const patchSelected=(patch:Partial<BannerElement>)=>setElements(current=>current.map(item=>item.id===selectedId?{...item,...patch}:item));
+ useEffect(()=>localStorage.setItem("banner-editor:format-elements",JSON.stringify(elementsByFormat)),[elementsByFormat]);
+ const setElements=(update:BannerElement[]|((current:BannerElement[])=>BannerElement[]))=>setElementsByFormat(all=>{const current=all[activeFormat]??initialElements;return{...all,[activeFormat]:typeof update==="function"?update(current):update}});
+ const switchFormat=(id:string)=>{const target=elementsByFormat[id]??initialElements;setActiveFormat(id);if(!target.some(item=>item.id===selectedId))setSelectedId(target[0].id)};
+ const patchSelected=(patch:Partial<BannerElement>)=>setElements(current=>current.map(item=>item.id===selected.id?{...item,...patch}:item));
  const toggleVisible=(id:string)=>setElements(current=>current.map(item=>item.id===id?{...item,visible:!item.visible}:item));
  const duplicateSelected=()=>{const copy={...selected,id:`${selected.id}-${Date.now()}`,name:`${selected.name} copy`,x:selected.x+3,y:selected.y+3};setElements(current=>[...current,copy]);setSelectedId(copy.id)};
  const deleteSelected=()=>{if(elements.length===1)return;const remaining=elements.filter(item=>item.id!==selectedId);setElements(remaining);setSelectedId(remaining[0].id)};
@@ -37,7 +45,7 @@ export default function App(){
     <div className="asset-group"><div className="asset-group-title"><strong>Primary set</strong><span>Required</span></div><div className="asset-grid">{assets.filter(item=>item.group==="primary").map(item=><button className="asset-card" key={item.id}>{item.type==="font"?<Type size={17}/>:<Image size={17}/>}<span>{item.name}</span></button>)}</div></div>
     <div className="asset-group additional"><div className="asset-group-title"><strong>Additional set</strong><span>Optional</span></div><div className="asset-grid">{assets.filter(item=>item.group==="additional").map(item=><button className="asset-card" key={item.id}>{item.type==="font"?<Type size={17}/>:<Image size={17}/>}<span>{item.name}</span></button>)}</div></div>
     <div className="panel-heading formats-heading"><div><span className="kicker">OUTPUT</span><h2>Formats</h2></div><span className="count">5</span></div>
-    <div className="format-list">{formats.map(item=><button key={item.id} className={`format-card ${activeFormat===item.id?"active":""}`} onClick={()=>setActiveFormat(item.id)}><span className="miniature" style={{aspectRatio:`${item.width}/${item.height}`}}/><span className="format-meta"><strong>{item.label}</strong><small>{item.width} × {item.height}</small></span>{item.status==="ready"?<CircleCheck size={15} className="success"/>:item.status==="review"?<span className="review-dot"/>:null}</button>)}</div>
+    <div className="format-list">{formats.map(item=><button key={item.id} className={`format-card ${activeFormat===item.id?"active":""}`} onClick={()=>switchFormat(item.id)}><span className="miniature" style={{aspectRatio:`${item.width}/${item.height}`}}/><span className="format-meta"><strong>{item.label}</strong><small>{item.width} × {item.height}</small></span>{item.status==="ready"?<CircleCheck size={15} className="success"/>:item.status==="review"?<span className="review-dot"/>:null}</button>)}</div>
     <button className="adapt-button"><Sparkles size={16}/> Adapt all formats</button>
    </aside>
    <section className="editor-stage">
