@@ -948,6 +948,33 @@ textarea {
 .easing-control select {
   min-width: 90px;
 }
+.v2-timeline > header .easing-preview {
+  width: 54px;
+  height: 30px;
+  padding: 1px 4px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: #fff;
+}
+.v2-timeline > header .easing-preview:hover,
+.v2-timeline > header .easing-preview.active {
+  border-color: var(--blue);
+  background: #f4f6ff;
+}
+.easing-preview svg {
+  display: block;
+  width: 46px;
+  height: 26px;
+}
+.easing-preview path {
+  fill: none;
+  stroke: #d6d8d1;
+  stroke-width: 1;
+}
+.easing-preview .preview-curve {
+  stroke: var(--blue);
+  stroke-width: 2.5;
+}
 .bezier-fields {
   display: flex;
   gap: 3px;
