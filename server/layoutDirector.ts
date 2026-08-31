@@ -22,27 +22,6 @@ export type LayoutDirectorRequest = {
   target: { id: string; width: number; height: number; elements: LayoutElementInput[]; previewDataUrl?: string };
 };
 
-const openAiSchema = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    rationale: { type: "string" },
-    elements: {
-      type: "array",
-      items: {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          id: { type: "string" }, x: { type: "number" }, y: { type: "number" }, width: { type: "number" },
-          scale: { type: "number" }, fontSize: { type: "number" }, visible: { type: "boolean" },
-        },
-        required: ["id", "x", "y", "width", "scale", "fontSize", "visible"],
-      },
-    },
-  },
-  required: ["rationale", "elements"],
-};
-
 const geminiSchema = {
   type: "OBJECT",
   properties: {
@@ -84,13 +63,22 @@ function sanitize(result: any, request: LayoutDirectorRequest) {
             x: clamp(Number(item.x ?? original.x), background ? -400 : 1, background ? 200 : 97),
             y: clamp(Number(item.y ?? original.y), background ? -400 : 1, background ? 200 : 97),
             width: clamp(Number(item.width ?? original.width), background ? 20 : 2, background ? 400 : 94),
-            // Text size is controlled only by fontSize. Keeping text scale at 100 avoids double-scaling in Konva.
             scale: text ? 100 : clamp(Number(item.scale ?? original.scale), 10, background ? 900 : 160),
             fontSize: image ? original.fontSize : clamp(Number(item.fontSize ?? original.fontSize), 6, textFontMax(original.role, request.target.width, request.target.height)),
             visible: typeof item.visible === "boolean" ? item.visible : original.visible,
           };
         }) : [],
   };
+}
+
+function parseModelJson(text: string) {
+  const trimmed = text.trim();
+  const unfenced = trimmed.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+  try { return JSON.parse(unfenced); } catch {}
+  const start = unfenced.indexOf("{");
+  const end = unfenced.lastIndexOf("}");
+  if (start >= 0 && end > start) return JSON.parse(unfenced.slice(start, end + 1));
+  throw new Error("AI returned text but no valid layout JSON");
 }
 
 async function readJson(req: IncomingMessage) {
@@ -115,7 +103,7 @@ function payloadWithoutImages(payload: LayoutDirectorRequest) {
 function buildPrompt(payload: LayoutDirectorRequest) {
   const ratio = payload.target.width / payload.target.height;
   const formatHint = ratio >= 4 ? "extreme horizontal strip" : ratio < 0.8 ? "portrait / vertical" : "rectangle";
-  return `You are the responsive art director for an HTML5 banner campaign. The first image is the MASTER composition. The second image is a rough deterministic TARGET resize. Recompose the TARGET as a designer would; do not merely scale the master. Target is ${payload.target.width}x${payload.target.height} (${formatHint}). Return only the requested structured JSON.\n\nMANDATORY QUALITY RULES:\n- Preserve the same campaign, copy, assets, ids, visual hierarchy and recognizable brand intent.\n- No accidental overlaps. No clipped headline. No empty white/unpainted artboard. No giant typography that destroys hierarchy.\n- Background must COVER the entire target. Cropping is expected. x/y may be strongly negative for background crop. Preserve visually useful parts of the master background when possible.\n- Treat logo as a logo: smaller than headline, protected by safe margins, never stretched across the layout.\n- Treat icon/badge as attached supporting content near its related text, not as a hero image.\n- Treat ui/image panels as independent composition blocks: resize and reposition them deliberately.\n- Headline may wrap to more or fewer lines by changing width and fontSize. On portrait, build a vertical hierarchy. On strips, aggressively compact into a horizontal hierarchy.\n- Secondary copy must remain visually secondary.\n- Keep ordinary foreground content roughly inside 4% safe margins.\n- Values x/y/width are percentages of TARGET artboard. fontSize is real TARGET pixels.\n- CRITICAL: for ALL text elements return scale=100. Never use scale to resize text; use fontSize and width only.\n- For logo/icon/ui images prefer scale around 100 and resize mainly with width. Do not make logos or badges huge.\n- Study the MASTER screenshot for grouping, alignment, proximity, focal balance and whitespace. Use the rough TARGET screenshot only as a starting point and fix its failures.\n- Every returned element id must correspond to an input element. Do not invent or rename assets.\n\nSTRUCTURE:\n${JSON.stringify(payloadWithoutImages(payload))}`;
+  return `You are the responsive art director for an HTML5 banner campaign. The first image is the MASTER composition. The second image is a rough deterministic TARGET resize. Recompose the TARGET as a designer would; do not merely scale the master. Target is ${payload.target.width}x${payload.target.height} (${formatHint}). Return ONLY one valid JSON object and no markdown.\n\nJSON SHAPE:\n{\"rationale\":\"short explanation\",\"elements\":[{\"id\":\"existing id\",\"x\":0,\"y\":0,\"width\":50,\"scale\":100,\"fontSize\":24,\"visible\":true}]}\nReturn every input element exactly once.\n\nMANDATORY QUALITY RULES:\n- Preserve the same campaign, copy, assets, ids, visual hierarchy and recognizable brand intent.\n- No accidental overlaps. No clipped headline. No empty white/unpainted artboard. No giant typography that destroys hierarchy.\n- Background must COVER the entire target. Cropping is expected. x/y may be strongly negative for background crop. Preserve visually useful parts of the master background when possible.\n- Treat logo as a logo: smaller than headline, protected by safe margins, never stretched across the layout.\n- Treat icon/badge as attached supporting content near its related text, not as a hero image.\n- Treat ui/image panels as independent composition blocks: resize and reposition them deliberately.\n- Headline may wrap to more or fewer lines by changing width and fontSize. On portrait, build a vertical hierarchy. On strips, aggressively compact into a horizontal hierarchy.\n- Secondary copy must remain visually secondary.\n- Keep ordinary foreground content roughly inside 4% safe margins.\n- Values x/y/width are percentages of TARGET artboard. fontSize is real TARGET pixels.\n- CRITICAL: for ALL text elements return scale=100. Never use scale to resize text; use fontSize and width only.\n- For logo/icon/ui images prefer scale around 100 and resize mainly with width. Do not make logos or badges huge.\n- Study the MASTER screenshot for grouping, alignment, proximity, focal balance and whitespace. Use the rough TARGET screenshot only as a starting point and fix its failures.\n- Every returned element id must correspond to an input element. Do not invent or rename assets.\n\nSTRUCTURE:\n${JSON.stringify(payloadWithoutImages(payload))}`;
 }
 
 function openRouterContent(payload: LayoutDirectorRequest) {
@@ -141,14 +129,13 @@ async function runOpenRouter(payload: LayoutDirectorRequest) {
       model,
       messages: [{ role: "user", content: openRouterContent(payload) }],
       temperature: 0.12,
-      response_format: { type: "json_schema", json_schema: { name: "banner_layout", strict: true, schema: openAiSchema } },
     }),
   });
   const body = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(body?.error?.message || `OpenRouter vision request failed (${response.status})`);
   const text = body?.choices?.[0]?.message?.content || "";
   if (!text) throw new Error("OpenRouter returned an empty layout");
-  return sanitize(JSON.parse(text), payload);
+  return sanitize(parseModelJson(text), payload);
 }
 
 async function runGemini(payload: LayoutDirectorRequest) {
@@ -167,7 +154,7 @@ async function runGemini(payload: LayoutDirectorRequest) {
   if (!response.ok) throw new Error(body?.error?.message || `Gemini request failed (${response.status})`);
   const text = body?.candidates?.[0]?.content?.parts?.map((p: any) => p.text || "").join("") || "";
   if (!text) throw new Error("Gemini returned an empty layout");
-  return sanitize(JSON.parse(text), payload);
+  return sanitize(parseModelJson(text), payload);
 }
 
 export async function runLayoutDirector(payload: LayoutDirectorRequest) {
