@@ -111,7 +111,8 @@ export default function Editor() {
     [zoom, setZoom] = useState(74),
     [timelineZoom, setTimelineZoom] = useState(1),
     [easing, setEasing] = useState<Easing>("ease-in-out"),
-    [bezier, setBezier] = useState<Bezier>([0.42, 0, 0.58, 1]);
+    [bezier, setBezier] = useState<Bezier>([0.42, 0, 0.58, 1]),
+    [curveOpen, setCurveOpen] = useState(false);
   const [bannerSettings, setBannerSettings] = useState<BannerSettings>(() => {
       try {
         return (
@@ -575,6 +576,7 @@ export default function Editor() {
     event.preventDefault();
     const svg = event.currentTarget.ownerSVGElement;
     if (!svg) return;
+    setEasing("custom");
     const move = (pointer: PointerEvent) => {
       const box = svg.getBoundingClientRect();
       const x = clamp(
@@ -601,6 +603,16 @@ export default function Editor() {
     addEventListener("pointermove", move);
     addEventListener("pointerup", end);
   };
+  const activeBezier: Bezier =
+    easing === "linear"
+      ? [0, 0, 1, 1]
+      : easing === "ease-in"
+        ? [0.42, 0, 1, 1]
+        : easing === "ease-out"
+          ? [0, 0, 0.58, 1]
+          : easing === "ease-in-out"
+            ? [0.42, 0, 0.58, 1]
+            : bezier;
   const dragKey = (
     event: React.PointerEvent,
     elementId: string,
@@ -1197,7 +1209,11 @@ export default function Editor() {
                 Easing{" "}
                 <select
                   value={easing}
-                  onChange={(event) => setEasing(event.target.value as Easing)}
+                  onChange={(event) => {
+                    const value = event.target.value as Easing;
+                    setEasing(value);
+                    if (value === "custom") setCurveOpen(true);
+                  }}
                 >
                   <option value="linear">Linear</option>
                   <option value="ease-in">Ease in</option>
@@ -1206,7 +1222,22 @@ export default function Editor() {
                   <option value="custom">Custom curve</option>
                 </select>
               </label>
-              {easing === "custom" && (
+              <button
+                type="button"
+                className={`easing-preview ${curveOpen ? "active" : ""}`}
+                title="Open cubic-bezier editor"
+                aria-label="Open cubic-bezier editor"
+                onClick={() => setCurveOpen((open) => !open)}
+              >
+                <svg viewBox="0 0 48 28" aria-hidden="true">
+                  <path d="M4 24H44M4 24V4" />
+                  <path
+                    className="preview-curve"
+                    d={`M4 24C${4 + activeBezier[0] * 40} ${24 - activeBezier[1] * 20},${4 + activeBezier[2] * 40} ${24 - activeBezier[3] * 20},44 4`}
+                  />
+                </svg>
+              </button>
+              {curveOpen && (
                 <div className="bezier-editor">
                   <svg viewBox="0 0 124 74" aria-label="Cubic bezier editor">
                     <path className="bezier-axis" d="M12 62H112M12 62V12" />
@@ -1231,19 +1262,28 @@ export default function Editor() {
                   <div className="bezier-presets">
                     <button
                       type="button"
-                      onClick={() => setBezier([0.33, 1, 0.68, 1])}
+                      onClick={() => {
+                        setEasing("custom");
+                        setBezier([0.33, 1, 0.68, 1]);
+                      }}
                     >
                       Smooth
                     </button>
                     <button
                       type="button"
-                      onClick={() => setBezier([0.2, 0, 0.2, 1])}
+                      onClick={() => {
+                        setEasing("custom");
+                        setBezier([0.2, 0, 0.2, 1]);
+                      }}
                     >
                       Sharp
                     </button>
                     <button
                       type="button"
-                      onClick={() => setBezier([0.22, 1, 0.36, 1])}
+                      onClick={() => {
+                        setEasing("custom");
+                        setBezier([0.22, 1, 0.36, 1]);
+                      }}
                     >
                       Expo
                     </button>
@@ -1258,7 +1298,8 @@ export default function Editor() {
                         max={1}
                         step={0.01}
                         value={value}
-                        onChange={(event) =>
+                        onChange={(event) => {
+                          setEasing("custom");
                           setBezier(
                             (current) =>
                               current.map((item, itemIndex) =>
@@ -1266,8 +1307,8 @@ export default function Editor() {
                                   ? clamp(Number(event.target.value), 0, 1)
                                   : item,
                               ) as Bezier,
-                          )
-                        }
+                          );
+                        }}
                       />
                     ))}
                   </div>
