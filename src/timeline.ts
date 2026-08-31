@@ -49,12 +49,44 @@ export const easeProgress = (
     return cubicBezierProgress(t, [0.42, 0, 0.58, 1]);
   return t;
 };
+export const interpolateValue = (
+  baseValue: number,
+  frames: Array<Keyframe | null | undefined>,
+  property: AnimatableProperty,
+  playhead: number,
+) => {
+  const time = Number.isFinite(playhead)
+    ? Math.max(0, Math.min(6, playhead))
+    : 0;
+  const valid = frames
+    .filter(
+      (frame): frame is Keyframe =>
+        Boolean(frame) &&
+        frame!.property === property &&
+        Number.isFinite(frame!.time) &&
+        Number.isFinite(frame!.value),
+    )
+    .sort((a, b) => a.time - b.time);
+  if (!valid.length) return baseValue;
+  const before = [{ time: 0, value: baseValue }, ...valid]
+    .filter((frame) => frame.time <= time)
+    .at(-1) ?? { time: 0, value: baseValue };
+  const after = valid.find((frame) => frame.time >= time);
+  if (!after || after.time === before.time) return before.value;
+  const progress = easeProgress(
+    (time - before.time) / (after.time - before.time),
+    after.easing,
+    after.bezier,
+  );
+  return before.value + (after.value - before.value) * progress;
+};
 export const snapTimelineTime = (
   value: number,
   candidates: number[] = [],
   step = 0.1,
   threshold = 0.07,
 ) => {
+  if (!Number.isFinite(value)) return 0;
   const clamped = Math.max(0, Math.min(6, value));
   const anchors = [0, 6, ...candidates];
   const nearest = anchors.reduce(

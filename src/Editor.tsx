@@ -11,12 +11,14 @@ import {
   Image,
   Lock,
   MousePointer2,
+  Moon,
   Pause,
   Play,
   Plus,
   RefreshCw,
   RotateCcw,
   Square,
+  Sun,
   Trash2,
   Type,
   Unlock,
@@ -34,7 +36,7 @@ import {
   type BannerSettings,
 } from "./model";
 import {
-  easeProgress,
+  interpolateValue,
   moveKeyframe,
   setEasingAtTime,
   snapTimelineTime,
@@ -53,7 +55,7 @@ type Asset = {
   type: "image" | "font";
   url: string;
 };
-type FormatBackground = { color: string; imageUrl?: string };
+type FormatBackground = { color: string };
 const DURATION = 6,
   ANIMATABLE: AnimatableProperty[] = ["x", "y", "scale", "rotation", "opacity"];
 const CYRILLIC_FONTS = [
@@ -69,6 +71,13 @@ const CYRILLIC_FONTS = [
   "IBM Plex Sans",
   "Georgia",
   "Times New Roman",
+];
+const EASING_PRESETS: { name: string; value: Bezier }[] = [
+  { name: "Linear", value: [0, 0, 1, 1] },
+  { name: "S-curve", value: [0.42, 0, 0.58, 1] },
+  { name: "Snap", value: [0.22, 1, 0.36, 1] },
+  { name: "Snap reverse", value: [0.64, 0, 0.78, 0] },
+  { name: "Pop", value: [0.2, 0.8, 0.2, 1] },
 ];
 const clamp = (v: number, min: number, max: number) =>
   Math.min(max, Math.max(min, v));
@@ -138,6 +147,11 @@ export default function Editor() {
       return blankBackgrounds();
     }
   });
+  const [theme, setTheme] = useState<"dark" | "light">(() =>
+    localStorage.getItem("banner-editor:v3:theme") === "light"
+      ? "light"
+      : "dark",
+  );
   const [selectedId, setSelectedId] = useState<string | null>(null),
     [platformId, setPlatformId] = useState("google"),
     [playhead, setPlayhead] = useState(0),
@@ -215,6 +229,9 @@ export default function Editor() {
       );
     } catch {}
   }, [backgrounds]);
+  useEffect(() => {
+    localStorage.setItem("banner-editor:v3:theme", theme);
+  }, [theme]);
   useEffect(() => {
     assets
       .filter((asset) => asset.type === "font")
@@ -306,21 +323,12 @@ export default function Editor() {
     element: BannerElement,
     property: AnimatableProperty,
   ) => {
-    const list = (frames[element.id] ?? [])
-      .filter((f) => f.property === property)
-      .sort((a, b) => a.time - b.time);
-    if (!list.length) return element[property];
-    const before = [{ time: 0, value: element[property] }, ...list]
-      .filter((f) => f.time <= playhead)
-      .at(-1)!;
-    const after = list.find((f) => f.time >= playhead);
-    if (!after || after.time === before.time) return before.value;
-    const progress = easeProgress(
-      (playhead - before.time) / (after.time - before.time),
-      after.easing,
-      after.bezier,
+    return interpolateValue(
+      element[property],
+      frames[element.id] ?? [],
+      property,
+      playhead,
     );
-    return before.value + (after.value - before.value) * progress;
   };
   const displayElements = elements.map((element) => ({
       ...element,
@@ -588,14 +596,38 @@ export default function Editor() {
     if (!file) return;
     const formatId = backgroundFormat.current;
     const reader = new FileReader();
-    reader.onload = () =>
-      setBackgrounds((current) => ({
+    reader.onload = () => {
+      const target = formats.find((item) => item.id === formatId)!;
+      const item: BannerElement = {
+        id: `background-${formatId}`,
+        kind: "image",
+        name: `Background · ${target.label}`,
+        text: "",
+        assetUrl: String(reader.result),
+        x: 0,
+        y: 0,
+        width: 100,
+        scale: 100,
+        rotation: 0,
+        opacity: 100,
+        fontFamily: "Arial",
+        fontSize: 16,
+        lineHeight: 100,
+        color: "#000000",
+        locked: false,
+        visible: true,
+      };
+      setElementsByFormat((current) => ({
         ...current,
-        [formatId]: {
-          ...(current[formatId] ?? { color: "#ffffff" }),
-          imageUrl: String(reader.result),
-        },
+        [formatId]: [
+          item,
+          ...(current[formatId] ?? []).filter(
+            (element) => element.id !== item.id,
+          ),
+        ],
       }));
+      if (formatId === activeFormat) setSelectedId(item.id);
+    };
     reader.readAsDataURL(file);
     if (backgroundInput.current) backgroundInput.current.value = "";
   };
@@ -773,7 +805,7 @@ export default function Editor() {
         ? `border:1px solid ${bannerSettings.borderColor};`
         : "",
       formatBackground = backgrounds[activeFormat] ?? { color: "#ffffff" },
-      backgroundStyle = `background-color:${formatBackground.color};${formatBackground.imageUrl ? `background-image:url(${formatBackground.imageUrl});background-size:cover;background-position:center;` : ""}`;
+      backgroundStyle = `background-color:${formatBackground.color};`;
     const html = `<!doctype html><meta name="ad.size" content="width=${format.width},height=${format.height}"><style>*{box-sizing:border-box}body{margin:0;position:relative;overflow:hidden;width:${format.width}px;height:${format.height}px;${backgroundStyle}${border}${bannerSettings.clickSurface ? "cursor:pointer;" : ""}}</style>${body}${interaction}`,
       link = document.createElement("a");
     link.href = URL.createObjectURL(new Blob([html], { type: "text/html" }));
@@ -783,7 +815,7 @@ export default function Editor() {
   };
 
   return (
-    <div className="v2-app">
+    <div className={`v2-app theme-${theme}`}>
       <header className="v2-top">
         <div className="v2-logo">B</div>
         <div>
@@ -791,6 +823,15 @@ export default function Editor() {
           <small>Local draft</small>
         </div>
         <div className="v2-top-actions">
+          <button
+            type="button"
+            title="Switch theme"
+            onClick={() =>
+              setTheme((value) => (value === "dark" ? "light" : "dark"))
+            }
+          >
+            {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
           <button
             type="button"
             onClick={(event) => {
@@ -946,11 +987,6 @@ export default function Editor() {
                 height: preview.height,
                 transform: `scale(${zoom / 74})`,
                 backgroundColor: backgrounds[activeFormat]?.color ?? "#ffffff",
-                backgroundImage: backgrounds[activeFormat]?.imageUrl
-                  ? `url(${backgrounds[activeFormat].imageUrl})`
-                  : undefined,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
               }}
               onPointerDown={(e) => {
                 if (e.target === e.currentTarget) setSelectedId(null);
@@ -975,7 +1011,7 @@ export default function Editor() {
                 .filter((e) => e.visible)
                 .map((e) => (
                   <div
-                    className={`v2-object ${e.id === selectedId ? "selected" : ""} ${e.locked ? "locked" : ""}`}
+                    className={`v2-object ${e.id === selectedId ? "selected" : ""} ${e.locked ? "locked" : ""} ${e.id === `background-${activeFormat}` ? "background-layer" : ""}`}
                     key={e.id}
                     style={{
                       left: `${e.x}%`,
@@ -1225,21 +1261,31 @@ export default function Editor() {
                   onClick={() => openBackgroundUpload(activeFormat)}
                 >
                   <Upload size={14} />{" "}
-                  {backgrounds[activeFormat]?.imageUrl
+                  {elements.some(
+                    (element) => element.id === `background-${activeFormat}`,
+                  )
                     ? "Replace background"
                     : "Upload background"}
                 </button>
-                {backgrounds[activeFormat]?.imageUrl && (
+                {elements.some(
+                  (element) => element.id === `background-${activeFormat}`,
+                ) && (
                   <button
                     type="button"
-                    onClick={() =>
-                      setBackgrounds((current) => ({
-                        ...current,
-                        [activeFormat]: {
-                          color: current[activeFormat]?.color ?? "#ffffff",
-                        },
-                      }))
-                    }
+                    onClick={() => {
+                      const id = `background-${activeFormat}`;
+                      updateElements((current) =>
+                        current.filter((element) => element.id !== id),
+                      );
+                      setKeyframesByFormat((current) => {
+                        const formatFrames = {
+                          ...(current[activeFormat] ?? {}),
+                        };
+                        delete formatFrames[id];
+                        return { ...current, [activeFormat]: formatFrames };
+                      });
+                      if (selectedId === id) setSelectedId(null);
+                    }}
                   >
                     Remove
                   </button>
@@ -1396,32 +1442,46 @@ export default function Editor() {
                   <BezierEditor
                     value={bezier}
                     onChange={(value) => applyEasing("custom", value as Bezier)}
+                    width={350}
+                    height={210}
+                    padding={[14, 14, 24, 24]}
+                    background={theme === "dark" ? "#101110" : "#f6f7f4"}
+                    gridColor={theme === "dark" ? "#292c29" : "#dfe2dc"}
+                    curveColor={theme === "dark" ? "#48e693" : "#2878ff"}
+                    curveWidth={3}
+                    handleColor={theme === "dark" ? "#48e693" : "#2878ff"}
+                    handleRadius={4}
+                    handleStroke={1}
+                    progress={playhead / DURATION}
+                    progressColor={theme === "dark" ? "#f3a742" : "#e07a21"}
+                    textStyle={{
+                      fill: theme === "dark" ? "#7f847e" : "#737870",
+                      fontSize: 9,
+                    }}
                   />
                   <div className="bezier-presets">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        applyEasing("custom", [0.33, 1, 0.68, 1]);
-                      }}
-                    >
-                      Smooth
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        applyEasing("custom", [0.2, 0, 0.2, 1]);
-                      }}
-                    >
-                      Sharp
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        applyEasing("custom", [0.22, 1, 0.36, 1]);
-                      }}
-                    >
-                      Expo
-                    </button>
+                    {EASING_PRESETS.map((preset) => (
+                      <button
+                        type="button"
+                        key={preset.name}
+                        className={
+                          bezier.every(
+                            (value, index) =>
+                              Math.abs(value - preset.value[index]) < 0.01,
+                          )
+                            ? "active"
+                            : ""
+                        }
+                        onClick={() => applyEasing("custom", preset.value)}
+                      >
+                        <svg viewBox="0 0 54 34" aria-hidden="true">
+                          <path
+                            d={`M3 31C${3 + preset.value[0] * 48} ${31 - preset.value[1] * 28},${3 + preset.value[2] * 48} ${31 - preset.value[3] * 28},51 3`}
+                          />
+                        </svg>
+                        <span>{preset.name}</span>
+                      </button>
+                    ))}
                   </div>
                   <div className="bezier-fields">
                     {bezier.map((value, index) => (

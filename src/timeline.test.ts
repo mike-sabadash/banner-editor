@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   easeProgress,
+  interpolateValue,
   moveKeyframe,
   setEasingAtTime,
   snapTimelineTime,
@@ -31,6 +32,12 @@ describe("timeline", () => {
   it("snaps close to keyframes and otherwise to the tenth grid", () => {
     expect(snapTimelineTime(1.96, [2])).toBe(2);
     expect(snapTimelineTime(1.24, [])).toBe(1.2);
+  });
+  it("recovers an invalid timeline coordinate instead of poisoning playback", () => {
+    expect(snapTimelineTime(Number.NaN, [2])).toBe(0);
+  });
+  it("keeps playback alive with invalid persisted keyframes", () => {
+    expect(interpolateValue(10, [undefined, null], "x", Number.NaN)).toBe(10);
   });
   it("applies a changed curve to the active keyframe", () => {
     const frames = [

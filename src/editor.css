@@ -853,7 +853,7 @@ textarea {
   background: #fff;
   box-shadow: 0 8px 24px #1d1e1928;
 }
-.bezier-editor svg {
+.bezier-editor > svg {
   display: block;
   width: 100%;
   height: 82px;
@@ -874,12 +874,6 @@ textarea {
   stroke: var(--blue);
   stroke-width: 3;
 }
-.bezier-editor circle {
-  fill: #fff;
-  stroke: var(--blue);
-  stroke-width: 3;
-  cursor: grab;
-}
 .bezier-presets,
 .bezier-fields {
   display: grid;
@@ -887,13 +881,40 @@ textarea {
   gap: 4px;
   margin-top: 5px;
 }
+.bezier-presets {
+  grid-template-columns: repeat(5, 1fr);
+}
 .bezier-presets button {
-  height: 25px;
+  min-width: 0;
+  height: 58px;
   border: 1px solid var(--line);
-  border-radius: 4px;
+  border-radius: 7px;
   background: #fafaf7;
-  font-size: 9px;
+  display: grid;
+  grid-template-rows: 34px 14px;
+  place-items: center;
+  padding: 4px;
+  font-size: 8px;
   cursor: pointer;
+}
+.bezier-presets button.active {
+  border-color: var(--blue);
+  background: #173326;
+}
+.bezier-presets button svg {
+  width: 48px;
+  height: 30px;
+}
+.bezier-presets button path {
+  fill: none;
+  stroke: var(--blue);
+  stroke-width: 2;
+}
+.bezier-presets button span {
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .bezier-fields {
   grid-template-columns: repeat(4, 1fr);
@@ -905,6 +926,91 @@ textarea {
   border: 1px solid var(--line);
   border-radius: 3px;
   font-size: 9px;
+}
+.background-layer {
+  height: 100%;
+}
+.background-layer img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.v2-app.theme-light {
+  --line: #d7d9d4;
+  --panel: #f6f7f4;
+  --ink: #20231f;
+  --muted: #747a72;
+  --blue: #2878ff;
+  background: #e8eae6;
+}
+.theme-light .v2-top,
+.theme-light .v2-library,
+.theme-light .v2-inspector,
+.theme-light .v2-stagebar,
+.theme-light .v2-timeline,
+.theme-light .timeline-layer-cell,
+.theme-light .timeline-label-head {
+  background: #f6f7f4;
+}
+.theme-light .v2-main {
+  background: #eceeea;
+}
+.theme-light .v2-top-actions button,
+.theme-light .v2-stagebar button,
+.theme-light .v2-assets,
+.theme-light .v2-assets button,
+.theme-light .v2-type-row > *,
+.theme-light .v2-fields label,
+.theme-light .v2-object-actions button,
+.theme-light .tt select,
+.theme-light .easing-control select,
+.theme-light .banner-settings .click-variable input,
+.theme-light .background-actions button {
+  color: var(--ink);
+  background: #fff;
+  border-color: #d7d9d4;
+}
+.theme-light .v2-top-actions .primary {
+  background: #20231f;
+  color: #fff;
+  border-color: #20231f;
+}
+.theme-light .v2-format.active,
+.theme-light .v2-layer.active {
+  background: #e9eefb;
+  border-color: #c7d3ef;
+}
+.theme-light .v2-timeline > header,
+.theme-light .v2-ruler {
+  background: #f1f2ef;
+}
+.theme-light .v2-timeline-grid {
+  background: #fff;
+}
+.theme-light .timeline-row.active .timeline-layer-cell {
+  background: #e9eefb;
+}
+.theme-light .timeline-row.active .timeline-track {
+  background-color: #f0f4ff;
+}
+.theme-light .timeline-track {
+  border-color: #d8dad5;
+}
+.theme-light .bezier-editor {
+  background: #f6f7f4;
+  border-color: #d3d6d0;
+  box-shadow: 0 18px 60px #20231f33;
+}
+.theme-light .bezier-presets button,
+.theme-light .bezier-fields input {
+  color: #20231f;
+  background: #fff;
+  border-color: #d7d9d4;
+}
+.theme-light .bezier-presets button.active {
+  background: #e9f1ff;
+  border-color: #2878ff;
 }
 
 /* Diffusion-inspired editor system: dense, dark and tool-first. */
@@ -1092,13 +1198,9 @@ textarea {
   background: #151615;
   box-shadow: 0 18px 60px #000a;
 }
-.bezier-editor svg {
-  height: 190px;
-  background-color: #101110;
-  background-image:
-    linear-gradient(#282a27 1px, transparent 1px),
-    linear-gradient(90deg, #282a27 1px, transparent 1px);
-  background-size: 25% 25%;
+.bezier-editor > svg {
+  max-width: 100%;
+  height: auto;
   border: 1px solid #30322f;
   border-radius: 5px;
 }
@@ -1112,10 +1214,6 @@ textarea {
 .bezier-curve {
   stroke: #48e693;
   stroke-width: 3;
-}
-.bezier-editor circle {
-  stroke: #48e693;
-  fill: #151615;
 }
 .bezier-presets button,
 .bezier-fields input {
