@@ -77,8 +77,10 @@ function parseModelJson(text: string) {
   try { return JSON.parse(unfenced); } catch {}
   const start = unfenced.indexOf("{");
   const end = unfenced.lastIndexOf("}");
-  if (start >= 0 && end > start) return JSON.parse(unfenced.slice(start, end + 1));
-  throw new Error("AI returned text but no valid layout JSON");
+  if (start >= 0 && end > start) {
+    try { return JSON.parse(unfenced.slice(start, end + 1)); } catch {}
+  }
+  throw new Error(`AI returned text but no valid layout JSON. Preview: ${unfenced.slice(0, 180)}`);
 }
 
 async function readJson(req: IncomingMessage) {
@@ -113,28 +115,57 @@ function openRouterContent(payload: LayoutDirectorRequest) {
   return content;
 }
 
+function openRouterError(body: any, status: number) {
+  const message = body?.error?.message || body?.message || "Unknown upstream error";
+  const code = body?.error?.code ?? body?.code;
+  const metadata = body?.error?.metadata;
+  const provider = metadata?.provider_name || metadata?.provider || body?.provider;
+  const parts = [`OpenRouter ${status}`];
+  if (code !== undefined) parts.push(`code=${String(code)}`);
+  if (provider) parts.push(`provider=${String(provider)}`);
+  parts.push(String(message));
+  return parts.join(" · ");
+}
+
 async function runOpenRouter(payload: LayoutDirectorRequest) {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) throw new Error("OPENROUTER_API_KEY is not configured on the server");
   const model = process.env.OPENROUTER_LAYOUT_MODEL || "openrouter/free";
-  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${apiKey}`,
-      "HTTP-Referer": process.env.OPENROUTER_SITE_URL || "https://banners.rechord.online",
-      "X-Title": process.env.OPENROUTER_APP_NAME || "Banner Editor Layout Director",
-    },
-    body: JSON.stringify({
-      model,
-      messages: [{ role: "user", content: openRouterContent(payload) }],
-      temperature: 0.12,
-    }),
-  });
-  const body = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(body?.error?.message || `OpenRouter vision request failed (${response.status})`);
-  const text = body?.choices?.[0]?.message?.content || "";
-  if (!text) throw new Error("OpenRouter returned an empty layout");
+  let response: Response;
+  try {
+    response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${apiKey}`,
+        "HTTP-Referer": process.env.OPENROUTER_SITE_URL || "https://banners.rechord.online",
+        "X-Title": process.env.OPENROUTER_APP_NAME || "Banner Editor Layout Director",
+      },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: "user", content: openRouterContent(payload) }],
+        temperature: 0.12,
+      }),
+    });
+  } catch (error) {
+    throw new Error(`OpenRouter network error · ${error instanceof Error ? error.message : String(error)}`);
+  }
+
+  const raw = await response.text();
+  let body: any = {};
+  try { body = raw ? JSON.parse(raw) : {}; } catch { body = { message: raw.slice(0, 500) }; }
+  if (!response.ok) throw new Error(openRouterError(body, response.status));
+
+  const content = body?.choices?.[0]?.message?.content;
+  const text = typeof content === "string"
+    ? content
+    : Array.isArray(content)
+      ? content.map((part: any) => typeof part?.text === "string" ? part.text : "").join("")
+      : "";
+  if (!text) {
+    const finishReason = body?.choices?.[0]?.finish_reason;
+    throw new Error(`OpenRouter returned an empty layout${finishReason ? ` · finish_reason=${finishReason}` : ""}`);
+  }
   return sanitize(parseModelJson(text), payload);
 }
 
@@ -180,6 +211,7 @@ export function layoutDirectorMiddleware() {
       res.end(JSON.stringify(result));
     } catch (error) {
       const message = error instanceof Error ? error.message : "Layout Director failed";
+      console.error(`[layout-director] ${message}`);
       res.statusCode = /API_KEY|No AI provider/.test(message) ? 503 : 500;
       res.setHeader("content-type", "application/json");
       res.end(JSON.stringify({ error: message }));
