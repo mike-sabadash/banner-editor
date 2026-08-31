@@ -1,5 +1,5 @@
-export type ElementKind = "eyebrow" | "headline" | "copy" | "button" | "legal";
-export type BannerElement = { id:string; kind:ElementKind; name:string; text:string; x:number; y:number; width:number; scale:number; rotation:number; opacity:number; fontFamily:string; fontSize:number; color:string; locked:boolean; visible:boolean };
+export type ElementKind = "eyebrow" | "headline" | "copy" | "button" | "legal" | "image";
+export type BannerElement = { id:string; kind:ElementKind; name:string; text:string; assetUrl?:string; x:number; y:number; width:number; scale:number; rotation:number; opacity:number; fontFamily:string; fontSize:number; lineHeight:number; color:string; locked:boolean; visible:boolean };
 export type Format = { id:string; label:string; width:number; height:number; status:"master"|"ready"|"review" };
 export const formats: Format[] = [
   {id:"master",label:"Master",width:1200,height:628,status:"master"},
@@ -9,11 +9,11 @@ export const formats: Format[] = [
   {id:"mobile",label:"Mobile banner",width:320,height:50,status:"review"},
 ];
 export const initialElements: BannerElement[] = [
-  {id:"eyebrow",kind:"eyebrow",name:"Eyebrow",text:"NEW COLLECTION",x:8,y:13,width:45,scale:100,rotation:0,opacity:100,fontFamily:"DM Sans",fontSize:12,color:"#d8ca91",locked:false,visible:true},
-  {id:"headline",kind:"headline",name:"Headline",text:"Move beyond ordinary.",x:8,y:24,width:54,scale:100,rotation:0,opacity:100,fontFamily:"Manrope",fontSize:52,color:"#ffffff",locked:false,visible:true},
-  {id:"copy",kind:"copy",name:"Body copy",text:"Built for the moments that matter.",x:8,y:56,width:44,scale:100,rotation:0,opacity:100,fontFamily:"DM Sans",fontSize:15,color:"#d1d5cc",locked:false,visible:true},
-  {id:"button",kind:"button",name:"CTA",text:"Explore now",x:8,y:71,width:20,scale:100,rotation:0,opacity:100,fontFamily:"DM Sans",fontSize:12,color:"#20231e",locked:true,visible:true},
-  {id:"legal",kind:"legal",name:"Legal copy",text:"Terms and conditions apply.",x:8,y:92,width:42,scale:100,rotation:0,opacity:100,fontFamily:"DM Sans",fontSize:8,color:"#a8ada5",locked:true,visible:true},
+  {id:"eyebrow",kind:"eyebrow",name:"Eyebrow",text:"NEW COLLECTION",x:8,y:13,width:45,scale:100,rotation:0,opacity:100,fontFamily:"DM Sans",fontSize:12,lineHeight:100,color:"#d8ca91",locked:false,visible:true},
+  {id:"headline",kind:"headline",name:"Headline",text:"Move beyond ordinary.",x:8,y:24,width:54,scale:100,rotation:0,opacity:100,fontFamily:"Manrope",fontSize:52,lineHeight:95,color:"#ffffff",locked:false,visible:true},
+  {id:"copy",kind:"copy",name:"Body copy",text:"Built for the moments that matter.",x:8,y:56,width:44,scale:100,rotation:0,opacity:100,fontFamily:"DM Sans",fontSize:15,lineHeight:130,color:"#d1d5cc",locked:false,visible:true},
+  {id:"button",kind:"button",name:"CTA",text:"Explore now",x:8,y:71,width:20,scale:100,rotation:0,opacity:100,fontFamily:"DM Sans",fontSize:12,lineHeight:100,color:"#20231e",locked:true,visible:true},
+  {id:"legal",kind:"legal",name:"Legal copy",text:"Terms and conditions apply.",x:8,y:92,width:42,scale:100,rotation:0,opacity:100,fontFamily:"DM Sans",fontSize:8,lineHeight:120,color:"#a8ada5",locked:true,visible:true},
 ];
 export const platformProfiles=[
  {id:"google",name:"Google Ads HTML5",maxZip:150,maxDuration:30,click:"clickTag",maxFiles:null},
