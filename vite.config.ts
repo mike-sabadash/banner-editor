@@ -4,8 +4,19 @@ import { layoutDirectorMiddleware } from "./server/layoutDirector";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
-  if (env.GEMINI_API_KEY) process.env.GEMINI_API_KEY = env.GEMINI_API_KEY;
-  if (env.GEMINI_LAYOUT_MODEL) process.env.GEMINI_LAYOUT_MODEL = env.GEMINI_LAYOUT_MODEL;
+
+  const serverEnvKeys = [
+    "OPENROUTER_API_KEY",
+    "OPENROUTER_LAYOUT_MODEL",
+    "OPENROUTER_SITE_URL",
+    "OPENROUTER_APP_NAME",
+    "GEMINI_API_KEY",
+    "GEMINI_LAYOUT_MODEL",
+  ] as const;
+
+  for (const key of serverEnvKeys) {
+    if (env[key]) process.env[key] = env[key];
+  }
 
   return {
     plugins: [
