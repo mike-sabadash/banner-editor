@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Image as KonvaImage, Layer, Stage, Text, Transformer } from "react-konva";
-import type Konva from "konva";
 import { formats, fitPreview, type BannerElement } from "../model";
 import { editorActions, getDisplayElement, useEditorState } from "./editorStore";
 
@@ -16,11 +15,11 @@ const useHtmlImage = (src?: string) => {
   return image;
 };
 
-function CanvasObject({ element, scaleX, scaleY }: { element: BannerElement; scaleX: number; scaleY: number }) {
+function CanvasObject({ element }: { element: BannerElement }) {
   const state = useEditorState();
   const selected = state.selectedId === element.id;
-  const nodeRef = useRef<Konva.Node>(null);
-  const transformerRef = useRef<Konva.Transformer>(null);
+  const nodeRef = useRef<any>(null);
+  const transformerRef = useRef<any>(null);
   const image = useHtmlImage(element.assetUrl);
   const display = useMemo(() => getDisplayElement(element, state.playhead), [element, state.playhead, state.keyframesByFormat]);
   const format = formats.find((f) => f.id === state.activeFormat)!;
@@ -35,11 +34,11 @@ function CanvasObject({ element, scaleX, scaleY }: { element: BannerElement; sca
     transformerRef.current.getLayer()?.batchDraw();
   }, [selected, image]);
 
-  const commitPosition = (node: Konva.Node) => editorActions.updateElement(element.id, {
+  const commitPosition = (node: any) => editorActions.updateElement(element.id, {
     x: (node.x() / format.width) * 100,
     y: (node.y() / format.height) * 100,
   });
-  const commitTransform = (node: Konva.Node) => {
+  const commitTransform = (node: any) => {
     const absoluteScale = Math.max(5, Math.min(600, node.scaleX() * 100));
     editorActions.updateElement(element.id, {
       x: (node.x() / format.width) * 100,
@@ -50,7 +49,7 @@ function CanvasObject({ element, scaleX, scaleY }: { element: BannerElement; sca
   };
 
   const common = {
-    ref: nodeRef as React.Ref<any>,
+    ref: nodeRef,
     x: artX,
     y: artY,
     rotation: display.rotation,
@@ -58,9 +57,9 @@ function CanvasObject({ element, scaleX, scaleY }: { element: BannerElement; sca
     scaleY: display.scale / 100,
     opacity: display.opacity / 100,
     draggable: !element.locked,
-    onPointerDown: (event: Konva.KonvaEventObject<PointerEvent>) => { event.cancelBubble = true; editorActions.select(element.id); },
-    onDragEnd: (event: Konva.KonvaEventObject<DragEvent>) => commitPosition(event.target),
-    onTransformEnd: (event: Konva.KonvaEventObject<Event>) => commitTransform(event.target),
+    onPointerDown: (event: any) => { event.cancelBubble = true; editorActions.select(element.id); },
+    onDragEnd: (event: any) => commitPosition(event.target),
+    onTransformEnd: (event: any) => commitTransform(event.target),
   };
 
   return <>
@@ -82,7 +81,7 @@ export default function CanvasV2() {
   return <div className="core-canvas-shell">
     <Stage width={preview.width} height={preview.height} scaleX={scaleX} scaleY={scaleY} onPointerDown={(event) => { if (event.target === event.target.getStage()) editorActions.select(null); }} className="core-stage">
       <Layer>
-        {elements.filter((e) => e.visible).map((element) => <CanvasObject key={element.id} element={element} scaleX={scaleX} scaleY={scaleY} />)}
+        {elements.filter((e) => e.visible).map((element) => <CanvasObject key={element.id} element={element} />)}
       </Layer>
     </Stage>
   </div>;
