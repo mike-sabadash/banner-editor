@@ -64,9 +64,9 @@ const geminiSchema = {
 
 const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
 const textFontMax = (role: LayoutRole, width: number, height: number) => {
-  if (role === "headline") return clamp(Math.min(width * 0.18, height * 0.22), 12, 72);
-  if (role === "legal") return clamp(Math.min(width * 0.055, height * 0.08), 7, 18);
-  return clamp(Math.min(width * 0.1, height * 0.12), 8, 40);
+  if (role === "headline") return clamp(Math.min(width * 0.12, height * 0.22), 11, 58);
+  if (role === "legal") return clamp(Math.min(width * 0.045, height * 0.07), 6, 16);
+  return clamp(Math.min(width * 0.075, height * 0.11), 7, 30);
 };
 
 function sanitize(result: any, request: LayoutDirectorRequest) {
@@ -78,12 +78,14 @@ function sanitize(result: any, request: LayoutDirectorRequest) {
           const original = allowed.get(item.id)!;
           const background = original.role === "background";
           const image = ["background", "logo", "image", "icon", "ui"].includes(original.role);
+          const text = !image;
           return {
             id: item.id,
-            x: clamp(Number(item.x ?? original.x), background ? -400 : -8, background ? 200 : 100),
-            y: clamp(Number(item.y ?? original.y), background ? -400 : -8, background ? 200 : 100),
-            width: clamp(Number(item.width ?? original.width), background ? 20 : 2, background ? 400 : 96),
-            scale: clamp(Number(item.scale ?? original.scale), 5, background ? 900 : image ? 300 : 180),
+            x: clamp(Number(item.x ?? original.x), background ? -400 : 1, background ? 200 : 97),
+            y: clamp(Number(item.y ?? original.y), background ? -400 : 1, background ? 200 : 97),
+            width: clamp(Number(item.width ?? original.width), background ? 20 : 2, background ? 400 : 94),
+            // Text size is controlled only by fontSize. Keeping text scale at 100 avoids double-scaling in Konva.
+            scale: text ? 100 : clamp(Number(item.scale ?? original.scale), 10, background ? 900 : 160),
             fontSize: image ? original.fontSize : clamp(Number(item.fontSize ?? original.fontSize), 6, textFontMax(original.role, request.target.width, request.target.height)),
             visible: typeof item.visible === "boolean" ? item.visible : original.visible,
           };
@@ -113,7 +115,7 @@ function payloadWithoutImages(payload: LayoutDirectorRequest) {
 function buildPrompt(payload: LayoutDirectorRequest) {
   const ratio = payload.target.width / payload.target.height;
   const formatHint = ratio >= 4 ? "extreme horizontal strip" : ratio < 0.8 ? "portrait / vertical" : "rectangle";
-  return `You are the responsive art director for an HTML5 banner campaign. The first image is the MASTER composition. The second image is a rough deterministic TARGET resize. Recompose the TARGET as a designer would; do not merely scale the master. Target is ${payload.target.width}x${payload.target.height} (${formatHint}). Return only the requested structured JSON.\n\nMANDATORY QUALITY RULES:\n- Preserve the same campaign, copy, assets, ids, visual hierarchy and recognizable brand intent.\n- No accidental overlaps. No clipped headline. No empty white/unpainted artboard. No giant typography that destroys hierarchy.\n- Background must COVER the entire target. Cropping is expected. x/y may be strongly negative for background crop. Preserve visually useful parts of the master background when possible.\n- Treat logo as a logo: smaller than headline, protected by safe margins, never stretched across the layout.\n- Treat icon/badge as attached supporting content near its related text, not as a hero image.\n- Treat ui/image panels as independent composition blocks: resize and reposition them deliberately.\n- Headline may wrap to more or fewer lines by changing width and fontSize. On portrait, build a vertical hierarchy. On strips, aggressively compact into a horizontal hierarchy.\n- Secondary copy must remain visually secondary.\n- Keep ordinary foreground content roughly inside 4% safe margins.\n- Values x/y/width are percentages of TARGET artboard. scale is percent. fontSize is real TARGET pixels, so 300x600, 728x90 and 320x50 need very different font sizes.\n- Study the MASTER screenshot for grouping, alignment, proximity, focal balance and whitespace. Use the rough TARGET screenshot only as a starting point and fix its failures.\n- Every returned element id must correspond to an input element. Do not invent or rename assets.\n\nSTRUCTURE:\n${JSON.stringify(payloadWithoutImages(payload))}`;
+  return `You are the responsive art director for an HTML5 banner campaign. The first image is the MASTER composition. The second image is a rough deterministic TARGET resize. Recompose the TARGET as a designer would; do not merely scale the master. Target is ${payload.target.width}x${payload.target.height} (${formatHint}). Return only the requested structured JSON.\n\nMANDATORY QUALITY RULES:\n- Preserve the same campaign, copy, assets, ids, visual hierarchy and recognizable brand intent.\n- No accidental overlaps. No clipped headline. No empty white/unpainted artboard. No giant typography that destroys hierarchy.\n- Background must COVER the entire target. Cropping is expected. x/y may be strongly negative for background crop. Preserve visually useful parts of the master background when possible.\n- Treat logo as a logo: smaller than headline, protected by safe margins, never stretched across the layout.\n- Treat icon/badge as attached supporting content near its related text, not as a hero image.\n- Treat ui/image panels as independent composition blocks: resize and reposition them deliberately.\n- Headline may wrap to more or fewer lines by changing width and fontSize. On portrait, build a vertical hierarchy. On strips, aggressively compact into a horizontal hierarchy.\n- Secondary copy must remain visually secondary.\n- Keep ordinary foreground content roughly inside 4% safe margins.\n- Values x/y/width are percentages of TARGET artboard. fontSize is real TARGET pixels.\n- CRITICAL: for ALL text elements return scale=100. Never use scale to resize text; use fontSize and width only.\n- For logo/icon/ui images prefer scale around 100 and resize mainly with width. Do not make logos or badges huge.\n- Study the MASTER screenshot for grouping, alignment, proximity, focal balance and whitespace. Use the rough TARGET screenshot only as a starting point and fix its failures.\n- Every returned element id must correspond to an input element. Do not invent or rename assets.\n\nSTRUCTURE:\n${JSON.stringify(payloadWithoutImages(payload))}`;
 }
 
 function openRouterContent(payload: LayoutDirectorRequest) {
@@ -138,7 +140,7 @@ async function runOpenRouter(payload: LayoutDirectorRequest) {
     body: JSON.stringify({
       model,
       messages: [{ role: "user", content: openRouterContent(payload) }],
-      temperature: 0.15,
+      temperature: 0.12,
       response_format: { type: "json_schema", json_schema: { name: "banner_layout", strict: true, schema: openAiSchema } },
     }),
   });
@@ -158,7 +160,7 @@ async function runGemini(payload: LayoutDirectorRequest) {
     headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
     body: JSON.stringify({
       contents: [{ parts: [{ text: buildPrompt(payload) }] }],
-      generationConfig: { temperature: 0.15, responseMimeType: "application/json", responseSchema: geminiSchema },
+      generationConfig: { temperature: 0.12, responseMimeType: "application/json", responseSchema: geminiSchema },
     }),
   });
   const body = await response.json().catch(() => ({}));
