@@ -1,8 +1,10 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
+type LayoutRole = "background" | "logo" | "headline" | "text" | "cta" | "legal" | "image" | "icon" | "ui";
+
 export type LayoutElementInput = {
   id: string;
-  role: "background" | "logo" | "headline" | "text" | "cta" | "legal" | "image";
+  role: LayoutRole;
   kind: string;
   name: string;
   text: string;
@@ -16,8 +18,8 @@ export type LayoutElementInput = {
 };
 
 export type LayoutDirectorRequest = {
-  master: { width: number; height: number; elements: LayoutElementInput[] };
-  target: { id: string; width: number; height: number; elements: LayoutElementInput[] };
+  master: { width: number; height: number; elements: LayoutElementInput[]; previewDataUrl?: string };
+  target: { id: string; width: number; height: number; elements: LayoutElementInput[]; previewDataUrl?: string };
 };
 
 const openAiSchema = {
@@ -31,13 +33,8 @@ const openAiSchema = {
         type: "object",
         additionalProperties: false,
         properties: {
-          id: { type: "string" },
-          x: { type: "number" },
-          y: { type: "number" },
-          width: { type: "number" },
-          scale: { type: "number" },
-          fontSize: { type: "number" },
-          visible: { type: "boolean" },
+          id: { type: "string" }, x: { type: "number" }, y: { type: "number" }, width: { type: "number" },
+          scale: { type: "number" }, fontSize: { type: "number" }, visible: { type: "boolean" },
         },
         required: ["id", "x", "y", "width", "scale", "fontSize", "visible"],
       },
@@ -55,13 +52,8 @@ const geminiSchema = {
       items: {
         type: "OBJECT",
         properties: {
-          id: { type: "STRING" },
-          x: { type: "NUMBER" },
-          y: { type: "NUMBER" },
-          width: { type: "NUMBER" },
-          scale: { type: "NUMBER" },
-          fontSize: { type: "NUMBER" },
-          visible: { type: "BOOLEAN" },
+          id: { type: "STRING" }, x: { type: "NUMBER" }, y: { type: "NUMBER" }, width: { type: "NUMBER" },
+          scale: { type: "NUMBER" }, fontSize: { type: "NUMBER" }, visible: { type: "BOOLEAN" },
         },
         required: ["id", "x", "y", "width", "scale", "fontSize", "visible"],
       },
@@ -71,39 +63,64 @@ const geminiSchema = {
 };
 
 const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
+const textFontMax = (role: LayoutRole, width: number, height: number) => {
+  if (role === "headline") return clamp(Math.min(width * 0.18, height * 0.22), 12, 72);
+  if (role === "legal") return clamp(Math.min(width * 0.055, height * 0.08), 7, 18);
+  return clamp(Math.min(width * 0.1, height * 0.12), 8, 40);
+};
 
 function sanitize(result: any, request: LayoutDirectorRequest) {
   const allowed = new Map(request.target.elements.map((e) => [e.id, e]));
   return {
-    rationale: typeof result?.rationale === "string" ? result.rationale.slice(0, 600) : "AI layout",
+    rationale: typeof result?.rationale === "string" ? result.rationale.slice(0, 900) : "AI layout",
     elements: Array.isArray(result?.elements)
-      ? result.elements
-          .filter((item: any) => allowed.has(item?.id))
-          .map((item: any) => {
-            const original = allowed.get(item.id)!;
-            return {
-              id: item.id,
-              x: clamp(Number(item.x ?? original.x), -20, 120),
-              y: clamp(Number(item.y ?? original.y), -20, 120),
-              width: clamp(Number(item.width ?? original.width), 2, 140),
-              scale: clamp(Number(item.scale ?? original.scale), 5, 600),
-              fontSize: clamp(Number(item.fontSize ?? original.fontSize), 6, 300),
-              visible: Boolean(item.visible),
-            };
-          })
-      : [],
+      ? result.elements.filter((item: any) => allowed.has(item?.id)).map((item: any) => {
+          const original = allowed.get(item.id)!;
+          const background = original.role === "background";
+          const image = ["background", "logo", "image", "icon", "ui"].includes(original.role);
+          return {
+            id: item.id,
+            x: clamp(Number(item.x ?? original.x), background ? -400 : -8, background ? 200 : 100),
+            y: clamp(Number(item.y ?? original.y), background ? -400 : -8, background ? 200 : 100),
+            width: clamp(Number(item.width ?? original.width), background ? 20 : 2, background ? 400 : 96),
+            scale: clamp(Number(item.scale ?? original.scale), 5, background ? 900 : image ? 300 : 180),
+            fontSize: image ? original.fontSize : clamp(Number(item.fontSize ?? original.fontSize), 6, textFontMax(original.role, request.target.width, request.target.height)),
+            visible: typeof item.visible === "boolean" ? item.visible : original.visible,
+          };
+        }) : [],
   };
 }
 
 async function readJson(req: IncomingMessage) {
   const chunks: Buffer[] = [];
-  for await (const chunk of req) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-  if (chunks.reduce((n, b) => n + b.length, 0) > 1_000_000) throw new Error("Request too large");
+  let bytes = 0;
+  for await (const chunk of req) {
+    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    bytes += buffer.length;
+    if (bytes > 4_000_000) throw new Error("Request too large");
+    chunks.push(buffer);
+  }
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
 }
 
+function payloadWithoutImages(payload: LayoutDirectorRequest) {
+  return {
+    master: { width: payload.master.width, height: payload.master.height, elements: payload.master.elements },
+    target: { id: payload.target.id, width: payload.target.width, height: payload.target.height, elements: payload.target.elements },
+  };
+}
+
 function buildPrompt(payload: LayoutDirectorRequest) {
-  return `You are an expert responsive HTML5 advertising art director. Re-layout an existing banner from MASTER to TARGET without changing copy, assets, element ids, or brand intent. Return only the requested structured JSON.\n\nRules:\n- Coordinates x/y and width are percentages of target artboard.\n- Preserve visual hierarchy and reading order.\n- Background should cover the artboard.\n- Logos should stay clearly visible with safe margins and should not dominate.\n- Headline must remain readable; reduce font size and width when necessary.\n- CTA must be visible and tappable if present.\n- Legal text may shrink but should remain legible; never overlap critical content.\n- Prefer reflow/stacking in portrait and compact compositions in very wide strips.\n- Keep important content inside 4% safe margins when possible.\n- You are refining a deterministic first-pass layout, so make conservative, useful corrections instead of redesigning the campaign.\n\nINPUT:\n${JSON.stringify(payload)}`;
+  const ratio = payload.target.width / payload.target.height;
+  const formatHint = ratio >= 4 ? "extreme horizontal strip" : ratio < 0.8 ? "portrait / vertical" : "rectangle";
+  return `You are the responsive art director for an HTML5 banner campaign. The first image is the MASTER composition. The second image is a rough deterministic TARGET resize. Recompose the TARGET as a designer would; do not merely scale the master. Target is ${payload.target.width}x${payload.target.height} (${formatHint}). Return only the requested structured JSON.\n\nMANDATORY QUALITY RULES:\n- Preserve the same campaign, copy, assets, ids, visual hierarchy and recognizable brand intent.\n- No accidental overlaps. No clipped headline. No empty white/unpainted artboard. No giant typography that destroys hierarchy.\n- Background must COVER the entire target. Cropping is expected. x/y may be strongly negative for background crop. Preserve visually useful parts of the master background when possible.\n- Treat logo as a logo: smaller than headline, protected by safe margins, never stretched across the layout.\n- Treat icon/badge as attached supporting content near its related text, not as a hero image.\n- Treat ui/image panels as independent composition blocks: resize and reposition them deliberately.\n- Headline may wrap to more or fewer lines by changing width and fontSize. On portrait, build a vertical hierarchy. On strips, aggressively compact into a horizontal hierarchy.\n- Secondary copy must remain visually secondary.\n- Keep ordinary foreground content roughly inside 4% safe margins.\n- Values x/y/width are percentages of TARGET artboard. scale is percent. fontSize is real TARGET pixels, so 300x600, 728x90 and 320x50 need very different font sizes.\n- Study the MASTER screenshot for grouping, alignment, proximity, focal balance and whitespace. Use the rough TARGET screenshot only as a starting point and fix its failures.\n- Every returned element id must correspond to an input element. Do not invent or rename assets.\n\nSTRUCTURE:\n${JSON.stringify(payloadWithoutImages(payload))}`;
+}
+
+function openRouterContent(payload: LayoutDirectorRequest) {
+  const content: any[] = [{ type: "text", text: buildPrompt(payload) }];
+  if (payload.master.previewDataUrl) content.push({ type: "image_url", image_url: { url: payload.master.previewDataUrl } });
+  if (payload.target.previewDataUrl) content.push({ type: "image_url", image_url: { url: payload.target.previewDataUrl } });
+  return content;
 }
 
 async function runOpenRouter(payload: LayoutDirectorRequest) {
@@ -115,25 +132,18 @@ async function runOpenRouter(payload: LayoutDirectorRequest) {
     headers: {
       "content-type": "application/json",
       authorization: `Bearer ${apiKey}`,
-      "HTTP-Referer": process.env.OPENROUTER_SITE_URL || "http://localhost:5173",
+      "HTTP-Referer": process.env.OPENROUTER_SITE_URL || "https://banners.rechord.online",
       "X-Title": process.env.OPENROUTER_APP_NAME || "Banner Editor Layout Director",
     },
     body: JSON.stringify({
       model,
-      messages: [{ role: "user", content: buildPrompt(payload) }],
-      temperature: 0.2,
-      response_format: {
-        type: "json_schema",
-        json_schema: {
-          name: "banner_layout",
-          strict: true,
-          schema: openAiSchema,
-        },
-      },
+      messages: [{ role: "user", content: openRouterContent(payload) }],
+      temperature: 0.15,
+      response_format: { type: "json_schema", json_schema: { name: "banner_layout", strict: true, schema: openAiSchema } },
     }),
   });
   const body = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(body?.error?.message || `OpenRouter request failed (${response.status})`);
+  if (!response.ok) throw new Error(body?.error?.message || `OpenRouter vision request failed (${response.status})`);
   const text = body?.choices?.[0]?.message?.content || "";
   if (!text) throw new Error("OpenRouter returned an empty layout");
   return sanitize(JSON.parse(text), payload);
@@ -148,11 +158,7 @@ async function runGemini(payload: LayoutDirectorRequest) {
     headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
     body: JSON.stringify({
       contents: [{ parts: [{ text: buildPrompt(payload) }] }],
-      generationConfig: {
-        temperature: 0.2,
-        responseMimeType: "application/json",
-        responseSchema: geminiSchema,
-      },
+      generationConfig: { temperature: 0.15, responseMimeType: "application/json", responseSchema: geminiSchema },
     }),
   });
   const body = await response.json().catch(() => ({}));
