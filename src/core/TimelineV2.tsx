@@ -17,7 +17,7 @@ function NumberField({ element, property }: { element: BannerElement; property: 
   const commit = (raw: string) => { const n = Number(raw.replace(",",".")); if (Number.isFinite(n)) editorActions.updateElement(element.id, { [property]: n }); };
   const scrub = (event: React.PointerEvent) => {
     event.preventDefault(); startRef.current = { x: event.clientX, value };
-    const move = (e: PointerEvent) => { const start=startRef.current;if(!start)return;const speed=(property==="opacity"||property==="scale")?.5:.2;const next=start.value+(e.clientX-start.x)*speed*(e.shiftKey?5:1);editorActions.updateElement(element.id,{[property]:property==="opacity"?Math.max(0,Math.min(100,next)):property==="scale"?Math.max(5,Math.min(600,next)):next}); };
+    const move = (e: PointerEvent) => { const start=startRef.current;if(!start)return;const speed=(property==="opacity"||property==="scale") ? 0.5 : 0.2;const next=start.value+(e.clientX-start.x)*speed*(e.shiftKey?5:1);editorActions.updateElement(element.id,{[property]:property==="opacity"?Math.max(0,Math.min(100,next)):property==="scale"?Math.max(5,Math.min(600,next)):next}); };
     const up=()=>{removeEventListener("pointermove",move);removeEventListener("pointerup",up);startRef.current=null};addEventListener("pointermove",move);addEventListener("pointerup",up);
   };
   const keyed = (state.keyframesByFormat[state.activeFormat]?.[element.id] ?? []).some((f)=>f.property===property&&Math.abs(f.time-state.playhead)<.035);
