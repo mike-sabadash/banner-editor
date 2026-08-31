@@ -19,12 +19,12 @@ const loadImage = (src: string) => {
 
 const roleOf = (element: BannerElement, index: number, total: number): LayoutRole => {
   const hay = `${element.kind} ${element.name} ${element.text}`.toLowerCase();
-  if (element.kind === "image" && (/background|\bbg\b|фон/.test(hay) || element.width * element.scale / 100 >= 70 || index === 0 && total > 1)) return "background";
-  if (/logo|логотип/.test(hay)) return "logo";
+  if (/logo|логотип/.test(hay) && element.kind === "image") return "logo";
+  if (/ui|interface|screen|widget|panel|card|mobile|onboard|404/.test(hay) && element.kind === "image") return "ui";
+  if (/icon|shield|badge|икон/.test(hay) && element.kind === "image") return "icon";
+  if (element.kind === "image" && (/background|\bbg\b|фон|1200x628/.test(hay) || element.width >= 88 || (index === 0 && total > 1 && element.width >= 70))) return "background";
   if (/legal|disclaimer|terms|услов|18\+/.test(hay) || element.kind === "legal") return "legal";
   if (/cta|button|кноп|купить|подробнее|узнать|перейти/.test(hay) || element.kind === "button") return "cta";
-  if (/ui|interface|screen|widget|panel|card|mobile|onboard/.test(hay) && element.kind === "image") return "ui";
-  if (/icon|shield|badge|икон/.test(hay) && element.kind === "image") return "icon";
   if (element.kind === "headline" || /headline|title|заголов/.test(hay)) return "headline";
   if (element.kind === "image") return "image";
   return "text";
@@ -92,7 +92,7 @@ async function renderPreview(format: Format, elements: BannerElement[]) {
           const img = await loadImage(element.assetUrl);
           const ratio = img.naturalWidth ? img.naturalHeight / img.naturalWidth : 0.65;
           ctx.drawImage(img, 0, 0, width, width * ratio);
-        } catch { /* keep preview rendering other layers */ }
+        } catch { }
       } else if (element.kind !== "image") {
         const weight = element.kind === "headline" ? 700 : 500;
         ctx.font = `${weight} ${Math.max(1, element.fontSize)}px ${element.fontFamily || "Arial"}`;
@@ -154,20 +154,83 @@ async function askAi(master: Format, masterElements: BannerElement[], target: Fo
 
 const applyPatches = (baseline: BannerElement[], patches: LayoutPatch[]) => {
   const map = new Map(patches.map((p) => [p.id, p]));
-  return baseline.map((element) => {
+  return baseline.map((element, index) => {
     const patch = map.get(element.id);
     if (!patch) return element;
+    const role = roleOf(element, index, baseline.length);
+    const isText = element.kind !== "image";
     return {
       ...element,
       x: patch.x,
       y: patch.y,
       width: patch.width,
-      scale: patch.scale,
-      fontSize: element.kind === "image" ? element.fontSize : patch.fontSize,
+      scale: isText ? 100 : role === "background" ? patch.scale : 100,
+      fontSize: isText ? patch.fontSize : element.fontSize,
       visible: patch.visible,
     };
   });
 };
+
+const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
+
+function repairComposition(target: Format, elements: BannerElement[]) {
+  const ratio = target.width / target.height;
+  const portrait = ratio < 0.8;
+  const strip = ratio >= 4;
+  const extremeStrip = ratio >= 6;
+  const roles = new Map(elements.map((element, index) => [element.id, roleOf(element, index, elements.length)]));
+
+  return elements.map((source) => {
+    const role = roles.get(source.id)!;
+    const element = { ...source };
+
+    if (role !== "background") element.scale = 100;
+    if (element.kind !== "image") {
+      element.scale = 100;
+      element.width = clamp(element.width, 10, 90);
+    }
+
+    if (role === "background") return element;
+
+    if (portrait) {
+      if (role === "logo") Object.assign(element, { x: 8, y: 6, width: 16, scale: 100 });
+      else if (role === "headline") Object.assign(element, { x: 8, y: 18, width: 84, fontSize: clamp(element.fontSize, 28, 34), scale: 100 });
+      else if (role === "text") Object.assign(element, { x: 14, y: 46, width: 72, fontSize: clamp(element.fontSize, 17, 21), scale: 100 });
+      else if (role === "icon") Object.assign(element, { x: 8, y: 47, width: 6, scale: 100 });
+      else if (role === "ui") Object.assign(element, { x: 10, y: 72, width: 80, scale: 100 });
+      else if (role === "cta") Object.assign(element, { x: 10, y: 64, width: 80, scale: 100 });
+      else if (role === "legal") Object.assign(element, { x: 8, y: 92, width: 84, fontSize: clamp(element.fontSize, 8, 12), scale: 100 });
+      else Object.assign(element, { x: clamp(element.x, 8, 82), y: clamp(element.y, 8, 88), width: clamp(element.width, 18, 84) });
+      return element;
+    }
+
+    if (strip) {
+      if (extremeStrip) {
+        if (role === "logo") Object.assign(element, { x: 2, y: 14, width: 9, scale: 100 });
+        else if (role === "headline") Object.assign(element, { x: 14, y: 9, width: 34, fontSize: clamp(element.fontSize, 10, 13), scale: 100 });
+        else if (role === "text") Object.assign(element, { x: 14, y: 58, width: 34, fontSize: clamp(element.fontSize, 6, 8), scale: 100 });
+        else if (role === "icon") Object.assign(element, { x: 11, y: 57, width: 2.5, scale: 100 });
+        else if (role === "ui") Object.assign(element, { x: 66, y: 9, width: 31, scale: 100 });
+      } else {
+        if (role === "logo") Object.assign(element, { x: 3, y: 12, width: 9, scale: 100 });
+        else if (role === "headline") Object.assign(element, { x: 16, y: 10, width: 37, fontSize: clamp(element.fontSize, 19, 24), scale: 100 });
+        else if (role === "text") Object.assign(element, { x: 16, y: 58, width: 36, fontSize: clamp(element.fontSize, 9, 12), scale: 100 });
+        else if (role === "icon") Object.assign(element, { x: 13, y: 57, width: 2.8, scale: 100 });
+        else if (role === "ui") Object.assign(element, { x: 66, y: 10, width: 30, scale: 100 });
+      }
+      return element;
+    }
+
+    if (role === "logo") Object.assign(element, { width: clamp(element.width, 10, 18), scale: 100 });
+    if (role === "headline") Object.assign(element, { fontSize: clamp(element.fontSize, 22, 31), scale: 100, width: clamp(element.width, 42, 78) });
+    if (role === "text") Object.assign(element, { fontSize: clamp(element.fontSize, 12, 18), scale: 100, width: clamp(element.width, 34, 74) });
+    if (role === "icon") Object.assign(element, { width: clamp(element.width, 4, 9), scale: 100 });
+    if (role === "ui") Object.assign(element, { width: clamp(element.width, 54, 82), scale: 100 });
+    element.x = clamp(element.x, 4, 92);
+    element.y = clamp(element.y, 4, 92);
+    return element;
+  });
+}
 
 async function adaptOne(project: ProjectState, target: Format) {
   const masterFormat = formats.find((f) => f.id === "master")!;
@@ -177,7 +240,8 @@ async function adaptOne(project: ProjectState, target: Format) {
   const clonedMasterFrames = cloneFrameMap(masterFrames);
   const baselineFrames = mapAllFrames(clonedMasterFrames, masterElements, baseline);
   const ai = await askAi(masterFormat, masterElements, target, baseline);
-  const improved = applyPatches(baseline, ai.elements);
+  const aiLayout = applyPatches(baseline, ai.elements);
+  const improved = repairComposition(target, aiLayout);
   const improvedFrames = mapAllFrames(baselineFrames, baseline, improved);
   return { elements: improved, keyframes: improvedFrames, rationale: ai.rationale };
 }
@@ -218,11 +282,12 @@ export async function aiAdaptAll(onProgress?: (label: string) => void) {
       const reason = error instanceof Error ? error.message : "AI failed";
       const master = project.elementsByFormat.master ?? [];
       const baseline = adaptMasterToFormat(master, target).elements;
+      const repaired = repairComposition(target, baseline);
       const cloned = cloneFrameMap(project.keyframesByFormat.master ?? {});
       project = {
         ...project,
-        elementsByFormat: { ...project.elementsByFormat, [target.id]: baseline },
-        keyframesByFormat: { ...project.keyframesByFormat, [target.id]: mapAllFrames(cloned, master, baseline) },
+        elementsByFormat: { ...project.elementsByFormat, [target.id]: repaired },
+        keyframesByFormat: { ...project.keyframesByFormat, [target.id]: mapAllFrames(cloned, master, repaired) },
         formatOverrides: { ...project.formatOverrides, [target.id]: false },
       };
       failures.push(`${target.label}: ${reason}`);
@@ -231,8 +296,8 @@ export async function aiAdaptAll(onProgress?: (label: string) => void) {
   }
   editorActions.importProject(project);
   if (failures.length) {
-    onProgress?.(`AI failed for ${failures.length} format(s) · rules fallback applied`);
-    throw new Error(`AI did not complete ${failures.length} format(s). Rules fallback applied. ${failures[0]}`);
+    onProgress?.(`AI failed for ${failures.length} format(s) · repaired rules fallback applied`);
+    throw new Error(`AI did not complete ${failures.length} format(s). Repaired fallback applied. ${failures[0]}`);
   }
   onProgress?.("Vision AI adaptation complete");
   return messages;
