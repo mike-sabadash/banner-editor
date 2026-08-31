@@ -907,6 +907,223 @@ textarea {
   font-size: 9px;
 }
 
+/* Diffusion-inspired editor system: dense, dark and tool-first. */
+:root {
+  --line: #30322f;
+  --panel: #151615;
+  --ink: #f0f1ed;
+  --muted: #8f938d;
+  --blue: #41d98a;
+}
+.v2-app {
+  background: #0d0e0d;
+  font-family: Inter, Manrope, Arial, sans-serif;
+}
+.v2-top,
+.v2-library,
+.v2-inspector,
+.v2-stagebar,
+.v2-timeline,
+.timeline-layer-cell,
+.timeline-label-head {
+  background: #151615;
+}
+.v2-main {
+  background: #111211;
+}
+.v2-stagebar,
+.v2-top,
+.v2-timeline,
+.v2-inspector,
+.v2-library {
+  border-color: var(--line);
+}
+.v2-top-actions button,
+.v2-stagebar button,
+.v2-assets,
+.v2-assets button,
+.v2-type-row > *,
+.v2-fields label,
+.v2-object-actions button,
+.tt select,
+.easing-control select,
+.banner-settings .click-variable input {
+  color: var(--ink);
+  background: #202220;
+  border-color: #353835;
+}
+.v2-top-actions .primary {
+  background: #f2f3ef;
+  color: #111;
+  border-color: #f2f3ef;
+}
+.v2-canvas-area {
+  background-color: #101110;
+  background-image: radial-gradient(#343733 0.7px, transparent 0.7px);
+}
+.v2-format.active,
+.v2-layer.active {
+  background: #242724;
+  border-color: #414541;
+}
+.format-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 34px;
+  align-items: center;
+  gap: 3px;
+}
+.format-background-upload {
+  height: 32px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+}
+.format-background-upload:hover {
+  color: var(--blue);
+  background: #232623;
+}
+.background-actions {
+  display: flex;
+  gap: 6px;
+  margin: 4px 0 8px;
+}
+.background-actions button {
+  min-height: 30px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink);
+  background: #202220;
+  font-size: 9px;
+  cursor: pointer;
+}
+.v2-app {
+  grid-template-rows: 62px minmax(0, 1fr) 270px;
+}
+.v2-timeline > header {
+  background: #171817;
+  border-color: #343633;
+}
+.v2-timeline-grid {
+  background: #111211;
+  grid-auto-rows: 38px;
+}
+.timeline-layer-cell,
+.timeline-label-head {
+  border-color: #343633;
+}
+.timeline-row.active .timeline-layer-cell {
+  background: #202b25;
+}
+.timeline-row.active .timeline-track {
+  background-color: #17221c;
+}
+.v2-ruler {
+  background-color: #171817;
+  border-color: #3a3c39;
+}
+.v2-ruler,
+.timeline-track {
+  background-image:
+    linear-gradient(to right, #3a3d39 1px, transparent 1px),
+    linear-gradient(to right, #262825 1px, transparent 1px);
+}
+.timeline-track {
+  border-bottom: 1px solid #30332f;
+}
+.track-bar {
+  height: 14px;
+  border-radius: 3px;
+  background: #315f78;
+  box-shadow: inset 0 0 0 1px #477e9b;
+  opacity: 0.9;
+}
+.timeline-row.active .track-bar {
+  background: #347b62;
+  box-shadow: inset 0 0 0 1px #48a47f;
+}
+.timeline-key {
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  border: 1px solid #e8e9e5;
+  background: #f2f3ef;
+}
+.timeline-key.active {
+  background: var(--blue);
+  box-shadow:
+    0 0 0 2px #101110,
+    0 0 0 3px var(--blue);
+}
+.key-opacity,
+.key-rotation,
+.key-scale {
+  background: #f2f3ef;
+}
+.global-playhead {
+  width: 2px;
+  background: #45aef2;
+  box-shadow: none;
+}
+.global-playhead.snapped {
+  width: 2px;
+  box-shadow:
+    0 0 0 1px #101110,
+    0 0 6px #45aef2;
+}
+.playhead-head {
+  background: #45aef2;
+}
+.v2-timeline > header .easing-preview {
+  background: #202220;
+  border-color: #3a3d39;
+}
+.bezier-editor {
+  right: 190px;
+  bottom: 36px;
+  width: 380px;
+  padding: 14px;
+  border-color: #383b37;
+  background: #151615;
+  box-shadow: 0 18px 60px #000a;
+}
+.bezier-editor svg {
+  height: 190px;
+  background-color: #101110;
+  background-image:
+    linear-gradient(#282a27 1px, transparent 1px),
+    linear-gradient(90deg, #282a27 1px, transparent 1px);
+  background-size: 25% 25%;
+  border: 1px solid #30322f;
+  border-radius: 5px;
+}
+.bezier-axis {
+  stroke: #555954;
+}
+.bezier-guides {
+  stroke: #8a918a;
+  stroke-dasharray: 3 3;
+}
+.bezier-curve {
+  stroke: #48e693;
+  stroke-width: 3;
+}
+.bezier-editor circle {
+  stroke: #48e693;
+  fill: #151615;
+}
+.bezier-presets button,
+.bezier-fields input {
+  color: var(--ink);
+  background: #202220;
+  border-color: #383b37;
+}
+
 .v2-ruler,
 .timeline-track {
   background-image:

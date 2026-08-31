@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   easeProgress,
   moveKeyframe,
+  setEasingAtTime,
   snapTimelineTime,
   upsertKeyframe,
 } from "./timeline";
@@ -30,5 +31,33 @@ describe("timeline", () => {
   it("snaps close to keyframes and otherwise to the tenth grid", () => {
     expect(snapTimelineTime(1.96, [2])).toBe(2);
     expect(snapTimelineTime(1.24, [])).toBe(1.2);
+  });
+  it("applies a changed curve to the active keyframe", () => {
+    const frames = [
+      {
+        id: "a",
+        time: 1,
+        property: "x" as const,
+        value: 50,
+        easing: "linear" as const,
+      },
+    ];
+    expect(
+      setEasingAtTime(frames, 1, "custom", [0.2, 0, 0.2, 1])[0],
+    ).toMatchObject({ easing: "custom", bezier: [0.2, 0, 0.2, 1] });
+  });
+  it("applies easing to the segment ending at the next keyframe", () => {
+    const frames = [
+      {
+        id: "a",
+        time: 2,
+        property: "x" as const,
+        value: 50,
+        easing: "linear" as const,
+      },
+    ];
+    expect(
+      setEasingAtTime(frames, 1, "ease-out", [0, 0, 0.58, 1])[0].easing,
+    ).toBe("ease-out");
   });
 });

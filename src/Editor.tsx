@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import BezierEditor from "bezier-easing-editor";
 import {
   ChevronDown,
   ChevronLeft,
@@ -35,6 +36,7 @@ import {
 import {
   easeProgress,
   moveKeyframe,
+  setEasingAtTime,
   snapTimelineTime,
   upsertKeyframe,
   type AnimatableProperty,
@@ -51,8 +53,23 @@ type Asset = {
   type: "image" | "font";
   url: string;
 };
+type FormatBackground = { color: string; imageUrl?: string };
 const DURATION = 6,
   ANIMATABLE: AnimatableProperty[] = ["x", "y", "scale", "rotation", "opacity"];
+const CYRILLIC_FONTS = [
+  "Manrope",
+  "Inter",
+  "Arial",
+  "Helvetica Neue",
+  "Roboto",
+  "PT Sans",
+  "PT Serif",
+  "Noto Sans",
+  "Noto Serif",
+  "IBM Plex Sans",
+  "Georgia",
+  "Times New Roman",
+];
 const clamp = (v: number, min: number, max: number) =>
   Math.min(max, Math.max(min, v));
 const blankFormats = () =>
@@ -68,6 +85,10 @@ const cloneFrames = (source: FormatKeyframes): FormatKeyframes =>
       frames.map((frame) => ({ ...frame, id: crypto.randomUUID() })),
     ]),
   );
+const blankBackgrounds = () =>
+  Object.fromEntries(
+    formats.map((format) => [format.id, { color: "#ffffff" }]),
+  ) as Record<string, FormatBackground>;
 
 export default function Editor() {
   const [activeFormat, setActiveFormat] = useState("master");
@@ -104,6 +125,19 @@ export default function Editor() {
       return [];
     }
   });
+  const [backgrounds, setBackgrounds] = useState<
+    Record<string, FormatBackground>
+  >(() => {
+    try {
+      return (
+        JSON.parse(
+          localStorage.getItem("banner-editor:v3:backgrounds") || "",
+        ) || blankBackgrounds()
+      );
+    } catch {
+      return blankBackgrounds();
+    }
+  });
   const [selectedId, setSelectedId] = useState<string | null>(null),
     [platformId, setPlatformId] = useState("google"),
     [playhead, setPlayhead] = useState(0),
@@ -127,7 +161,9 @@ export default function Editor() {
       Record<string, AdaptationDecision[]>
     >({});
   const uploadGroup = useRef<Asset["group"]>("primary"),
-    fileInput = useRef<HTMLInputElement>(null);
+    fileInput = useRef<HTMLInputElement>(null),
+    backgroundInput = useRef<HTMLInputElement>(null),
+    backgroundFormat = useRef("master");
   const format = formats.find((item) => item.id === activeFormat)!,
     elements = elementsByFormat[activeFormat] ?? [],
     selected = elements.find((item) => item.id === selectedId) ?? null,
@@ -171,6 +207,26 @@ export default function Editor() {
       );
     } catch {}
   }, [bannerSettings]);
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        "banner-editor:v3:backgrounds",
+        JSON.stringify(backgrounds),
+      );
+    } catch {}
+  }, [backgrounds]);
+  useEffect(() => {
+    assets
+      .filter((asset) => asset.type === "font")
+      .forEach((asset) => {
+        const family = asset.name.replace(/\.[^.]+$/, "");
+        const face = new FontFace(family, `url(${asset.url})`);
+        face
+          .load()
+          .then((loaded) => document.fonts.add(loaded))
+          .catch(() => undefined);
+      });
+  }, [assets]);
   useEffect(() => {
     if (!playing) return;
     const start = performance.now() - playhead * 1000;
@@ -523,8 +579,32 @@ export default function Editor() {
     setAssets((all) => [...all, ...items]);
     if (fileInput.current) fileInput.current.value = "";
   };
+  const openBackgroundUpload = (formatId: string) => {
+    backgroundFormat.current = formatId;
+    backgroundInput.current?.click();
+  };
+  const uploadBackground = (files: FileList | null) => {
+    const file = files?.[0];
+    if (!file) return;
+    const formatId = backgroundFormat.current;
+    const reader = new FileReader();
+    reader.onload = () =>
+      setBackgrounds((current) => ({
+        ...current,
+        [formatId]: {
+          ...(current[formatId] ?? { color: "#ffffff" }),
+          imageUrl: String(reader.result),
+        },
+      }));
+    reader.readAsDataURL(file);
+    if (backgroundInput.current) backgroundInput.current.value = "";
+  };
   const placeAsset = (asset: Asset) => {
-    if (asset.type !== "image") return;
+    if (asset.type === "font") {
+      if (selected?.kind !== "image")
+        updateSelected({ fontFamily: asset.name.replace(/\.[^.]+$/, "") });
+      return;
+    }
     const item: BannerElement = {
       id: crypto.randomUUID(),
       kind: "image",
@@ -569,39 +649,26 @@ export default function Editor() {
       clamp(value * (event.deltaY > 0 ? 0.9 : 1.1), 0.6, 4),
     );
   };
-  const dragBezierPoint = (
-    event: React.PointerEvent<SVGCircleElement>,
-    point: 0 | 1,
+  const applyEasing = (
+    value: Easing,
+    curve: Bezier = bezier,
+    updateCurve = true,
   ) => {
-    event.preventDefault();
-    const svg = event.currentTarget.ownerSVGElement;
-    if (!svg) return;
-    setEasing("custom");
-    const move = (pointer: PointerEvent) => {
-      const box = svg.getBoundingClientRect();
-      const x = clamp(
-        (pointer.clientX - box.left - 12) / (box.width - 24),
-        0,
-        1,
-      );
-      const y = clamp(
-        1 - (pointer.clientY - box.top - 12) / (box.height - 24),
-        0,
-        1,
-      );
-      setBezier((current) => {
-        const next = [...current] as Bezier;
-        next[point * 2] = Math.round(x * 100) / 100;
-        next[point * 2 + 1] = Math.round(y * 100) / 100;
-        return next;
-      });
-    };
-    const end = () => {
-      removeEventListener("pointermove", move);
-      removeEventListener("pointerup", end);
-    };
-    addEventListener("pointermove", move);
-    addEventListener("pointerup", end);
+    setEasing(value);
+    if (value === "custom" && updateCurve) setBezier(curve);
+    if (!selectedId) return;
+    setKeyframesByFormat((all) => ({
+      ...all,
+      [activeFormat]: {
+        ...(all[activeFormat] ?? {}),
+        [selectedId]: setEasingAtTime(
+          all[activeFormat]?.[selectedId] ?? [],
+          playhead,
+          value,
+          curve,
+        ),
+      },
+    }));
   };
   const activeBezier: Bezier =
     easing === "linear"
@@ -704,8 +771,10 @@ export default function Editor() {
         : "",
       border = bannerSettings.borderEnabled
         ? `border:1px solid ${bannerSettings.borderColor};`
-        : "";
-    const html = `<!doctype html><meta name="ad.size" content="width=${format.width},height=${format.height}"><style>*{box-sizing:border-box}body{margin:0;position:relative;overflow:hidden;width:${format.width}px;height:${format.height}px;${border}${bannerSettings.clickSurface ? "cursor:pointer;" : ""}}</style>${body}${interaction}`,
+        : "",
+      formatBackground = backgrounds[activeFormat] ?? { color: "#ffffff" },
+      backgroundStyle = `background-color:${formatBackground.color};${formatBackground.imageUrl ? `background-image:url(${formatBackground.imageUrl});background-size:cover;background-position:center;` : ""}`;
+    const html = `<!doctype html><meta name="ad.size" content="width=${format.width},height=${format.height}"><style>*{box-sizing:border-box}body{margin:0;position:relative;overflow:hidden;width:${format.width}px;height:${format.height}px;${backgroundStyle}${border}${bannerSettings.clickSurface ? "cursor:pointer;" : ""}}</style>${body}${interaction}`,
       link = document.createElement("a");
     link.href = URL.createObjectURL(new Blob([html], { type: "text/html" }));
     link.download = `banner-${format.width}x${format.height}.html`;
@@ -722,7 +791,14 @@ export default function Editor() {
           <small>Local draft</small>
         </div>
         <div className="v2-top-actions">
-          <button type="button" onClick={previewAll}>
+          <button
+            type="button"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              previewAll();
+            }}
+          >
             <Play size={16} /> Preview
           </button>
           <button type="button" className="primary" onClick={exportHtml}>
@@ -743,6 +819,13 @@ export default function Editor() {
             multiple
             accept="image/*,.svg,.woff,.woff2,.ttf,.otf"
             onChange={(e) => upload(e.target.files)}
+          />
+          <input
+            ref={backgroundInput}
+            hidden
+            type="file"
+            accept="image/*"
+            onChange={(event) => uploadBackground(event.target.files)}
           />
           {(["primary", "additional"] as Asset["group"][]).map((group) => (
             <section className="v2-assets" key={group}>
@@ -788,20 +871,29 @@ export default function Editor() {
             <b>Formats</b>
           </div>
           {formats.map((item) => (
-            <button
-              type="button"
-              className={`v2-format ${item.id === activeFormat ? "active" : ""}`}
-              key={item.id}
-              onClick={() => switchFormat(item.id)}
-            >
-              <i style={{ aspectRatio: `${item.width}/${item.height}` }} />
-              <span>
-                <b>{item.label}</b>
-                <small>
-                  {item.width} × {item.height}
-                </small>
-              </span>
-            </button>
+            <div className="format-row" key={item.id}>
+              <button
+                type="button"
+                className={`v2-format ${item.id === activeFormat ? "active" : ""}`}
+                onClick={() => switchFormat(item.id)}
+              >
+                <i style={{ aspectRatio: `${item.width}/${item.height}` }} />
+                <span>
+                  <b>{item.label}</b>
+                  <small>
+                    {item.width} × {item.height}
+                  </small>
+                </span>
+              </button>
+              <button
+                type="button"
+                className="format-background-upload"
+                title={`Upload background for ${item.label}`}
+                onClick={() => openBackgroundUpload(item.id)}
+              >
+                <Upload size={14} />
+              </button>
+            </div>
           ))}
         </aside>
         <section className="v2-stage">
@@ -853,6 +945,12 @@ export default function Editor() {
                 width: preview.width,
                 height: preview.height,
                 transform: `scale(${zoom / 74})`,
+                backgroundColor: backgrounds[activeFormat]?.color ?? "#ffffff",
+                backgroundImage: backgrounds[activeFormat]?.imageUrl
+                  ? `url(${backgrounds[activeFormat].imageUrl})`
+                  : undefined,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
               }}
               onPointerDown={(e) => {
                 if (e.target === e.currentTarget) setSelectedId(null);
@@ -1007,10 +1105,19 @@ export default function Editor() {
                           updateSelected({ fontFamily: e.target.value })
                         }
                       >
-                        <option>Manrope</option>
-                        <option>DM Sans</option>
-                        <option>Arial</option>
-                        <option>Georgia</option>
+                        {CYRILLIC_FONTS.map((font) => (
+                          <option key={font}>{font}</option>
+                        ))}
+                        {assets
+                          .filter((asset) => asset.type === "font")
+                          .map((asset) => {
+                            const family = asset.name.replace(/\.[^.]+$/, "");
+                            return (
+                              <option key={asset.id} value={family}>
+                                {family} · uploaded
+                              </option>
+                            );
+                          })}
                       </select>
                       <input
                         type="number"
@@ -1097,6 +1204,48 @@ export default function Editor() {
                 <ChevronDown size={16} /> Banner settings
               </button>
               <label>
+                Background color
+                <input
+                  type="color"
+                  value={backgrounds[activeFormat]?.color ?? "#ffffff"}
+                  onChange={(event) =>
+                    setBackgrounds((current) => ({
+                      ...current,
+                      [activeFormat]: {
+                        ...(current[activeFormat] ?? {}),
+                        color: event.target.value,
+                      },
+                    }))
+                  }
+                />
+              </label>
+              <div className="background-actions">
+                <button
+                  type="button"
+                  onClick={() => openBackgroundUpload(activeFormat)}
+                >
+                  <Upload size={14} />{" "}
+                  {backgrounds[activeFormat]?.imageUrl
+                    ? "Replace background"
+                    : "Upload background"}
+                </button>
+                {backgrounds[activeFormat]?.imageUrl && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setBackgrounds((current) => ({
+                        ...current,
+                        [activeFormat]: {
+                          color: current[activeFormat]?.color ?? "#ffffff",
+                        },
+                      }))
+                    }
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+              <label>
                 <input
                   type="checkbox"
                   checked={bannerSettings.borderEnabled}
@@ -1176,9 +1325,11 @@ export default function Editor() {
           <button
             type="button"
             className="v2-play"
-            onClick={() => {
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
               if (playhead >= DURATION) setPlayhead(0);
-              setPlaying(!playing);
+              setPlaying((value) => !value);
             }}
           >
             {playing ? (
@@ -1211,7 +1362,10 @@ export default function Editor() {
                   value={easing}
                   onChange={(event) => {
                     const value = event.target.value as Easing;
-                    setEasing(value);
+                    applyEasing(
+                      value,
+                      value === "custom" ? bezier : activeBezier,
+                    );
                     if (value === "custom") setCurveOpen(true);
                   }}
                 >
@@ -1239,32 +1393,15 @@ export default function Editor() {
               </button>
               {curveOpen && (
                 <div className="bezier-editor">
-                  <svg viewBox="0 0 124 74" aria-label="Cubic bezier editor">
-                    <path className="bezier-axis" d="M12 62H112M12 62V12" />
-                    <path
-                      className="bezier-guides"
-                      d={`M12 62L${12 + bezier[0] * 100} ${62 - bezier[1] * 50}M112 12L${12 + bezier[2] * 100} ${62 - bezier[3] * 50}`}
-                    />
-                    <path
-                      className="bezier-curve"
-                      d={`M12 62C${12 + bezier[0] * 100} ${62 - bezier[1] * 50},${12 + bezier[2] * 100} ${62 - bezier[3] * 50},112 12`}
-                    />
-                    {([0, 1] as const).map((point) => (
-                      <circle
-                        key={point}
-                        cx={12 + bezier[point * 2] * 100}
-                        cy={62 - bezier[point * 2 + 1] * 50}
-                        r="5"
-                        onPointerDown={(event) => dragBezierPoint(event, point)}
-                      />
-                    ))}
-                  </svg>
+                  <BezierEditor
+                    value={bezier}
+                    onChange={(value) => applyEasing("custom", value as Bezier)}
+                  />
                   <div className="bezier-presets">
                     <button
                       type="button"
                       onClick={() => {
-                        setEasing("custom");
-                        setBezier([0.33, 1, 0.68, 1]);
+                        applyEasing("custom", [0.33, 1, 0.68, 1]);
                       }}
                     >
                       Smooth
@@ -1272,8 +1409,7 @@ export default function Editor() {
                     <button
                       type="button"
                       onClick={() => {
-                        setEasing("custom");
-                        setBezier([0.2, 0, 0.2, 1]);
+                        applyEasing("custom", [0.2, 0, 0.2, 1]);
                       }}
                     >
                       Sharp
@@ -1281,8 +1417,7 @@ export default function Editor() {
                     <button
                       type="button"
                       onClick={() => {
-                        setEasing("custom");
-                        setBezier([0.22, 1, 0.36, 1]);
+                        applyEasing("custom", [0.22, 1, 0.36, 1]);
                       }}
                     >
                       Expo
@@ -1299,15 +1434,12 @@ export default function Editor() {
                         step={0.01}
                         value={value}
                         onChange={(event) => {
-                          setEasing("custom");
-                          setBezier(
-                            (current) =>
-                              current.map((item, itemIndex) =>
-                                itemIndex === index
-                                  ? clamp(Number(event.target.value), 0, 1)
-                                  : item,
-                              ) as Bezier,
-                          );
+                          const next = bezier.map((item, itemIndex) =>
+                            itemIndex === index
+                              ? clamp(Number(event.target.value), 0, 1)
+                              : item,
+                          ) as Bezier;
+                          applyEasing("custom", next);
                         }}
                       />
                     ))}

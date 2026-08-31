@@ -43,10 +43,10 @@ export const easeProgress = (
 ) => {
   const t = Math.max(0, Math.min(1, value));
   if (easing === "custom") return cubicBezierProgress(t, bezier);
-  if (easing === "ease-in") return t * t * t;
-  if (easing === "ease-out") return 1 - Math.pow(1 - t, 3);
+  if (easing === "ease-in") return cubicBezierProgress(t, [0.42, 0, 1, 1]);
+  if (easing === "ease-out") return cubicBezierProgress(t, [0, 0, 0.58, 1]);
   if (easing === "ease-in-out")
-    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    return cubicBezierProgress(t, [0.42, 0, 0.58, 1]);
   return t;
 };
 export const snapTimelineTime = (
@@ -65,4 +65,23 @@ export const snapTimelineTime = (
   return Math.abs(nearest - clamped) <= threshold
     ? nearest
     : Number((Math.round(clamped / step) * step).toFixed(4));
+};
+export const setEasingAtTime = (
+  frames: Keyframe[],
+  time: number,
+  easing: Easing,
+  bezier: Bezier,
+) => {
+  const exact = frames.find((frame) => Math.abs(frame.time - time) < 0.055);
+  const target =
+    exact ??
+    [...frames]
+      .sort((a, b) => a.time - b.time)
+      .find((frame) => frame.time > time);
+  if (!target) return frames;
+  return frames.map((frame) =>
+    frame.id === target.id
+      ? { ...frame, easing, bezier: [...bezier] as Bezier }
+      : frame,
+  );
 };
