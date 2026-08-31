@@ -20,7 +20,33 @@ export type LayoutDirectorRequest = {
   target: { id: string; width: number; height: number; elements: LayoutElementInput[] };
 };
 
-const schema = {
+const openAiSchema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    rationale: { type: "string" },
+    elements: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          id: { type: "string" },
+          x: { type: "number" },
+          y: { type: "number" },
+          width: { type: "number" },
+          scale: { type: "number" },
+          fontSize: { type: "number" },
+          visible: { type: "boolean" },
+        },
+        required: ["id", "x", "y", "width", "scale", "fontSize", "visible"],
+      },
+    },
+  },
+  required: ["rationale", "elements"],
+};
+
+const geminiSchema = {
   type: "OBJECT",
   properties: {
     rationale: { type: "STRING" },
@@ -76,20 +102,56 @@ async function readJson(req: IncomingMessage) {
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
 }
 
-export async function runLayoutDirector(payload: LayoutDirectorRequest) {
+function buildPrompt(payload: LayoutDirectorRequest) {
+  return `You are an expert responsive HTML5 advertising art director. Re-layout an existing banner from MASTER to TARGET without changing copy, assets, element ids, or brand intent. Return only the requested structured JSON.\n\nRules:\n- Coordinates x/y and width are percentages of target artboard.\n- Preserve visual hierarchy and reading order.\n- Background should cover the artboard.\n- Logos should stay clearly visible with safe margins and should not dominate.\n- Headline must remain readable; reduce font size and width when necessary.\n- CTA must be visible and tappable if present.\n- Legal text may shrink but should remain legible; never overlap critical content.\n- Prefer reflow/stacking in portrait and compact compositions in very wide strips.\n- Keep important content inside 4% safe margins when possible.\n- You are refining a deterministic first-pass layout, so make conservative, useful corrections instead of redesigning the campaign.\n\nINPUT:\n${JSON.stringify(payload)}`;
+}
+
+async function runOpenRouter(payload: LayoutDirectorRequest) {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) throw new Error("OPENROUTER_API_KEY is not configured on the server");
+  const model = process.env.OPENROUTER_LAYOUT_MODEL || "openrouter/free";
+  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${apiKey}`,
+      "HTTP-Referer": process.env.OPENROUTER_SITE_URL || "http://localhost:5173",
+      "X-Title": process.env.OPENROUTER_APP_NAME || "Banner Editor Layout Director",
+    },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: "user", content: buildPrompt(payload) }],
+      temperature: 0.2,
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "banner_layout",
+          strict: true,
+          schema: openAiSchema,
+        },
+      },
+    }),
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(body?.error?.message || `OpenRouter request failed (${response.status})`);
+  const text = body?.choices?.[0]?.message?.content || "";
+  if (!text) throw new Error("OpenRouter returned an empty layout");
+  return sanitize(JSON.parse(text), payload);
+}
+
+async function runGemini(payload: LayoutDirectorRequest) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("GEMINI_API_KEY is not configured on the server");
   const model = process.env.GEMINI_LAYOUT_MODEL || "gemini-2.5-flash-lite";
-  const prompt = `You are an expert responsive HTML5 advertising art director. Re-layout an existing banner from MASTER to TARGET without changing copy, assets, element ids, or brand intent. Return only the requested structured JSON.\n\nRules:\n- Coordinates x/y and width are percentages of target artboard.\n- Preserve visual hierarchy and reading order.\n- Background should cover the artboard.\n- Logos should stay clearly visible with safe margins and should not dominate.\n- Headline must remain readable; reduce font size and width when necessary.\n- CTA must be visible and tappable if present.\n- Legal text may shrink but should remain legible; never overlap critical content.\n- Prefer reflow/stacking in portrait and compact compositions in very wide strips.\n- Keep important content inside 4% safe margins when possible.\n- You are refining a deterministic first-pass layout, so make conservative, useful corrections instead of redesigning the campaign.\n\nINPUT:\n${JSON.stringify(payload)}`;
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
     method: "POST",
     headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
     body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
+      contents: [{ parts: [{ text: buildPrompt(payload) }] }],
       generationConfig: {
-        temperature: 0.25,
+        temperature: 0.2,
         responseMimeType: "application/json",
-        responseSchema: schema,
+        responseSchema: geminiSchema,
       },
     }),
   });
@@ -98,6 +160,12 @@ export async function runLayoutDirector(payload: LayoutDirectorRequest) {
   const text = body?.candidates?.[0]?.content?.parts?.map((p: any) => p.text || "").join("") || "";
   if (!text) throw new Error("Gemini returned an empty layout");
   return sanitize(JSON.parse(text), payload);
+}
+
+export async function runLayoutDirector(payload: LayoutDirectorRequest) {
+  if (process.env.OPENROUTER_API_KEY) return runOpenRouter(payload);
+  if (process.env.GEMINI_API_KEY) return runGemini(payload);
+  throw new Error("No AI provider configured. Add OPENROUTER_API_KEY (recommended) or GEMINI_API_KEY.");
 }
 
 export function layoutDirectorMiddleware() {
@@ -116,9 +184,10 @@ export function layoutDirectorMiddleware() {
       res.setHeader("content-type", "application/json");
       res.end(JSON.stringify(result));
     } catch (error) {
-      res.statusCode = /GEMINI_API_KEY/.test(String(error)) ? 503 : 500;
+      const message = error instanceof Error ? error.message : "Layout Director failed";
+      res.statusCode = /API_KEY|No AI provider/.test(message) ? 503 : 500;
       res.setHeader("content-type", "application/json");
-      res.end(JSON.stringify({ error: error instanceof Error ? error.message : "Layout Director failed" }));
+      res.end(JSON.stringify({ error: message }));
     }
   };
 }
