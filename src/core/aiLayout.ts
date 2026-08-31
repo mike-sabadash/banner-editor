@@ -1,16 +1,30 @@
 import { adaptMasterToFormat, formats, type BannerElement, type Format } from "../model";
-import type { AnimatableProperty, FormatKeyframes, Keyframe } from "../timeline";
+import type { FormatKeyframes, Keyframe } from "../timeline";
 import { editorActions, getEditorState, type ProjectState } from "./editorStore";
 
 type LayoutPatch = { id: string; x: number; y: number; width: number; scale: number; fontSize: number; visible: boolean };
 type LayoutResponse = { rationale: string; elements: LayoutPatch[] };
+type LayoutRole = "background" | "logo" | "headline" | "text" | "cta" | "legal" | "image" | "icon" | "ui";
 
-const roleOf = (element: BannerElement, index: number, total: number) => {
+const imageCache = new Map<string, Promise<HTMLImageElement>>();
+const loadImage = (src: string) => {
+  if (!imageCache.has(src)) imageCache.set(src, new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error("Could not render an image asset for AI preview"));
+    img.src = src;
+  }));
+  return imageCache.get(src)!;
+};
+
+const roleOf = (element: BannerElement, index: number, total: number): LayoutRole => {
   const hay = `${element.kind} ${element.name} ${element.text}`.toLowerCase();
-  if (element.kind === "image" && (element.width >= 80 || /background|bg|фон/.test(hay) || index === 0 && total > 1)) return "background";
+  if (element.kind === "image" && (/background|\bbg\b|фон/.test(hay) || element.width * element.scale / 100 >= 70 || index === 0 && total > 1)) return "background";
   if (/logo|логотип/.test(hay)) return "logo";
-  if (/legal|disclaimer|terms|услов|18\+/.test(hay)) return "legal";
+  if (/legal|disclaimer|terms|услов|18\+/.test(hay) || element.kind === "legal") return "legal";
   if (/cta|button|кноп|купить|подробнее|узнать|перейти/.test(hay) || element.kind === "button") return "cta";
+  if (/ui|interface|screen|widget|panel|card|mobile|onboard/.test(hay) && element.kind === "image") return "ui";
+  if (/icon|shield|badge|икон/.test(hay) && element.kind === "image") return "icon";
   if (element.kind === "headline" || /headline|title|заголов/.test(hay)) return "headline";
   if (element.kind === "image") return "image";
   return "text";
@@ -30,6 +44,71 @@ const serialize = (elements: BannerElement[]) => elements.map((e, index) => ({
   lineHeight: e.lineHeight,
   visible: e.visible,
 }));
+
+function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number) {
+  const output: string[] = [];
+  for (const paragraph of text.split("\n")) {
+    const words = paragraph.split(/\s+/).filter(Boolean);
+    if (!words.length) { output.push(""); continue; }
+    let line = words[0];
+    for (const word of words.slice(1)) {
+      const test = `${line} ${word}`;
+      if (ctx.measureText(test).width <= maxWidth) line = test;
+      else { output.push(line); line = word; }
+    }
+    output.push(line);
+  }
+  return output;
+}
+
+async function renderPreview(format: Format, elements: BannerElement[]) {
+  try {
+    if (document.fonts?.ready) await document.fonts.ready;
+    const maxEdge = 680;
+    const previewScale = Math.min(1, maxEdge / Math.max(format.width, format.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(format.width * previewScale));
+    canvas.height = Math.max(1, Math.round(format.height * previewScale));
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return undefined;
+    ctx.scale(previewScale, previewScale);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, format.width, format.height);
+
+    for (const element of elements) {
+      if (!element.visible) continue;
+      const x = element.x / 100 * format.width;
+      const y = element.y / 100 * format.height;
+      const width = element.width / 100 * format.width;
+      const objectScale = element.scale / 100;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(element.rotation * Math.PI / 180);
+      ctx.scale(objectScale, objectScale);
+      ctx.globalAlpha = element.opacity / 100;
+
+      if (element.kind === "image" && element.assetUrl) {
+        try {
+          const img = await loadImage(element.assetUrl);
+          const ratio = img.naturalWidth ? img.naturalHeight / img.naturalWidth : 0.65;
+          ctx.drawImage(img, 0, 0, width, width * ratio);
+        } catch { /* keep preview rendering other layers */ }
+      } else if (element.kind !== "image") {
+        const weight = element.kind === "headline" ? 700 : 500;
+        ctx.font = `${weight} ${Math.max(1, element.fontSize)}px ${element.fontFamily || "Arial"}`;
+        ctx.fillStyle = element.color || "#111111";
+        ctx.textBaseline = "top";
+        const lineHeight = element.fontSize * element.lineHeight / 100;
+        const lines = wrapText(ctx, element.text || "", Math.max(1, width));
+        lines.forEach((line, lineIndex) => ctx.fillText(line, 0, lineIndex * lineHeight, width));
+      }
+      ctx.restore();
+    }
+    return canvas.toDataURL("image/jpeg", 0.76);
+  } catch {
+    return undefined;
+  }
+}
 
 const cloneFrameMap = (source: FormatKeyframes): FormatKeyframes => Object.fromEntries(
   Object.entries(source).map(([id, list]) => [id, list.map((f) => ({ ...f, id: crypto.randomUUID(), bezier: f.bezier ? [...f.bezier] as typeof f.bezier : undefined }))]),
@@ -56,12 +135,16 @@ const mapAllFrames = (source: FormatKeyframes, fromElements: BannerElement[], to
 };
 
 async function askAi(master: Format, masterElements: BannerElement[], target: Format, baseline: BannerElement[]) {
+  const [masterPreview, targetPreview] = await Promise.all([
+    renderPreview(master, masterElements),
+    renderPreview(target, baseline),
+  ]);
   const response = await fetch("/api/layout-director", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
-      master: { width: master.width, height: master.height, elements: serialize(masterElements) },
-      target: { id: target.id, width: target.width, height: target.height, elements: serialize(baseline) },
+      master: { width: master.width, height: master.height, elements: serialize(masterElements), previewDataUrl: masterPreview },
+      target: { id: target.id, width: target.width, height: target.height, elements: serialize(baseline), previewDataUrl: targetPreview },
     }),
   });
   const json = await response.json().catch(() => ({}));
@@ -72,9 +155,17 @@ async function askAi(master: Format, masterElements: BannerElement[], target: Fo
 const applyPatches = (baseline: BannerElement[], patches: LayoutPatch[]) => {
   const map = new Map(patches.map((p) => [p.id, p]));
   return baseline.map((element) => {
-    const p = map.get(element.id);
-    if (!p) return element;
-    return { ...element, x: p.x, y: p.y, width: p.width, scale: p.scale, fontSize: element.kind === "image" ? element.fontSize : p.fontSize, visible: p.visible };
+    const patch = map.get(element.id);
+    if (!patch) return element;
+    return {
+      ...element,
+      x: patch.x,
+      y: patch.y,
+      width: patch.width,
+      scale: patch.scale,
+      fontSize: element.kind === "image" ? element.fontSize : patch.fontSize,
+      visible: patch.visible,
+    };
   });
 };
 
@@ -112,7 +203,7 @@ export async function aiAdaptAll(onProgress?: (label: string) => void) {
   if (!(project.elementsByFormat.master ?? []).length) throw new Error("Master is empty");
   const messages: string[] = [];
   for (const target of formats.filter((f) => f.id !== "master")) {
-    onProgress?.(`AI: ${target.label}…`);
+    onProgress?.(`Vision AI: ${target.label}…`);
     try {
       const result = await adaptOne(project, target);
       project = {
@@ -132,10 +223,10 @@ export async function aiAdaptAll(onProgress?: (label: string) => void) {
         keyframesByFormat: { ...project.keyframesByFormat, [target.id]: mapAllFrames(cloned, master, baseline) },
         formatOverrides: { ...project.formatOverrides, [target.id]: false },
       };
-      messages.push(`${target.label}: fallback (${error instanceof Error ? error.message : "AI failed"})`);
+      messages.push(`${target.label}: FALLBACK — ${error instanceof Error ? error.message : "AI failed"}`);
     }
   }
   editorActions.importProject(project);
-  onProgress?.("AI adaptation complete");
+  onProgress?.("Vision AI adaptation complete");
   return messages;
 }
