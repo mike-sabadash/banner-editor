@@ -1,0 +1,18 @@
+export type ElementKind = "eyebrow" | "headline" | "copy" | "button" | "legal";
+export type BannerElement = { id:string; kind:ElementKind; name:string; text:string; x:number; y:number; width:number; scale:number; locked:boolean; visible:boolean };
+export type Format = { id:string; label:string; width:number; height:number; status:"master"|"ready"|"review" };
+export const formats: Format[] = [
+  {id:"master",label:"Master",width:1200,height:628,status:"master"},
+  {id:"medium",label:"Medium rectangle",width:300,height:250,status:"ready"},
+  {id:"half",label:"Half page",width:300,height:600,status:"ready"},
+  {id:"leader",label:"Leaderboard",width:728,height:90,status:"review"},
+  {id:"mobile",label:"Mobile banner",width:320,height:50,status:"review"},
+];
+export const initialElements: BannerElement[] = [
+  {id:"eyebrow",kind:"eyebrow",name:"Eyebrow",text:"NEW COLLECTION",x:8,y:13,width:45,scale:100,locked:false,visible:true},
+  {id:"headline",kind:"headline",name:"Headline",text:"Move beyond ordinary.",x:8,y:24,width:54,scale:100,locked:false,visible:true},
+  {id:"copy",kind:"copy",name:"Body copy",text:"Built for the moments that matter.",x:8,y:56,width:44,scale:100,locked:false,visible:true},
+  {id:"button",kind:"button",name:"CTA",text:"Explore now",x:8,y:71,width:20,scale:100,locked:true,visible:true},
+  {id:"legal",kind:"legal",name:"Legal copy",text:"Terms and conditions apply.",x:8,y:92,width:42,scale:100,locked:true,visible:true},
+];
+export const fitPreview=(width:number,height:number,maxWidth=720,maxHeight=430)=>{const ratio=Math.min(maxWidth/width,maxHeight/height,1);return{width:Math.round(width*ratio),height:Math.round(height*ratio)}};
