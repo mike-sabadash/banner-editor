@@ -202,6 +202,7 @@ export async function aiAdaptAll(onProgress?: (label: string) => void) {
   let project = getEditorState();
   if (!(project.elementsByFormat.master ?? []).length) throw new Error("Master is empty");
   const messages: string[] = [];
+  const failures: string[] = [];
   for (const target of formats.filter((f) => f.id !== "master")) {
     onProgress?.(`Vision AI: ${target.label}…`);
     try {
@@ -214,6 +215,7 @@ export async function aiAdaptAll(onProgress?: (label: string) => void) {
       };
       messages.push(`${target.label}: ${result.rationale}`);
     } catch (error) {
+      const reason = error instanceof Error ? error.message : "AI failed";
       const master = project.elementsByFormat.master ?? [];
       const baseline = adaptMasterToFormat(master, target).elements;
       const cloned = cloneFrameMap(project.keyframesByFormat.master ?? {});
@@ -223,10 +225,15 @@ export async function aiAdaptAll(onProgress?: (label: string) => void) {
         keyframesByFormat: { ...project.keyframesByFormat, [target.id]: mapAllFrames(cloned, master, baseline) },
         formatOverrides: { ...project.formatOverrides, [target.id]: false },
       };
-      messages.push(`${target.label}: FALLBACK — ${error instanceof Error ? error.message : "AI failed"}`);
+      failures.push(`${target.label}: ${reason}`);
+      messages.push(`${target.label}: FALLBACK — ${reason}`);
     }
   }
   editorActions.importProject(project);
+  if (failures.length) {
+    onProgress?.(`AI failed for ${failures.length} format(s) · rules fallback applied`);
+    throw new Error(`AI did not complete ${failures.length} format(s). Rules fallback applied. ${failures[0]}`);
+  }
   onProgress?.("Vision AI adaptation complete");
   return messages;
 }
