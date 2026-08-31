@@ -1237,9 +1237,9 @@ export default function Editor() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setBezier([0.34, 1, 0.64, 1])}
+                      onClick={() => setBezier([0.2, 0, 0.2, 1])}
                     >
-                      Back
+                      Sharp
                     </button>
                     <button
                       type="button"
