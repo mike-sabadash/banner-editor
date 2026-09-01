@@ -7,7 +7,7 @@ const clamp = (value: number, min: number, max: number) => Math.min(max, Math.ma
 
 export function layoutRole(element: BannerElement, index: number, total: number): LayoutRole {
   const hay = `${element.kind} ${element.name} ${element.text}`.toLowerCase();
-  if (/logo|логотип/.test(hay) && element.kind === "image") return "logo";
+  if (/logo|логотип|страховка/.test(hay) && element.kind === "image") return "logo";
   if (/ui|interface|screen|widget|panel|card|mobile|onboard|404|frame/.test(hay) && element.kind === "image") return "ui";
   if (/icon|shield|badge|икон|щит/.test(hay) && element.kind === "image") return "icon";
   if (element.kind === "image" && (/background|(?:^|\W)bg(?:\W|$)|фон|\d{3,4}[x×_]\d{2,4}/.test(hay) || element.width >= 88 || (index === 0 && total > 1 && element.width >= 70))) return "background";
@@ -64,7 +64,69 @@ function intersects(a: BannerElement, b: BannerElement, format: Format, dimensio
   return overlapX > Math.min(a.width, b.width) * .08 && overlapY > Math.min(ah, bh) * .12;
 }
 
-export function composeLayout(format: Format, source: BannerElement[], dimensions: ImageDimensions = {}) {
+function fitText(element: BannerElement, format: Format, width: number, maxHeight: number, maxFont: number, minFont = 7) {
+  const longestWord = Math.max(1, ...(element.text || " ").split(/\s+/).map((word) => word.length));
+  const wordFit = width / 100 * format.width / (longestWord * .56);
+  let next = { ...element, width, scale: 100, fontSize: clamp(Math.min(element.fontSize, maxFont, wordFit), minFont, maxFont) };
+  while (next.fontSize > minFont && estimatedHeight(next, format, {}) > maxHeight) next = { ...next, fontSize: next.fontSize - 1 };
+  return next;
+}
+
+function placeAtCenterY(element: BannerElement, format: Format, dimensions: ImageDimensions, x: number, width: number, centerY: number) {
+  const next = { ...element, x, width, scale: 100 };
+  return { ...next, y: centerY - estimatedHeight(next, format, dimensions) / 2 };
+}
+
+function applyAnchorTemplate(format: Format, elements: BannerElement[], roles: Map<string, LayoutRole>, dimensions: ImageDimensions) {
+  const ratio = format.width / format.height;
+  const portrait = ratio < .8;
+  const strip = ratio >= 4;
+  const mobile = strip && format.height <= 60;
+  const icon = elements.find((element) => roles.get(element.id) === "icon");
+  const logo = elements.find((element) => roles.get(element.id) === "logo");
+  const headline = elements.find((element) => roles.get(element.id) === "headline");
+  const copy = elements.find((element) => roles.get(element.id) === "text");
+  const ui = elements.find((element) => roles.get(element.id) === "ui");
+
+  return elements.map((element) => {
+    const role = roles.get(element.id)!;
+    if (!element.visible || role === "background") return element;
+    if (strip) {
+      if (element.id === icon?.id) return placeAtCenterY(element, format, dimensions, 2, mobile ? 4 : 5, 50);
+      if (element.id === logo?.id) return placeAtCenterY(element, format, dimensions, mobile ? 8 : 9, mobile ? 18 : 20, 50);
+      if (element.id === headline?.id) return { ...fitText(element, format, mobile ? 34 : 32, 66, mobile ? 14 : 24, 7), x: mobile ? 29 : 32, y: 17 };
+      if (element.id === copy?.id) return { ...fitText(element, format, 30, 24, mobile ? 8 : 11, 6), x: mobile ? 30 : 33, y: 65 };
+      if (element.id === ui?.id) return placeAtCenterY(element, format, dimensions, mobile ? 66 : 67, mobile ? 31 : 30, 50);
+      return element;
+    }
+    if (portrait) {
+      if (element.id === icon?.id) return { ...element, x: 8, y: 6, width: 8, scale: 100 };
+      if (element.id === logo?.id) return { ...element, x: 20, y: 6, width: 50, scale: 100 };
+      if (element.id === headline?.id) return { ...fitText(element, format, 84, 24, 42, 16), x: 8, y: 20 };
+      if (element.id === copy?.id) return { ...fitText(element, format, 76, 16, 22, 10), x: 12, y: 47 };
+      if (element.id === ui?.id) {
+        let next = { ...element, width: 84, scale: 100 };
+        const height = estimatedHeight(next, format, dimensions);
+        if (height > 31) next.width *= 31 / height;
+        return { ...next, x: (100 - next.width) / 2, y: 94 - estimatedHeight(next, format, dimensions) };
+      }
+      return element;
+    }
+    if (element.id === icon?.id) return { ...element, x: 8, y: 8, width: 8, scale: 100 };
+    if (element.id === logo?.id) return { ...element, x: 20, y: 8, width: 42, scale: 100 };
+    if (element.id === headline?.id) return { ...fitText(element, format, 84, 28, 32, 14), x: 8, y: 27 };
+    if (element.id === copy?.id) return { ...fitText(element, format, 76, 14, 18, 9), x: 12, y: 54 };
+    if (element.id === ui?.id) {
+      let next = { ...element, width: 82, scale: 100 };
+      const height = estimatedHeight(next, format, dimensions);
+      if (height > 30) next.width *= 30 / height;
+      return { ...next, x: (100 - next.width) / 2, y: 95 - estimatedHeight(next, format, dimensions) };
+    }
+    return element;
+  });
+}
+
+export function composeLayout(format: Format, source: BannerElement[], dimensions: ImageDimensions = {}, options: { anchor?: boolean } = {}) {
   const roles = new Map(source.map((element, index) => [element.id, layoutRole(element, index, source.length)]));
   const prepared = source.map((element) => {
     const role = roles.get(element.id)!;
@@ -78,9 +140,10 @@ export function composeLayout(format: Format, source: BannerElement[], dimension
     return { ...element, x: (100 - width) / 2, y: (100 - height) / 2, width, scale: 100 };
   });
 
+  const templated = options.anchor ? applyAnchorTemplate(format, prepared, roles, dimensions) : prepared;
   const strip = format.width / format.height >= 4;
   const placed: BannerElement[] = [];
-  return prepared.map((original) => {
+  return templated.map((original) => {
     const role = roles.get(original.id)!;
     if (!original.visible || role === "background") return original;
     let next = { ...original };
