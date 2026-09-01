@@ -2,7 +2,7 @@ import BezierEditor from "bezier-easing-editor";
 import { AlignCenter, AlignJustify, AlignLeft, AlignRight, CaseLower, CaseSensitive, CaseUpper, Download, Eye, EyeOff, Image as ImageIcon, Lock, Maximize2, Minus, Plus, RefreshCw, Sparkles, Trash2, Type, Unlock, Upload, type LucideIcon } from "lucide-react";
 import { useRef, useState, type CSSProperties } from "react";
 import { formats } from "../model";
-import { EASING_PRESETS, type Bezier, type Easing } from "../timeline";
+import { EASING_PRESETS, easeProgress, type Bezier, type Easing } from "../timeline";
 import { aiAdaptAll, aiAdaptFormat, type AiFormatStatus } from "./aiLayout";
 import CanvasV2 from "./CanvasV2";
 import TimelineV2, { TransformInspector } from "./TimelineV2";
@@ -15,8 +15,7 @@ const pretty=(name:string)=>name.replaceAll("-"," ").replace(/\b\w/g,(m)=>m.toUp
 const TEXT_MOTION=["none","fade","rise","bounce","shake","typewriter"] as const;
 const ALIGN_BUTTONS=[{value:"left" as const,Icon:AlignLeft},{value:"center" as const,Icon:AlignCenter},{value:"right" as const,Icon:AlignRight},{value:"justify" as const,Icon:AlignJustify}];
 const CASE_BUTTONS=[{value:"none" as const,Icon:CaseSensitive},{value:"uppercase" as const,Icon:CaseUpper},{value:"lowercase" as const,Icon:CaseLower}];
-const EASING_CSS:Record<string,string>={linear:"linear",inQuad:"cubic-bezier(.55,.085,.68,.53)",outQuad:"cubic-bezier(.25,.46,.45,.94)",inOutQuad:"cubic-bezier(.455,.03,.515,.955)",inCubic:"cubic-bezier(.55,.055,.675,.19)",outCubic:"cubic-bezier(.215,.61,.355,1)",inOutCubic:"cubic-bezier(.645,.045,.355,1)",inSine:"cubic-bezier(.47,0,.745,.715)",outSine:"cubic-bezier(.39,.575,.565,1)",inOutSine:"cubic-bezier(.445,.05,.55,.95)",inExpo:"cubic-bezier(.95,.05,.795,.035)",outExpo:"cubic-bezier(.19,1,.22,1)",inOutExpo:"cubic-bezier(1,0,0,1)",inCirc:"cubic-bezier(.6,.04,.98,.335)",outCirc:"cubic-bezier(.075,.82,.165,1)",inOutCirc:"cubic-bezier(.785,.135,.15,.86)",inBack:"cubic-bezier(.6,-.28,.735,.045)",outBack:"cubic-bezier(.175,.885,.32,1.275)",inOutBack:"cubic-bezier(.68,-.55,.265,1.55)",inElastic:"cubic-bezier(.7,-.55,.8,.2)",outElastic:"cubic-bezier(.2,.8,.25,1.45)",inOutElastic:"cubic-bezier(.7,-.45,.3,1.45)",inBounce:"cubic-bezier(.65,-.35,.85,.15)",outBounce:"cubic-bezier(.15,.85,.35,1.35)",inOutBounce:"cubic-bezier(.7,-.35,.3,1.35)","spring-default":"cubic-bezier(.22,1.12,.36,1)","spring-snappy":"cubic-bezier(.16,1,.3,1)","spring-bouncy":"cubic-bezier(.34,1.56,.64,1)","spring-strong":"cubic-bezier(.12,1.38,.24,1)","steps-start":"steps(6,start)","steps-end":"steps(6,end)"};
-const easingPreviewStyle=(preset:string)=>({"--ease-preview":EASING_CSS[preset]??"ease-in-out"} as CSSProperties);
+const easingPreviewStyle=(preset:string)=>({"--ease-preview":`linear(${Array.from({length:41},(_,index)=>easeProgress(index/40,preset).toFixed(4)).join(",")})`} as CSSProperties);
 
 export default function EditorCoreV2(){
   const state=useEditorState(),imageInput=useRef<HTMLInputElement>(null),projectInput=useRef<HTMLInputElement>(null),aiAbort=useRef<AbortController|null>(null);
