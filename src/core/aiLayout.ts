@@ -4,7 +4,7 @@ import { editorActions, getEditorState, type ProjectState } from "./editorStore"
 import { selectAssetCandidates } from "./assetSelection";
 import { composeLayout, layoutRole, type ImageDimensions, type LayoutRole } from "./layoutComposer";
 
-type LayoutPatch = { id: string; x: number; y: number; width: number; scale: number; fontSize: number; visible: boolean; assetId?: string };
+export type LayoutPatch = { id: string; dx: number; dy: number; dWidth: number; dScale: number; dFontSize: number };
 type LayoutResponse = { rationale: string; elements: LayoutPatch[]; model?: string; provider?: string; usage?: {prompt_tokens?:number;completion_tokens?:number} };
 
 const imageCache = new Map<string, Promise<HTMLImageElement>>();
@@ -179,24 +179,24 @@ async function askAi(phase: "plan" | "review", master: Format, masterElements: B
   throw lastError;
 }
 
-const applyPatches = (baseline: BannerElement[], patches: LayoutPatch[], assets: AssetLibraryItem[]) => {
+export const applyDeltaPatches = (baseline: BannerElement[], patches: LayoutPatch[], target: Format) => {
   const map = new Map(patches.map((p) => [p.id, p]));
-  const assetMap = new Map(assets.map((asset) => [asset.id, asset]));
   return baseline.map((element, index) => {
     const patch = map.get(element.id);
     if (!patch) return element;
     const role = roleOf(element, index, baseline.length);
     const isText = element.kind !== "image";
-    const replacement = !isText && patch.assetId ? assetMap.get(patch.assetId) : undefined;
+    const dWidth = clamp(Number(patch.dWidth) || 0, -10, 10);
+    const width = clamp(element.width + dWidth, isText ? 10 : role === "background" ? 20 : 2, role === "background" ? 400 : 92);
+    const safe = role === "background" ? -400 : 4;
+    const maxX = role === "background" ? 200 : Math.max(4, 96 - width);
     return {
       ...element,
-      ...(replacement ? { name: replacement.name, assetUrl: replacement.assetUrl } : {}),
-      x: patch.x,
-      y: patch.y,
-      width: patch.width,
-      scale: isText ? 100 : role === "background" ? patch.scale : 100,
-      fontSize: isText ? patch.fontSize : element.fontSize,
-      visible: patch.visible,
+      x: clamp(element.x + clamp(Number(patch.dx) || 0, -8, 8), safe, maxX),
+      y: clamp(element.y + clamp(Number(patch.dy) || 0, -8, 8), safe, role === "background" ? 200 : 96),
+      width,
+      scale: isText ? 100 : clamp(element.scale + clamp(Number(patch.dScale) || 0, -10, 10), 25, 180),
+      fontSize: isText ? clamp(element.fontSize + clamp(Number(patch.dFontSize) || 0, -6, 6), 6, Math.max(6, target.height * .38)) : element.fontSize,
     };
   });
 };
@@ -267,25 +267,26 @@ async function adaptOne(project: ProjectState, target: Format, signal?: AbortSig
   const masterElements = project.elementsByFormat.master ?? [];
   const masterFrames = project.keyframesByFormat.master ?? {};
   const baseline = adaptMasterToFormat(masterElements, target).elements;
+  const anchor = composeLayout(target, baseline, await imageDimensions(baseline));
   const clonedMasterFrames = cloneFrameMap(masterFrames);
-  const baselineFrames = mapAllFrames(clonedMasterFrames, masterElements, baseline);
+  const anchorFrames = mapAllFrames(clonedMasterFrames, masterElements, anchor);
   const assets = selectAssetCandidates(project.assets ?? [], target);
   const background = project.backgrounds[target.id]?.color ?? "#ffffff";
-  const ai = await askAi("plan", masterFormat, masterElements, target, baseline, assets, project.backgrounds.master?.color ?? "#ffffff", background, signal);
-  const planned = applyPatches(baseline, ai.elements, assets);
+  const ai = await askAi("plan", masterFormat, masterElements, target, anchor, assets, project.backgrounds.master?.color ?? "#ffffff", background, signal);
+  const planned = applyDeltaPatches(anchor, ai.elements, target);
   const draft = composeLayout(target, planned, await imageDimensions(planned));
   let improved = draft;
   let reviewRationale = "";
   try {
     const review = await askAi("review", masterFormat, masterElements, target, draft, [], project.backgrounds.master?.color ?? "#ffffff", background, signal);
-    const reviewed = applyPatches(draft, review.elements, assets);
+    const reviewed = applyDeltaPatches(draft, review.elements, target);
     improved = composeLayout(target, reviewed, await imageDimensions(reviewed));
     reviewRationale = review.rationale;
   } catch (error) {
     if (signal?.aborted) throw error;
     reviewRationale = "visual review unavailable; deterministic constraints applied";
   }
-  const improvedFrames = mapAllFrames(baselineFrames, baseline, improved);
+  const improvedFrames = mapAllFrames(anchorFrames, anchor, improved);
   return { elements: improved, keyframes: improvedFrames, rationale: `${ai.rationale} · Review: ${reviewRationale}`, model: ai.model, provider: ai.provider };
 }
 
