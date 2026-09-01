@@ -1,6 +1,8 @@
 import type { AssetLibraryItem, BannerElement, Format } from "../model";
 
-const backgroundName = /(?:^|[-_.\s])(bg|background|фон)(?:$|[-_.\s])/i;
+const backgroundName = /(?:^|[-_.\s])(bg|background|backdrop|canvas|wallpaper|base|hero|фон|подложка)(?:$|[-_.\s])/i;
+const foregroundName = /(?:^|[-_.\s])(logo|icon|ui|interface|frame|product|button|badge|shield|логотип|икон|кноп|щит)(?:$|[-_.\s])/i;
+const mentions = (name: string, value: number) => new RegExp(`(?:^|\\D)${value}(?:\\D|$)`).test(name);
 
 const sizeWords = (format: Format) => {
   const area = format.width * format.height;
@@ -28,10 +30,25 @@ export function selectAssetCandidates(assets: AssetLibraryItem[], format: Format
 }
 
 export function selectBackgroundAsset(assets: AssetLibraryItem[], format: Format) {
-  const backgrounds = assets.filter((asset) => asset.assetUrl && backgroundName.test(asset.name));
-  const exact = backgrounds.filter((asset) => asset.width === format.width && asset.height === format.height);
-  return [...(exact.length ? exact : backgrounds)]
-    .sort((a, b) => scoreAssetForFormat(b, format) - scoreAssetForFormat(a, format))[0];
+  const candidates = assets.filter((asset) => {
+    if (!asset.assetUrl || foregroundName.test(asset.name)) return false;
+    const exactPixels = asset.width === format.width && asset.height === format.height;
+    const ratio = asset.width > 0 && asset.height > 0 ? asset.width / asset.height : 0;
+    const closeRatio = ratio > 0 && Math.abs(Math.log(ratio / (format.width / format.height))) < .16;
+    return backgroundName.test(asset.name) || exactPixels || (closeRatio && mentions(asset.name, format.width));
+  });
+  return [...candidates].sort((a, b) => {
+    const intent = (asset: AssetLibraryItem) => {
+      const name = asset.name.toLowerCase();
+      const exactPixels = asset.width === format.width && asset.height === format.height;
+      return scoreAssetForFormat(asset, format)
+        + (exactPixels ? 180 : 0)
+        + (backgroundName.test(name) ? 70 : 0)
+        + (mentions(name, format.width) ? 24 : 0)
+        + (mentions(name, format.height) ? 16 : 0);
+    };
+    return intent(b) - intent(a);
+  })[0];
 }
 
 export function applyBackgroundAsset(elements: BannerElement[], asset?: AssetLibraryItem) {
