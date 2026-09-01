@@ -31,4 +31,28 @@ describe("deterministic layout composer", () => {
     expect(result[0].width).toBeLessThanOrEqual(48);
     expect(result[1].width).toBeLessThanOrEqual(38);
   });
+
+  it.each([
+    ["medium", 300, 250],
+    ["half", 300, 600],
+    ["leader", 728, 90],
+    ["mobile", 320, 50],
+  ])("builds a role-aware anchor for %s", (id, width, height) => {
+    const headline = { ...createTextElement(), id: "headline", text: "ОСНОВНОЕ ТЕКСТОВОЕ ПОЛЕ", width: 45, fontSize: 48 };
+    const ui = image("ui", "Frame 2131329454.png", 60);
+    const logo = image("logo", "Страховка.png", 28);
+    const shield = image("shield", "shield.png", 5);
+    const background = image("bg", "1200x628-bg.jpg", 100);
+    const target = format(id, width, height);
+    const result = composeLayout(target, [headline, ui, logo, shield, background], {
+      ui: { width: 900, height: 260 }, logo: { width: 500, height: 90 }, shield: { width: 100, height: 120 }, bg: { width: 1200, height: 628 },
+    }, { anchor: true });
+    const byId = Object.fromEntries(result.map((element) => [element.id, element]));
+    expect(byId.headline.x).toBeGreaterThanOrEqual(4);
+    expect(byId.headline.x + byId.headline.width).toBeLessThanOrEqual(96);
+    expect(byId.headline.fontSize).toBeLessThanOrEqual(height <= 60 ? 14 : height <= 100 ? 24 : 42);
+    expect(byId.ui.x + byId.ui.width).toBeLessThanOrEqual(97);
+    expect(byId.logo.x + byId.logo.width).toBeLessThan(byId.headline.x + byId.headline.width + 1);
+    expect(byId.bg.width).toBeGreaterThanOrEqual(100);
+  });
 });
