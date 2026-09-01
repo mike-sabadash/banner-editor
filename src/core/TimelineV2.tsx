@@ -52,6 +52,17 @@ export default function TimelineV2() {
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
   }, [playing, state.duration]);
+  useEffect(() => {
+    const toggle = (event: KeyboardEvent) => {
+      const editable = event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLSelectElement;
+      const timelineActive = document.activeElement?.closest?.(".core-timeline") || document.querySelector(".core-timeline:hover");
+      if (event.code !== "Space" || event.repeat || editable || !timelineActive) return;
+      event.preventDefault();
+      setPlaying((value) => !value);
+    };
+    addEventListener("keydown", toggle);
+    return () => removeEventListener("keydown", toggle);
+  }, []);
 
   const seekAt = (node: HTMLElement, x: number) => {
     const box = node.getBoundingClientRect();
