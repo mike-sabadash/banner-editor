@@ -268,7 +268,7 @@ async function adaptOne(project: ProjectState, target: Format, signal?: AbortSig
   const masterFrames = project.keyframesByFormat.master ?? {};
   const selectedBackground = selectBackgroundAsset(project.assets ?? [], target);
   const baseline = applyBackgroundAsset(adaptMasterToFormat(masterElements, target).elements, selectedBackground);
-  const anchor = composeLayout(target, baseline, await imageDimensions(baseline), { anchor: true });
+  const anchor = composeLayout(target, baseline, await imageDimensions(baseline), { anchor: true, referenceFormat: masterFormat, referenceElements: masterElements });
   const clonedMasterFrames = cloneFrameMap(masterFrames);
   const anchorFrames = mapAllFrames(clonedMasterFrames, masterElements, anchor);
   const assets = selectAssetCandidates(project.assets ?? [], target);
@@ -341,7 +341,7 @@ export async function aiAdaptAll(
       const master = project.elementsByFormat.master ?? [];
       const selectedBackground = selectBackgroundAsset(project.assets ?? [], target);
       const baseline = applyBackgroundAsset(adaptMasterToFormat(master, target).elements, selectedBackground);
-      const repaired = composeLayout(target, baseline, await imageDimensions(baseline), { anchor: true });
+      const repaired = composeLayout(target, baseline, await imageDimensions(baseline), { anchor: true, referenceFormat: formats.find((format) => format.id === "master")!, referenceElements: master });
       const cloned = cloneFrameMap(project.keyframesByFormat.master ?? {});
       project = {
         ...project,
