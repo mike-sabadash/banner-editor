@@ -3,7 +3,7 @@ import type { FormatKeyframes, Keyframe } from "../timeline";
 import { editorActions, getEditorState, type ProjectState } from "./editorStore";
 
 type LayoutPatch = { id: string; x: number; y: number; width: number; scale: number; fontSize: number; visible: boolean };
-type LayoutResponse = { rationale: string; elements: LayoutPatch[] };
+type LayoutResponse = { rationale: string; elements: LayoutPatch[]; model?: string; provider?: string; usage?: {prompt_tokens?:number;completion_tokens?:number} };
 type LayoutRole = "background" | "logo" | "headline" | "text" | "cta" | "legal" | "image" | "icon" | "ui";
 
 const imageCache = new Map<string, Promise<HTMLImageElement>>();
@@ -244,7 +244,7 @@ async function adaptOne(project: ProjectState, target: Format, signal?: AbortSig
   const aiLayout = applyPatches(baseline, ai.elements);
   const improved = repairComposition(target, aiLayout);
   const improvedFrames = mapAllFrames(baselineFrames, baseline, improved);
-  return { elements: improved, keyframes: improvedFrames, rationale: ai.rationale };
+  return { elements: improved, keyframes: improvedFrames, rationale: ai.rationale, model: ai.model, provider: ai.provider };
 }
 
 export async function aiAdaptFormat(formatId: string, signal?: AbortSignal) {
@@ -260,7 +260,7 @@ export async function aiAdaptFormat(formatId: string, signal?: AbortSignal) {
     formatOverrides: { ...original.formatOverrides, [target.id]: false },
   };
   editorActions.importProject(next);
-  return result.rationale;
+  return `${result.model?`${result.model} · `:""}${result.rationale}`;
 }
 
 export type AiFormatStatus = "running" | "ready" | "fallback";
@@ -289,7 +289,7 @@ export async function aiAdaptAll(
         keyframesByFormat: { ...project.keyframesByFormat, [target.id]: result.keyframes },
         formatOverrides: { ...project.formatOverrides, [target.id]: false },
       };
-      messages.push(`${target.label}: ${result.rationale}`);
+      messages.push(`${target.label}: ${result.model?`[${result.model}] `:""}${result.rationale}`);
       onFormatStatus?.(target.id, "ready");
     } catch (error) {
       if (signal?.aborted || (error instanceof DOMException && error.name === "AbortError")) throw error;
