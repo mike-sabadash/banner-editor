@@ -29,6 +29,8 @@ export type BannerElement = {
   textCase?: TextCase;
   textSizing?: "auto" | "fixed";
   textAnimation?: TextAnimation;
+  inPoint?: number;
+  outPoint?: number;
   locked: boolean;
   visible: boolean;
 };
@@ -77,7 +79,9 @@ export const createTextElement = (
   color: "#1f211d",
   textAlign: "left",
   textCase: "none",
-  textSizing: "auto",
+  textSizing: "fixed",
+  inPoint: 0,
+  outPoint: 6,
   textAnimation: { type: "none", typeSpeed: 60, cursor: true },
   locked: false,
   visible: true,

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Image as KonvaImage, Layer, Line, Rect, Stage, Text, Transformer } from "react-konva";
 import { formats, fitPreview, type BannerElement } from "../model";
 import { animatedText, applyTextCase } from "./interaction";
-import { editorActions, getDisplayElement, useEditorState } from "./editorStore";
+import { editorActions, getDisplayElement, getEditorState, useEditorState } from "./editorStore";
 
 const useHtmlImage = (src?: string) => {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
@@ -25,7 +25,7 @@ const useHtmlImage = (src?: string) => {
 
 function CanvasObject({ element, setGuides }: { element: BannerElement; setGuides: (guides: Array<"left"|"right"|"top"|"bottom">) => void }) {
   const state = useEditorState();
-  const selected = state.selectedId === element.id;
+  const selected = (state.selectedIds?.length ? state.selectedIds : state.selectedId ? [state.selectedId] : []).includes(element.id);
   const nodeRef = useRef<any>(null);
   const transformerRef = useRef<any>(null);
   const editorRef = useRef<HTMLTextAreaElement | null>(null);
@@ -90,7 +90,7 @@ function CanvasObject({ element, setGuides }: { element: BannerElement; setGuide
     scaleY: display.scale / 100 * motionScale,
     opacity: display.opacity / 100 * motionOpacity,
     draggable: !element.locked,
-    onPointerDown: (event: any) => { event.cancelBubble = true; if (state.selectedId !== element.id) editorActions.select(element.id); },
+    onPointerDown: (event: any) => { event.cancelBubble = true;const source=event.evt as PointerEvent;editorActions.select(element.id,source.shiftKey||source.metaKey||source.ctrlKey); },
     onDragMove: (event: any) => {
       if (element.kind !== "image") return;
       const node = event.target, width = node.width() * node.scaleX(), height = node.height() * node.scaleY(), threshold = 7, next: Array<"left"|"right"|"top"|"bottom"> = [];
@@ -176,6 +176,13 @@ export default function CanvasV2() {
   const [guides, setGuides] = useState<Array<"left"|"right"|"top"|"bottom">>([]);
 
   useEffect(() => {
+    const node=shellRef.current;if(!node)return;
+    const wheel=(event:WheelEvent)=>{if(!event.ctrlKey&&!event.metaKey)return;event.preventDefault();const current=getEditorState().canvasZoom??1;editorActions.setCanvasZoom(current*(event.deltaY<0?1.1:.9))};
+    node.addEventListener("wheel",wheel,{passive:false});
+    return()=>node.removeEventListener("wheel",wheel);
+  },[]);
+
+  useEffect(() => {
     const editable = (target: EventTarget | null) => target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement;
     const down = (event: KeyboardEvent) => {
       if (event.code !== "Space" || editable(event.target)) return;
@@ -210,12 +217,6 @@ export default function CanvasV2() {
     panStart.current = null;
     setPanning(false);
   };
-  const zoomWheel = (event: React.WheelEvent<HTMLDivElement>) => {
-    if (!event.ctrlKey && !event.metaKey) return;
-    event.preventDefault();
-    editorActions.setCanvasZoom(zoom * (event.deltaY < 0 ? 1.1 : .9));
-  };
-
   return <div
     ref={shellRef}
     className={`core-canvas-shell ${spaceDown ? "can-pan" : ""} ${panning ? "is-panning" : ""}`}
@@ -223,11 +224,10 @@ export default function CanvasV2() {
     onPointerMove={movePan}
     onPointerUp={endPan}
     onPointerCancel={endPan}
-    onWheel={zoomWheel}
   >
     <Stage width={preview.width * zoom} height={preview.height * zoom} scaleX={scaleX} scaleY={scaleY} onPointerDown={(event) => { if (!spaceDown && event.target === event.target.getStage()) editorActions.select(null); }} className="core-stage">
       <Layer>
-        {elements.filter((element) => element.visible).map((element) => <CanvasObject key={element.id} element={element} setGuides={setGuides} />)}
+        {elements.filter((element) => element.visible&&state.playhead>=(element.inPoint??0)-.001&&state.playhead<=(element.outPoint??state.duration)+.001).map((element) => <CanvasObject key={element.id} element={element} setGuides={setGuides} />)}
         {guides.map((guide)=><Line key={guide} points={guide==="left"?[0,0,0,format.height]:guide==="right"?[format.width,0,format.width,format.height]:guide==="top"?[0,0,format.width,0]:[0,format.height,format.width,format.height]} stroke="#ff2db2" strokeWidth={1}/>)}
       </Layer>
     </Stage>

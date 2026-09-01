@@ -48,7 +48,8 @@ export const interpolateValue=(baseValue:number,frames:Array<Keyframe|null|undef
   if(!valid.length)return baseValue;
   const first=valid[0];
   // A first key at 3s marks the beginning of motion, not an implicit animation from 0s.
-  if(time<first.time)return first.time<=.001?first.value:baseValue;
+  // Outside the keyed interval, motion editors hold the nearest keyed value.
+  if(time<first.time)return first.value;
   let before=first;for(const f of valid){if(f.time<=time)before=f;else break}
   const after=valid.find((f)=>f.time>time);
   if(!after)return before.value;
