@@ -15,6 +15,7 @@ export type ProjectState = {
   selectedId: string | null;
   selectedKeyframeId: string | null;
   playhead: number;
+  canvasZoom: number;
 };
 
 const STORAGE_KEY="banner-editor:core-v2";
@@ -22,7 +23,7 @@ const blankElements=()=>Object.fromEntries(formats.map((f)=>[f.id,[] as BannerEl
 const blankFrames=()=>Object.fromEntries(formats.map((f)=>[f.id,{} as FormatKeyframes]));
 const blankBackgrounds=()=>Object.fromEntries(formats.map((f)=>[f.id,{color:"#ffffff"}]));
 const blankOverrides=()=>Object.fromEntries(formats.map((f)=>[f.id,false]));
-const fresh=():ProjectState=>({version:2,title:"Untitled campaign",duration:6,activeFormat:"master",elementsByFormat:blankElements(),keyframesByFormat:blankFrames(),backgrounds:blankBackgrounds(),settings:{...defaultBannerSettings},formatOverrides:blankOverrides(),selectedId:null,selectedKeyframeId:null,playhead:0});
+const fresh=():ProjectState=>({version:2,title:"Untitled campaign",duration:6,activeFormat:"master",elementsByFormat:blankElements(),keyframesByFormat:blankFrames(),backgrounds:blankBackgrounds(),settings:{...defaultBannerSettings},formatOverrides:blankOverrides(),selectedId:null,selectedKeyframeId:null,playhead:0,canvasZoom:1});
 const load=():ProjectState=>{try{const raw=localStorage.getItem(STORAGE_KEY);return raw?{...fresh(),...JSON.parse(raw),formatOverrides:{...blankOverrides(),...(JSON.parse(raw).formatOverrides??{})}}:fresh()}catch{return fresh()}};
 let state=load();
 const listeners=new Set<()=>void>();
@@ -43,7 +44,8 @@ const adaptedState=(s:ProjectState,force=false)=>{
 const touchOverride=(s:ProjectState)=>s.activeFormat==="master"?s.formatOverrides:{...s.formatOverrides,[s.activeFormat]:true};
 
 export const editorActions={
-  setPlayhead(time:number){patch({playhead:Math.max(0,Math.min(state.duration,time)),selectedKeyframeId:null})},
+  setPlayhead(time:number,keepKeySelection=false){patch({playhead:Math.max(0,Math.min(state.duration,time)),...(keepKeySelection?{}:{selectedKeyframeId:null})})},
+  setCanvasZoom(zoom:number){patch({canvasZoom:Math.max(.25,Math.min(3,zoom))})},
   select(id:string|null){patch({selectedId:id,selectedKeyframeId:null})},
   setFormat(id:string){patch((s)=>{let next:Partial<ProjectState>={activeFormat:id,selectedId:null,selectedKeyframeId:null,playhead:0};if(id!=="master"&&!(s.elementsByFormat[id]?.length)){const format=formats.find((f)=>f.id===id);if(format)next={...next,elementsByFormat:{...s.elementsByFormat,[id]:adaptMasterToFormat(s.elementsByFormat.master??[],format).elements},keyframesByFormat:{...s.keyframesByFormat,[id]:cloneFrames(s.keyframesByFormat.master??{})}}}return next})},
   adaptAll(force=true){patch((s)=>({...adaptedState(s,force),formatOverrides:force?blankOverrides():s.formatOverrides}))},

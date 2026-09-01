@@ -5,6 +5,9 @@ export type ElementKind =
   | "button"
   | "legal"
   | "image";
+export type TextAlign = "left" | "center" | "right" | "justify";
+export type TextCase = "none" | "uppercase" | "lowercase" | "capitalize";
+export type TextAnimation = { type: "none" | "typewriter"; typeSpeed: number; cursor: boolean };
 export type BannerElement = {
   id: string;
   kind: ElementKind;
@@ -21,6 +24,9 @@ export type BannerElement = {
   fontSize: number;
   lineHeight: number;
   color: string;
+  textAlign?: TextAlign;
+  textCase?: TextCase;
+  textAnimation?: TextAnimation;
   locked: boolean;
   visible: boolean;
 };
@@ -67,6 +73,9 @@ export const createTextElement = (
   fontSize: kind === "headline" ? 48 : 18,
   lineHeight: 110,
   color: "#1f211d",
+  textAlign: "left",
+  textCase: "none",
+  textAnimation: { type: "none", typeSpeed: 60, cursor: true },
   locked: false,
   visible: true,
 });
