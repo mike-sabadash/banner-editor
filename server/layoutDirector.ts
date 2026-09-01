@@ -130,7 +130,7 @@ function openRouterError(body: any, status: number) {
 async function runOpenRouter(payload: LayoutDirectorRequest) {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) throw new Error("OPENROUTER_API_KEY is not configured on the server");
-  const model = process.env.OPENROUTER_LAYOUT_MODEL || "openrouter/free";
+  const model = process.env.OPENROUTER_LAYOUT_MODEL || "qwen/qwen3.8-flash";
   let response: Response;
   try {
     response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -142,7 +142,7 @@ async function runOpenRouter(payload: LayoutDirectorRequest) {
         "X-Title": process.env.OPENROUTER_APP_NAME || "Banner Editor Layout Director",
       },
       body: JSON.stringify({
-        models: [model, "dots-studio/dots-3-note-preview:free", "openrouter/free"],
+        models: [model, "z-ai/glm-5.3-flash"],
         messages: [{ role: "user", content: openRouterContent(payload) }],
         temperature: 0.12,
       }),
