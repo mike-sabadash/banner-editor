@@ -7,7 +7,8 @@ export type ElementKind =
   | "image";
 export type TextAlign = "left" | "center" | "right" | "justify";
 export type TextCase = "none" | "uppercase" | "lowercase" | "capitalize";
-export type TextAnimation = { type: "none" | "typewriter"; typeSpeed: number; cursor: boolean };
+export type TextAnimationType = "none" | "typewriter" | "fade" | "rise" | "bounce" | "shake";
+export type TextAnimation = { type: TextAnimationType; typeSpeed: number; cursor: boolean; start?: number; duration?: number };
 export type BannerElement = {
   id: string;
   kind: ElementKind;
@@ -26,6 +27,7 @@ export type BannerElement = {
   color: string;
   textAlign?: TextAlign;
   textCase?: TextCase;
+  textSizing?: "auto" | "fixed";
   textAnimation?: TextAnimation;
   locked: boolean;
   visible: boolean;
@@ -75,6 +77,7 @@ export const createTextElement = (
   color: "#1f211d",
   textAlign: "left",
   textCase: "none",
+  textSizing: "auto",
   textAnimation: { type: "none", typeSpeed: 60, cursor: true },
   locked: false,
   visible: true,
