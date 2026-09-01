@@ -77,6 +77,65 @@ function placeAtCenterY(element: BannerElement, format: Format, dimensions: Imag
   return { ...next, y: centerY - estimatedHeight(next, format, dimensions) / 2 };
 }
 
+function applySimilarityTemplate(
+  format: Format,
+  elements: BannerElement[],
+  roles: Map<string, LayoutRole>,
+  dimensions: ImageDimensions,
+  referenceFormat: Format,
+  referenceElements: BannerElement[],
+) {
+  const references = new Map(referenceElements.map((element) => [element.id, element]));
+  const foreground = referenceElements.filter((element) => element.visible && roles.get(element.id) !== "background");
+  if (!foreground.length) return elements;
+  const boxes = foreground.map((element) => {
+    const scale = element.scale / 100;
+    const width = element.width / 100 * referenceFormat.width * scale;
+    const height = estimatedHeight({ ...element, width: element.width * scale, scale: 100 }, referenceFormat, dimensions) / 100 * referenceFormat.height;
+    return { element, x: element.x / 100 * referenceFormat.width, y: element.y / 100 * referenceFormat.height, width, height };
+  });
+  const minX = Math.min(...boxes.map((box) => box.x));
+  const minY = Math.min(...boxes.map((box) => box.y));
+  const maxX = Math.max(...boxes.map((box) => box.x + box.width));
+  const maxY = Math.max(...boxes.map((box) => box.y + box.height));
+  const groupWidth = Math.max(1, maxX - minX), groupHeight = Math.max(1, maxY - minY);
+  const safeX = format.width * .04, safeY = format.height * .04;
+  const safeWidth = format.width * .92, safeHeight = format.height * .92;
+  const scale = Math.min(safeWidth / groupWidth, safeHeight / groupHeight);
+  const leftMargin = minX, rightMargin = referenceFormat.width - maxX;
+  const topMargin = minY, bottomMargin = referenceFormat.height - maxY;
+  const centerX = (minX + maxX) / 2 / referenceFormat.width;
+  const centerY = (minY + maxY) / 2 / referenceFormat.height;
+  const targetX = Math.abs(centerX - .5) <= .12
+    ? (format.width - groupWidth * scale) / 2
+    : leftMargin < rightMargin * .7 ? safeX
+      : rightMargin < leftMargin * .7 ? format.width - safeX - groupWidth * scale
+        : clamp(centerX * format.width - groupWidth * scale / 2, safeX, format.width - safeX - groupWidth * scale);
+  const targetY = Math.abs(centerY - .5) <= .12
+    ? (format.height - groupHeight * scale) / 2
+    : topMargin < bottomMargin * .7 ? safeY
+      : bottomMargin < topMargin * .7 ? format.height - safeY - groupHeight * scale
+        : clamp(centerY * format.height - groupHeight * scale / 2, safeY, format.height - safeY - groupHeight * scale);
+
+  return elements.map((element) => {
+    if (!element.visible || roles.get(element.id) === "background") return element;
+    const reference = references.get(element.id);
+    const box = boxes.find((item) => item.element.id === element.id);
+    if (!reference || !box) return element;
+    const width = box.width * scale / format.width * 100;
+    const next: BannerElement = {
+      ...element,
+      x: (targetX + (box.x - minX) * scale) / format.width * 100,
+      y: (targetY + (box.y - minY) * scale) / format.height * 100,
+      width,
+      scale: 100,
+      fontSize: reference.kind === "image" ? element.fontSize : Math.max(6, reference.fontSize * scale),
+      textAlign: reference.textAlign,
+    };
+    return next;
+  });
+}
+
 function applyAnchorTemplate(format: Format, elements: BannerElement[], roles: Map<string, LayoutRole>, dimensions: ImageDimensions) {
   const ratio = format.width / format.height;
   const portrait = ratio < .8;
@@ -152,7 +211,7 @@ function applyAnchorTemplate(format: Format, elements: BannerElement[], roles: M
   });
 }
 
-export function composeLayout(format: Format, source: BannerElement[], dimensions: ImageDimensions = {}, options: { anchor?: boolean } = {}) {
+export function composeLayout(format: Format, source: BannerElement[], dimensions: ImageDimensions = {}, options: { anchor?: boolean; referenceFormat?: Format; referenceElements?: BannerElement[] } = {}) {
   const roles = new Map(source.map((element, index) => [element.id, layoutRole(element, index, source.length)]));
   const prepared = source.map((element) => {
     const role = roles.get(element.id)!;
@@ -166,7 +225,10 @@ export function composeLayout(format: Format, source: BannerElement[], dimension
     return { ...element, x: (100 - width) / 2, y: (100 - height) / 2, width, scale: 100 };
   });
 
-  const templated = options.anchor ? applyAnchorTemplate(format, prepared, roles, dimensions) : prepared;
+  const canPreserveComposition = options.anchor && format.width / format.height < 4 && options.referenceFormat && options.referenceElements?.length;
+  const templated = canPreserveComposition
+    ? applySimilarityTemplate(format, prepared, roles, dimensions, options.referenceFormat!, options.referenceElements!)
+    : options.anchor ? applyAnchorTemplate(format, prepared, roles, dimensions) : prepared;
   const strip = format.width / format.height >= 4;
   const placed: BannerElement[] = [];
   return templated.map((original) => {
