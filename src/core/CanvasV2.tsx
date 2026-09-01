@@ -25,7 +25,7 @@ const useHtmlImage = (src?: string) => {
 
 function CanvasObject({ element, setGuides }: { element: BannerElement; setGuides: (guides: Array<"left"|"right"|"top"|"bottom">) => void }) {
   const state = useEditorState();
-  const selected = state.selectedId === element.id;
+  const selected = (state.selectedIds?.length ? state.selectedIds : state.selectedId ? [state.selectedId] : []).includes(element.id);
   const nodeRef = useRef<any>(null);
   const transformerRef = useRef<any>(null);
   const editorRef = useRef<HTMLTextAreaElement | null>(null);
@@ -90,7 +90,7 @@ function CanvasObject({ element, setGuides }: { element: BannerElement; setGuide
     scaleY: display.scale / 100 * motionScale,
     opacity: display.opacity / 100 * motionOpacity,
     draggable: !element.locked,
-    onPointerDown: (event: any) => { event.cancelBubble = true; if (state.selectedId !== element.id) editorActions.select(element.id); },
+    onPointerDown: (event: any) => { event.cancelBubble = true;const source=event.evt as PointerEvent;editorActions.select(element.id,source.shiftKey||source.metaKey||source.ctrlKey); },
     onDragMove: (event: any) => {
       if (element.kind !== "image") return;
       const node = event.target, width = node.width() * node.scaleX(), height = node.height() * node.scaleY(), threshold = 7, next: Array<"left"|"right"|"top"|"bottom"> = [];
@@ -227,7 +227,7 @@ export default function CanvasV2() {
   >
     <Stage width={preview.width * zoom} height={preview.height * zoom} scaleX={scaleX} scaleY={scaleY} onPointerDown={(event) => { if (!spaceDown && event.target === event.target.getStage()) editorActions.select(null); }} className="core-stage">
       <Layer>
-        {elements.filter((element) => element.visible).map((element) => <CanvasObject key={element.id} element={element} setGuides={setGuides} />)}
+        {elements.filter((element) => element.visible&&state.playhead>=(element.inPoint??0)-.001&&state.playhead<=(element.outPoint??state.duration)+.001).map((element) => <CanvasObject key={element.id} element={element} setGuides={setGuides} />)}
         {guides.map((guide)=><Line key={guide} points={guide==="left"?[0,0,0,format.height]:guide==="right"?[format.width,0,format.width,format.height]:guide==="top"?[0,0,format.width,0]:[0,format.height,format.width,format.height]} stroke="#ff2db2" strokeWidth={1}/>)}
       </Layer>
     </Stage>
