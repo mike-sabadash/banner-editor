@@ -1,7 +1,7 @@
 import { adaptMasterToFormat, formats, type AssetLibraryItem, type BannerElement, type Format } from "../model";
 import type { FormatKeyframes, Keyframe } from "../timeline";
 import { editorActions, getEditorState, type ProjectState } from "./editorStore";
-import { selectAssetCandidates } from "./assetSelection";
+import { applyBackgroundAsset, selectAssetCandidates, selectBackgroundAsset } from "./assetSelection";
 import { composeLayout, layoutRole, type ImageDimensions, type LayoutRole } from "./layoutComposer";
 
 export type LayoutPatch = { id: string; dx: number; dy: number; dWidth: number; dScale: number; dFontSize: number };
@@ -266,7 +266,8 @@ async function adaptOne(project: ProjectState, target: Format, signal?: AbortSig
   const masterFormat = formats.find((f) => f.id === "master")!;
   const masterElements = project.elementsByFormat.master ?? [];
   const masterFrames = project.keyframesByFormat.master ?? {};
-  const baseline = adaptMasterToFormat(masterElements, target).elements;
+  const selectedBackground = selectBackgroundAsset(project.assets ?? [], target);
+  const baseline = applyBackgroundAsset(adaptMasterToFormat(masterElements, target).elements, selectedBackground);
   const anchor = composeLayout(target, baseline, await imageDimensions(baseline), { anchor: true });
   const clonedMasterFrames = cloneFrameMap(masterFrames);
   const anchorFrames = mapAllFrames(clonedMasterFrames, masterElements, anchor);
@@ -338,7 +339,8 @@ export async function aiAdaptAll(
       if (signal?.aborted || (error instanceof DOMException && error.name === "AbortError")) throw error;
       const reason = error instanceof Error ? error.message : "AI failed";
       const master = project.elementsByFormat.master ?? [];
-      const baseline = adaptMasterToFormat(master, target).elements;
+      const selectedBackground = selectBackgroundAsset(project.assets ?? [], target);
+      const baseline = applyBackgroundAsset(adaptMasterToFormat(master, target).elements, selectedBackground);
       const repaired = composeLayout(target, baseline, await imageDimensions(baseline), { anchor: true });
       const cloned = cloneFrameMap(project.keyframesByFormat.master ?? {});
       project = {
