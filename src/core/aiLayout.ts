@@ -65,7 +65,7 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number)
 async function renderPreview(format: Format, elements: BannerElement[], background = "#ffffff") {
   try {
     if (document.fonts?.ready) await document.fonts.ready;
-    const maxEdge = 680;
+    const maxEdge = 480;
     const previewScale = Math.min(1, maxEdge / Math.max(format.width, format.height));
     const canvas = document.createElement("canvas");
     canvas.width = Math.max(1, Math.round(format.width * previewScale));
@@ -114,7 +114,7 @@ async function renderPreview(format: Format, elements: BannerElement[], backgrou
 async function renderAssetPreview(asset: AssetLibraryItem) {
   try {
     const image = await loadImage(asset.assetUrl);
-    const maxEdge = 420;
+    const maxEdge = 256;
     const scale = Math.min(1, maxEdge / Math.max(image.naturalWidth, image.naturalHeight));
     const canvas = document.createElement("canvas");
     canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
@@ -158,19 +158,25 @@ async function askAi(master: Format, masterElements: BannerElement[], target: Fo
     renderPreview(target, baseline, targetBackground),
     Promise.all(assets.map(async (asset) => ({ ...asset, previewDataUrl: await renderAssetPreview(asset) }))),
   ]);
-  const response = await fetch("/api/layout-director", {
-    method: "POST",
-    signal,
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      master: { width: master.width, height: master.height, elements: serialize(masterElements), previewDataUrl: masterPreview },
-      target: { id: target.id, width: target.width, height: target.height, elements: serialize(baseline), previewDataUrl: targetPreview },
-      assets: assetPreviews.map(({ assetUrl: _assetUrl, ...asset }) => asset),
-    }),
+  const body = JSON.stringify({
+    master: { width: master.width, height: master.height, elements: serialize(masterElements), previewDataUrl: masterPreview },
+    target: { id: target.id, width: target.width, height: target.height, elements: serialize(baseline), previewDataUrl: targetPreview },
+    assets: assetPreviews.map(({ assetUrl: _assetUrl, ...asset }) => asset),
   });
-  const json = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(json?.error || `AI Layout Director failed (${response.status})`);
-  return json as LayoutResponse;
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const response = await fetch("/api/layout-director", { method: "POST", signal, headers: { "content-type": "application/json" }, body });
+      const json = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(json?.error || `AI Layout Director failed (${response.status})`);
+      return json as LayoutResponse;
+    } catch (error) {
+      if (signal?.aborted) throw error;
+      lastError = error;
+      if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 700));
+    }
+  }
+  throw lastError;
 }
 
 const applyPatches = (baseline: BannerElement[], patches: LayoutPatch[], assets: AssetLibraryItem[]) => {
@@ -265,8 +271,7 @@ async function adaptOne(project: ProjectState, target: Format, signal?: AbortSig
   const baselineFrames = mapAllFrames(clonedMasterFrames, masterElements, baseline);
   const assets = selectAssetCandidates(project.assets ?? [], target);
   const ai = await askAi(masterFormat, masterElements, target, baseline, assets, project.backgrounds.master?.color ?? "#ffffff", project.backgrounds[target.id]?.color ?? "#ffffff", signal);
-  const aiLayout = applyPatches(baseline, ai.elements, assets);
-  const improved = repairComposition(target, aiLayout);
+  const improved = applyPatches(baseline, ai.elements, assets);
   const improvedFrames = mapAllFrames(baselineFrames, baseline, improved);
   return { elements: improved, keyframes: improvedFrames, rationale: ai.rationale, model: ai.model, provider: ai.provider };
 }
@@ -320,7 +325,7 @@ export async function aiAdaptAll(
       const reason = error instanceof Error ? error.message : "AI failed";
       const master = project.elementsByFormat.master ?? [];
       const baseline = adaptMasterToFormat(master, target).elements;
-      const repaired = repairComposition(target, baseline);
+      const repaired = baseline;
       const cloned = cloneFrameMap(project.keyframesByFormat.master ?? {});
       project = {
         ...project,
