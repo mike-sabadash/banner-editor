@@ -1,19 +1,26 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Image as KonvaImage, Layer, Line, Stage, Text, Transformer } from "react-konva";
+import { Image as KonvaImage, Layer, Line, Rect, Stage, Text, Transformer } from "react-konva";
 import { formats, fitPreview, type BannerElement } from "../model";
 import { animatedText, applyTextCase } from "./interaction";
 import { editorActions, getDisplayElement, useEditorState } from "./editorStore";
 
 const useHtmlImage = (src?: string) => {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
+  const [error, setError] = useState(false);
   useEffect(() => {
-    if (!src) { setImage(null); return; }
+    if (!src) { setImage(null); setError(true); return; }
+    let cancelled = false;
+    setImage(null); setError(false);
     const img = new window.Image();
-    img.onload = () => setImage(img);
+    const ready = () => { if (!cancelled && img.naturalWidth > 0) { setImage(img); setError(false); } };
+    img.onload = ready;
+    img.onerror = () => { if (!cancelled) setError(true); };
     img.src = src;
-    return () => { img.onload = null; };
+    if (img.complete) ready();
+    if (typeof img.decode === "function") void img.decode().then(ready).catch(() => { if (!img.complete && !cancelled) setError(true); });
+    return () => { cancelled = true; img.onload = null; img.onerror = null; };
   }, [src]);
-  return image;
+  return { image, error };
 };
 
 function CanvasObject({ element, setGuides }: { element: BannerElement; setGuides: (guides: Array<"left"|"right"|"top"|"bottom">) => void }) {
@@ -21,7 +28,7 @@ function CanvasObject({ element, setGuides }: { element: BannerElement; setGuide
   const selected = state.selectedId === element.id;
   const nodeRef = useRef<any>(null);
   const transformerRef = useRef<any>(null);
-  const image = useHtmlImage(element.assetUrl);
+  const { image, error: imageError } = useHtmlImage(element.assetUrl);
   const display = useMemo(() => getDisplayElement(element, state.playhead), [element, state.playhead, state.keyframesByFormat]);
   const format = formats.find((f) => f.id === state.activeFormat)!;
   const artX = (display.x / 100) * format.width;
@@ -119,8 +126,10 @@ function CanvasObject({ element, setGuides }: { element: BannerElement; setGuide
   };
 
   return <>
-    {element.kind === "image" ? (
-      <KonvaImage {...common} image={image ?? undefined} width={artWidth} height={artWidth * ratio} />
+    {element.kind === "image" ? image ? (
+      <KonvaImage {...common} image={image} width={artWidth} height={artWidth * ratio} />
+    ) : (
+      <><Rect {...common} width={artWidth} height={Math.max(72,artWidth * ratio)} fill={imageError?"#fff0ef":"#eef1ed"} stroke={imageError?"#d84f45":"#aab0a7"} dash={[8,6]}/><Text x={artX+12} y={artY+12} width={Math.max(40,artWidth-24)} text={imageError?"Image could not be decoded":"Loading image…"} fontSize={14} fill={imageError?"#a33a32":"#687068"}/></>
     ) : (
       <Text {...common} text={text} width={display.textSizing === "fixed" ? artWidth : undefined} fontFamily={element.fontFamily} fontSize={element.fontSize} lineHeight={element.lineHeight / 100} fill={element.color} align={element.textAlign ?? "left"} wrap="word" />
     )}
