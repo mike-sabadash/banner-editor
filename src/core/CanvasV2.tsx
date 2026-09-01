@@ -28,6 +28,7 @@ function CanvasObject({ element, setGuides }: { element: BannerElement; setGuide
   const selected = state.selectedId === element.id;
   const nodeRef = useRef<any>(null);
   const transformerRef = useRef<any>(null);
+  const editorRef = useRef<HTMLTextAreaElement | null>(null);
   const { image, error: imageError } = useHtmlImage(element.assetUrl);
   const display = useMemo(() => getDisplayElement(element, state.playhead), [element, state.playhead, state.keyframesByFormat]);
   const format = formats.find((f) => f.id === state.activeFormat)!;
@@ -48,6 +49,8 @@ function CanvasObject({ element, setGuides }: { element: BannerElement; setGuide
     transformerRef.current.nodes([nodeRef.current]);
     transformerRef.current.getLayer()?.batchDraw();
   }, [selected, image, element.kind]);
+
+  useEffect(() => () => editorRef.current?.remove(), []);
 
   const commitPosition = (node: any) => editorActions.updateElement(element.id, {
     x: (node.x() / format.width) * 100,
@@ -114,12 +117,22 @@ function CanvasObject({ element, setGuides }: { element: BannerElement; setGuide
     onTransformEnd: (event: any) => { setGuides([]); commitTransform(event.target); },
     onDblClick: (event: any) => {
       if (element.kind === "image" || !nodeRef.current) return;
+      editorRef.current?.focus();
+      if (editorRef.current) return;
       const node = nodeRef.current, stage = event.target.getStage(), rect = node.getClientRect(), stageRect = stage.container().getBoundingClientRect();
       node.hide(); transformerRef.current?.hide(); node.getLayer()?.batchDraw();
       const input = document.createElement("textarea");
-      input.value = element.text; input.style.cssText = `position:fixed;z-index:9999;left:${stageRect.left + rect.x}px;top:${stageRect.top + rect.y}px;width:${Math.max(40, rect.width)}px;min-height:${Math.max(28, rect.height)}px;height:auto;padding:0;border:1px solid #2878ff;outline:none;resize:none;overflow:hidden;white-space:pre-wrap;overflow-wrap:break-word;background:#fff;color:${element.color};font-family:${element.fontFamily};font-size:${element.fontSize * (stage.scaleX() || 1)}px;line-height:${element.lineHeight / 100};`;
-      document.body.appendChild(input); const fit=()=>{input.style.height="0";input.style.height=`${Math.max(28,input.scrollHeight)}px`}; input.addEventListener("input",fit); fit(); input.focus(); input.setSelectionRange(input.value.length,input.value.length);
-      const finish = () => { editorActions.updateElement(element.id, { text: input.value, textSizing: "auto" }, false); input.remove(); node.show(); transformerRef.current?.show(); node.getLayer()?.batchDraw(); };
+      editorRef.current = input;
+      const canvasScale = stage.scaleX() || 1;
+      const editWidth = Math.max(40, artWidth * canvasScale * (display.scale / 100));
+      input.value = element.text;
+      input.spellcheck = false;
+      input.style.cssText = `position:fixed;z-index:9999;box-sizing:border-box;left:${stageRect.left + rect.x}px;top:${stageRect.top + rect.y}px;width:${editWidth}px;min-height:${Math.max(24, rect.height)}px;height:${Math.max(24, rect.height)}px;margin:0;padding:0;border:1px solid #2878ff;border-radius:0;outline:none;resize:none;overflow:hidden;white-space:pre-wrap;overflow-wrap:break-word;word-break:normal;background:transparent;color:${element.color};caret-color:${element.color};font-family:${element.fontFamily};font-size:${element.fontSize * canvasScale}px;font-weight:inherit;line-height:${element.lineHeight / 100};text-align:${element.textAlign ?? "left"};transform-origin:left top;`;
+      document.body.appendChild(input);
+      const fit=()=>{input.style.height="0";input.style.height=`${Math.max(24,input.scrollHeight)}px`};
+      input.addEventListener("input",fit); fit(); input.focus(); input.setSelectionRange(input.value.length,input.value.length);
+      let finished=false;
+      const finish = () => { if(finished)return;finished=true;editorRef.current=null;editorActions.updateElement(element.id, { text: input.value, textSizing: "fixed" }, false); input.remove(); node.show(); transformerRef.current?.show(); node.getLayer()?.batchDraw(); };
       input.addEventListener("blur", finish, { once: true });
       input.addEventListener("keydown", (key) => { if (key.key === "Escape") { input.value = element.text; input.blur(); } if (key.key === "Enter" && (key.metaKey || key.ctrlKey)) input.blur(); });
     },
@@ -131,7 +144,7 @@ function CanvasObject({ element, setGuides }: { element: BannerElement; setGuide
     ) : (
       <><Rect {...common} width={artWidth} height={Math.max(72,artWidth * ratio)} fill={imageError?"#fff0ef":"#eef1ed"} stroke={imageError?"#d84f45":"#aab0a7"} dash={[8,6]}/><Text x={artX+12} y={artY+12} width={Math.max(40,artWidth-24)} text={imageError?"Image could not be decoded":"Loading image…"} fontSize={14} fill={imageError?"#a33a32":"#687068"}/></>
     ) : (
-      <Text {...common} text={text} width={display.textSizing === "fixed" ? artWidth : undefined} fontFamily={element.fontFamily} fontSize={element.fontSize} lineHeight={element.lineHeight / 100} fill={element.color} align={element.textAlign ?? "left"} wrap="word" />
+      <Text {...common} text={text} width={artWidth} fontFamily={element.fontFamily} fontSize={element.fontSize} lineHeight={element.lineHeight / 100} fill={element.color} align={element.textAlign ?? "left"} wrap="word" />
     )}
     {selected && !element.locked && <Transformer
       ref={transformerRef}
@@ -139,6 +152,7 @@ function CanvasObject({ element, setGuides }: { element: BannerElement; setGuide
       keepRatio={element.kind === "image"}
       flipEnabled={false}
       enabledAnchors={element.kind === "image" ? ["top-left","top-right","bottom-left","bottom-right"] : ["middle-left","middle-right"]}
+      ignoreStroke
       anchorSize={9}
       borderStroke="#2878ff"
       anchorStroke="#2878ff"
