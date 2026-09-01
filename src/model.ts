@@ -9,6 +9,7 @@ export type TextAlign = "left" | "center" | "right" | "justify";
 export type TextCase = "none" | "uppercase" | "lowercase" | "capitalize";
 export type TextAnimationType = "none" | "typewriter" | "fade" | "rise" | "bounce" | "shake";
 export type TextAnimation = { type: TextAnimationType; typeSpeed: number; cursor: boolean; start?: number; duration?: number };
+export type AssetLibraryItem = { id:string; name:string; assetUrl:string; width:number; height:number; bytes:number };
 export type BannerElement = {
   id: string;
   kind: ElementKind;
