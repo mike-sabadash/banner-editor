@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Image as KonvaImage, Layer, Stage, Text, Transformer } from "react-konva";
+import { Image as KonvaImage, Layer, Line, Stage, Text, Transformer } from "react-konva";
 import { formats, fitPreview, type BannerElement } from "../model";
 import { animatedText, applyTextCase } from "./interaction";
 import { editorActions, getDisplayElement, useEditorState } from "./editorStore";
@@ -16,7 +16,7 @@ const useHtmlImage = (src?: string) => {
   return image;
 };
 
-function CanvasObject({ element }: { element: BannerElement }) {
+function CanvasObject({ element, setGuides }: { element: BannerElement; setGuides: (guides: Array<"left"|"right"|"top"|"bottom">) => void }) {
   const state = useEditorState();
   const selected = state.selectedId === element.id;
   const nodeRef = useRef<any>(null);
@@ -49,7 +49,7 @@ function CanvasObject({ element }: { element: BannerElement }) {
 
   const commitTransform = (node: any) => {
     if (element.kind !== "image") {
-      const nextWidth = Math.max(5, Math.min(100, (artWidth * Math.abs(node.scaleX()) / format.width) * 100));
+      const nextWidth = Math.max(5, Math.min(100, (node.width() / format.width) * 100));
       editorActions.updateElement(element.id, {
         x: (node.x() / format.width) * 100,
         y: (node.y() / format.height) * 100,
@@ -80,16 +80,38 @@ function CanvasObject({ element }: { element: BannerElement }) {
     scaleY: display.scale / 100 * motionScale,
     opacity: display.opacity / 100 * motionOpacity,
     draggable: !element.locked,
-    onPointerDown: (event: any) => { event.cancelBubble = true; editorActions.select(element.id); },
-    onDragEnd: (event: any) => commitPosition(event.target),
-    onTransformEnd: (event: any) => commitTransform(event.target),
+    onPointerDown: (event: any) => { event.cancelBubble = true; if (state.selectedId !== element.id) editorActions.select(element.id); },
+    onDragMove: (event: any) => {
+      if (element.kind !== "image") return;
+      const node = event.target, width = node.width() * node.scaleX(), height = node.height() * node.scaleY(), threshold = 7, next: Array<"left"|"right"|"top"|"bottom"> = [];
+      if (Math.abs(node.x()) < threshold) { node.x(0); next.push("left"); }
+      if (Math.abs(node.y()) < threshold) { node.y(0); next.push("top"); }
+      if (Math.abs(node.x() + width - format.width) < threshold) { node.x(format.width - width); next.push("right"); }
+      if (Math.abs(node.y() + height - format.height) < threshold) { node.y(format.height - height); next.push("bottom"); }
+      setGuides(next);
+    },
+    onDragEnd: (event: any) => { setGuides([]); commitPosition(event.target); },
+    onTransform: (event: any) => {
+      const node = event.target;
+      if (element.kind !== "image") {
+        node.width(Math.max(18, node.width() * Math.abs(node.scaleX())));
+        node.scaleX(1); node.scaleY(1);
+        transformerRef.current?.forceUpdate();
+      } else {
+        const width=node.width()*node.scaleX(),height=node.height()*node.scaleY(),threshold=7,next:Array<"left"|"right"|"top"|"bottom">=[];
+        if(Math.abs(node.x())<threshold)next.push("left"); if(Math.abs(node.y())<threshold)next.push("top");
+        if(Math.abs(node.x()+width-format.width)<threshold)next.push("right"); if(Math.abs(node.y()+height-format.height)<threshold)next.push("bottom");
+        setGuides(next);
+      }
+    },
+    onTransformEnd: (event: any) => { setGuides([]); commitTransform(event.target); },
     onDblClick: (event: any) => {
       if (element.kind === "image" || !nodeRef.current) return;
       const node = nodeRef.current, stage = event.target.getStage(), rect = node.getClientRect(), stageRect = stage.container().getBoundingClientRect();
       node.hide(); transformerRef.current?.hide(); node.getLayer()?.batchDraw();
       const input = document.createElement("textarea");
-      input.value = element.text; input.style.cssText = `position:fixed;z-index:9999;left:${stageRect.left + rect.x}px;top:${stageRect.top + rect.y}px;width:${Math.max(80, rect.width)}px;height:${Math.max(36, rect.height)}px;padding:0;border:1px solid #2878ff;outline:none;resize:none;background:transparent;color:${element.color};font:${element.fontSize * (stage.scaleX() || 1)}px ${element.fontFamily};line-height:${element.lineHeight / 100};`;
-      document.body.appendChild(input); input.focus(); input.select();
+      input.value = element.text; input.style.cssText = `position:fixed;z-index:9999;left:${stageRect.left + rect.x}px;top:${stageRect.top + rect.y}px;width:${Math.max(40, rect.width)}px;min-height:${Math.max(28, rect.height)}px;height:auto;padding:0;border:1px solid #2878ff;outline:none;resize:none;overflow:hidden;white-space:pre-wrap;overflow-wrap:break-word;background:#fff;color:${element.color};font-family:${element.fontFamily};font-size:${element.fontSize * (stage.scaleX() || 1)}px;line-height:${element.lineHeight / 100};`;
+      document.body.appendChild(input); const fit=()=>{input.style.height="0";input.style.height=`${Math.max(28,input.scrollHeight)}px`}; input.addEventListener("input",fit); fit(); input.focus(); input.setSelectionRange(input.value.length,input.value.length);
       const finish = () => { editorActions.updateElement(element.id, { text: input.value, textSizing: "auto" }, false); input.remove(); node.show(); transformerRef.current?.show(); node.getLayer()?.batchDraw(); };
       input.addEventListener("blur", finish, { once: true });
       input.addEventListener("keydown", (key) => { if (key.key === "Escape") { input.value = element.text; input.blur(); } if (key.key === "Enter" && (key.metaKey || key.ctrlKey)) input.blur(); });
@@ -128,6 +150,7 @@ export default function CanvasV2() {
   const panStart = useRef<{ x: number; y: number; left: number; top: number } | null>(null);
   const [spaceDown, setSpaceDown] = useState(false);
   const [panning, setPanning] = useState(false);
+  const [guides, setGuides] = useState<Array<"left"|"right"|"top"|"bottom">>([]);
 
   useEffect(() => {
     const editable = (target: EventTarget | null) => target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement;
@@ -181,7 +204,8 @@ export default function CanvasV2() {
   >
     <Stage width={preview.width * zoom} height={preview.height * zoom} scaleX={scaleX} scaleY={scaleY} onPointerDown={(event) => { if (!spaceDown && event.target === event.target.getStage()) editorActions.select(null); }} className="core-stage">
       <Layer>
-        {elements.filter((element) => element.visible).map((element) => <CanvasObject key={element.id} element={element} />)}
+        {elements.filter((element) => element.visible).map((element) => <CanvasObject key={element.id} element={element} setGuides={setGuides} />)}
+        {guides.includes("left")&&<Line points={[0,0,0,format.height]} stroke="#ff2db2" strokeWidth={1}/>} {guides.includes("right")&&<Line points={[format.width,0,format.width,format.height]} stroke="#ff2db2" strokeWidth={1}/>} {guides.includes("top")&&<Line points={[0,0,format.width,0]} stroke="#ff2db2" strokeWidth={1}/>} {guides.includes("bottom")&&<Line points={[0,format.height,format.width,format.height]} stroke="#ff2db2" strokeWidth={1}/>} 
       </Layer>
     </Stage>
   </div>;
