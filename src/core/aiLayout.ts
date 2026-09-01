@@ -267,7 +267,7 @@ async function adaptOne(project: ProjectState, target: Format, signal?: AbortSig
   const masterElements = project.elementsByFormat.master ?? [];
   const masterFrames = project.keyframesByFormat.master ?? {};
   const baseline = adaptMasterToFormat(masterElements, target).elements;
-  const anchor = composeLayout(target, baseline, await imageDimensions(baseline));
+  const anchor = composeLayout(target, baseline, await imageDimensions(baseline), { anchor: true });
   const clonedMasterFrames = cloneFrameMap(masterFrames);
   const anchorFrames = mapAllFrames(clonedMasterFrames, masterElements, anchor);
   const assets = selectAssetCandidates(project.assets ?? [], target);
@@ -339,7 +339,7 @@ export async function aiAdaptAll(
       const reason = error instanceof Error ? error.message : "AI failed";
       const master = project.elementsByFormat.master ?? [];
       const baseline = adaptMasterToFormat(master, target).elements;
-      const repaired = composeLayout(target, baseline, await imageDimensions(baseline));
+      const repaired = composeLayout(target, baseline, await imageDimensions(baseline), { anchor: true });
       const cloned = cloneFrameMap(project.keyframesByFormat.master ?? {});
       project = {
         ...project,
