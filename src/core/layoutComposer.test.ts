@@ -62,9 +62,10 @@ describe("deterministic layout composer", () => {
     const shield = { ...image("shield", "shield.png", 6), x: 47, y: 8 };
     const background = image("bg", "1200x628-bg.jpg", 100);
     const target = format("medium", 300, 250);
-    const result = composeLayout(target, [background, headline, shield, ui], {
+    const reference = [background, headline, shield, ui];
+    const result = composeLayout(target, reference, {
       ui: { width: 900, height: 260 }, shield: { width: 100, height: 120 }, bg: { width: 300, height: 250 },
-    }, { anchor: true });
+    }, { anchor: true, referenceFormat: format("master", 1200, 628), referenceElements: reference });
     const byId = Object.fromEntries(result.map((element) => [element.id, element]));
     const uiHeight = byId.ui.width / 100 * target.width * (260 / 900) / target.height * 100;
     expect(byId.shield.x + byId.shield.width / 2).toBeCloseTo(50);
@@ -72,5 +73,21 @@ describe("deterministic layout composer", () => {
     expect(byId.headline.textAlign).toBe("center");
     expect(byId.ui.x + byId.ui.width / 2).toBeCloseTo(50);
     expect(byId.ui.y + uiHeight).toBeLessThanOrEqual(96);
+  });
+
+  it("preserves a non-centered composition and relative image proportions", () => {
+    const headline = { ...createTextElement(), id: "headline", text: "Страховка", x: 12, y: 28, width: 30, fontSize: 48 };
+    const ui = { ...image("ui", "Frame 2131329454.png", 50), x: 5, y: 52 };
+    const shield = { ...image("shield", "shield.png", 5), x: 5, y: 8 };
+    const background = image("bg", "1200x628-bg.jpg", 100);
+    const reference = [background, headline, shield, ui];
+    const result = composeLayout(format("medium", 300, 250), reference, {
+      ui: { width: 900, height: 260 }, shield: { width: 100, height: 120 }, bg: { width: 1200, height: 628 },
+    }, { anchor: true, referenceFormat: format("master", 1200, 628), referenceElements: reference });
+    const byId = Object.fromEntries(result.map((element) => [element.id, element]));
+    expect(Math.min(byId.shield.x, byId.ui.x)).toBeCloseTo(4);
+    expect(byId.ui.width / byId.shield.width).toBeCloseTo(10);
+    expect(byId.shield.y).toBeLessThan(byId.headline.y);
+    expect(byId.headline.y).toBeLessThan(byId.ui.y);
   });
 });
