@@ -17,9 +17,19 @@ export type LayoutElementInput = {
   visible: boolean;
 };
 
+export type LayoutAssetInput = {
+  id: string;
+  name: string;
+  width: number;
+  height: number;
+  bytes: number;
+  previewDataUrl?: string;
+};
+
 export type LayoutDirectorRequest = {
   master: { width: number; height: number; elements: LayoutElementInput[]; previewDataUrl?: string };
   target: { id: string; width: number; height: number; elements: LayoutElementInput[]; previewDataUrl?: string };
+  assets?: LayoutAssetInput[];
 };
 
 const geminiSchema = {
@@ -32,7 +42,7 @@ const geminiSchema = {
         type: "OBJECT",
         properties: {
           id: { type: "STRING" }, x: { type: "NUMBER" }, y: { type: "NUMBER" }, width: { type: "NUMBER" },
-          scale: { type: "NUMBER" }, fontSize: { type: "NUMBER" }, visible: { type: "BOOLEAN" },
+          scale: { type: "NUMBER" }, fontSize: { type: "NUMBER" }, visible: { type: "BOOLEAN" }, assetId: { type: "STRING", nullable: true },
         },
         required: ["id", "x", "y", "width", "scale", "fontSize", "visible"],
       },
@@ -50,6 +60,7 @@ const textFontMax = (role: LayoutRole, width: number, height: number) => {
 
 function sanitize(result: any, request: LayoutDirectorRequest) {
   const allowed = new Map(request.target.elements.map((e) => [e.id, e]));
+  const allowedAssets = new Set((request.assets ?? []).map((asset) => asset.id));
   return {
     rationale: typeof result?.rationale === "string" ? result.rationale.slice(0, 900) : "AI layout",
     elements: Array.isArray(result?.elements)
@@ -66,6 +77,7 @@ function sanitize(result: any, request: LayoutDirectorRequest) {
             scale: text ? 100 : clamp(Number(item.scale ?? original.scale), 10, background ? 900 : 160),
             fontSize: image ? original.fontSize : clamp(Number(item.fontSize ?? original.fontSize), 6, textFontMax(original.role, request.target.width, request.target.height)),
             visible: typeof item.visible === "boolean" ? item.visible : original.visible,
+            ...(image && allowedAssets.has(item.assetId) ? { assetId: item.assetId } : {}),
           };
         }) : [],
   };
@@ -89,7 +101,7 @@ async function readJson(req: IncomingMessage) {
   for await (const chunk of req) {
     const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
     bytes += buffer.length;
-    if (bytes > 4_000_000) throw new Error("Request too large");
+    if (bytes > 12_000_000) throw new Error("Request too large");
     chunks.push(buffer);
   }
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
@@ -99,19 +111,21 @@ function payloadWithoutImages(payload: LayoutDirectorRequest) {
   return {
     master: { width: payload.master.width, height: payload.master.height, elements: payload.master.elements },
     target: { id: payload.target.id, width: payload.target.width, height: payload.target.height, elements: payload.target.elements },
+    assets: (payload.assets ?? []).map(({ previewDataUrl: _previewDataUrl, ...asset }) => asset),
   };
 }
 
 function buildPrompt(payload: LayoutDirectorRequest) {
   const ratio = payload.target.width / payload.target.height;
   const formatHint = ratio >= 4 ? "extreme horizontal strip" : ratio < 0.8 ? "portrait / vertical" : "rectangle";
-  return `You are the responsive art director for an HTML5 banner campaign. The first image is the MASTER composition. The second image is a rough deterministic TARGET resize. Recompose the TARGET as a designer would; do not merely scale the master. Target is ${payload.target.width}x${payload.target.height} (${formatHint}). Return ONLY one valid JSON object and no markdown.\n\nJSON SHAPE:\n{\"rationale\":\"short explanation\",\"elements\":[{\"id\":\"existing id\",\"x\":0,\"y\":0,\"width\":50,\"scale\":100,\"fontSize\":24,\"visible\":true}]}\nReturn every input element exactly once.\n\nMANDATORY QUALITY RULES:\n- Preserve the same campaign, copy, assets, ids, visual hierarchy and recognizable brand intent.\n- No accidental overlaps. No clipped headline. No empty white/unpainted artboard. No giant typography that destroys hierarchy.\n- Background must COVER the entire target. Cropping is expected. x/y may be strongly negative for background crop. Preserve visually useful parts of the master background when possible.\n- Treat logo as a logo: smaller than headline, protected by safe margins, never stretched across the layout.\n- Treat icon/badge as attached supporting content near its related text, not as a hero image.\n- Treat ui/image panels as independent composition blocks: resize and reposition them deliberately.\n- Headline may wrap to more or fewer lines by changing width and fontSize. On portrait, build a vertical hierarchy. On strips, aggressively compact into a horizontal hierarchy.\n- Secondary copy must remain visually secondary.\n- Keep ordinary foreground content roughly inside 4% safe margins.\n- Values x/y/width are percentages of TARGET artboard. fontSize is real TARGET pixels.\n- CRITICAL: for ALL text elements return scale=100. Never use scale to resize text; use fontSize and width only.\n- For logo/icon/ui images prefer scale around 100 and resize mainly with width. Do not make logos or badges huge.\n- Study the MASTER screenshot for grouping, alignment, proximity, focal balance and whitespace. Use the rough TARGET screenshot only as a starting point and fix its failures.\n- Every returned element id must correspond to an input element. Do not invent or rename assets.\n\nSTRUCTURE:\n${JSON.stringify(payloadWithoutImages(payload))}`;
+  return `You are the responsive art director for an HTML5 banner campaign. The first image is the MASTER composition. The second image is a rough deterministic TARGET resize. Later images are optional AI ASSET LIBRARY candidates in the exact order listed in STRUCTURE.assets. Recompose the TARGET as a designer would; do not merely scale the master. Target is ${payload.target.width}x${payload.target.height} (${formatHint}). Return ONLY one valid JSON object and no markdown.\n\nJSON SHAPE:\n{\"rationale\":\"short explanation including any asset replacement\",\"elements\":[{\"id\":\"existing id\",\"x\":0,\"y\":0,\"width\":50,\"scale\":100,\"fontSize\":24,\"visible\":true,\"assetId\":\"optional library asset id\"}]}\nReturn every input element exactly once.\n\nMANDATORY QUALITY RULES:\n- Preserve the same campaign, copy, assets, ids, visual hierarchy and recognizable brand intent.\n- No accidental overlaps. No clipped headline. No empty white/unpainted artboard. No giant typography that destroys hierarchy.\n- Background must COVER the entire target. Cropping is expected. x/y may be strongly negative for background crop. Preserve visually useful parts of the master background when possible.\n- Treat logo as a logo: smaller than headline, protected by safe margins, never stretched across the layout.\n- Treat icon/badge as attached supporting content near its related text, not as a hero image.\n- Treat ui/image panels as independent composition blocks: resize and reposition them deliberately.\n- Headline may wrap to more or fewer lines by changing width and fontSize. On portrait, build a vertical hierarchy. On strips, aggressively compact into a horizontal hierarchy.\n- Secondary copy must remain visually secondary.\n- Keep ordinary foreground content roughly inside 4% safe margins.\n- Values x/y/width are percentages of TARGET artboard. fontSize is real TARGET pixels.\n- CRITICAL: for ALL text elements return scale=100. Never use scale to resize text; use fontSize and width only.\n- For logo/icon/ui images prefer scale around 100 and resize mainly with width. Do not make logos or badges huge.\n- Study the MASTER screenshot for grouping, alignment, proximity, focal balance and whitespace. Use the rough TARGET screenshot only as a starting point and fix its failures.\n- Every returned element id must correspond to an input element. Do not invent or rename assets.\n- assetId is optional and is allowed only on an existing image element. Use it when a library candidate is more suitable than that element's master source; it replaces the source without creating a layer.\n- Prefer candidates whose filename contains target dimensions, whose aspect ratio matches, or whose name has an appropriate small/size-s/size-m hint. For small banners prefer the lighter suitable asset. Do not replace an image merely because a candidate exists.\n\nSTRUCTURE:\n${JSON.stringify(payloadWithoutImages(payload))}`;
 }
 
 function openRouterContent(payload: LayoutDirectorRequest) {
   const content: any[] = [{ type: "text", text: buildPrompt(payload) }];
   if (payload.master.previewDataUrl) content.push({ type: "image_url", image_url: { url: payload.master.previewDataUrl } });
   if (payload.target.previewDataUrl) content.push({ type: "image_url", image_url: { url: payload.target.previewDataUrl } });
+  for (const asset of payload.assets ?? []) if (asset.previewDataUrl) content.push({ type: "image_url", image_url: { url: asset.previewDataUrl } });
   return content;
 }
 
