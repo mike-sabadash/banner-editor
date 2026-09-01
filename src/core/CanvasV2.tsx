@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Image as KonvaImage, Layer, Line, Rect, Stage, Text, Transformer } from "react-konva";
 import { formats, fitPreview, type BannerElement } from "../model";
 import { animatedText, applyTextCase } from "./interaction";
-import { editorActions, getDisplayElement, useEditorState } from "./editorStore";
+import { editorActions, getDisplayElement, getEditorState, useEditorState } from "./editorStore";
 
 const useHtmlImage = (src?: string) => {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
@@ -176,6 +176,13 @@ export default function CanvasV2() {
   const [guides, setGuides] = useState<Array<"left"|"right"|"top"|"bottom">>([]);
 
   useEffect(() => {
+    const node=shellRef.current;if(!node)return;
+    const wheel=(event:WheelEvent)=>{if(!event.ctrlKey&&!event.metaKey)return;event.preventDefault();const current=getEditorState().canvasZoom??1;editorActions.setCanvasZoom(current*(event.deltaY<0?1.1:.9))};
+    node.addEventListener("wheel",wheel,{passive:false});
+    return()=>node.removeEventListener("wheel",wheel);
+  },[]);
+
+  useEffect(() => {
     const editable = (target: EventTarget | null) => target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement;
     const down = (event: KeyboardEvent) => {
       if (event.code !== "Space" || editable(event.target)) return;
@@ -210,12 +217,6 @@ export default function CanvasV2() {
     panStart.current = null;
     setPanning(false);
   };
-  const zoomWheel = (event: React.WheelEvent<HTMLDivElement>) => {
-    if (!event.ctrlKey && !event.metaKey) return;
-    event.preventDefault();
-    editorActions.setCanvasZoom(zoom * (event.deltaY < 0 ? 1.1 : .9));
-  };
-
   return <div
     ref={shellRef}
     className={`core-canvas-shell ${spaceDown ? "can-pan" : ""} ${panning ? "is-panning" : ""}`}
@@ -223,7 +224,6 @@ export default function CanvasV2() {
     onPointerMove={movePan}
     onPointerUp={endPan}
     onPointerCancel={endPan}
-    onWheel={zoomWheel}
   >
     <Stage width={preview.width * zoom} height={preview.height * zoom} scaleX={scaleX} scaleY={scaleY} onPointerDown={(event) => { if (!spaceDown && event.target === event.target.getStage()) editorActions.select(null); }} className="core-stage">
       <Layer>
