@@ -1,8 +1,9 @@
-import { adaptMasterToFormat, formats, type BannerElement, type Format } from "../model";
+import { adaptMasterToFormat, formats, type AssetLibraryItem, type BannerElement, type Format } from "../model";
 import type { FormatKeyframes, Keyframe } from "../timeline";
 import { editorActions, getEditorState, type ProjectState } from "./editorStore";
+import { selectAssetCandidates } from "./assetSelection";
 
-type LayoutPatch = { id: string; x: number; y: number; width: number; scale: number; fontSize: number; visible: boolean };
+type LayoutPatch = { id: string; x: number; y: number; width: number; scale: number; fontSize: number; visible: boolean; assetId?: string };
 type LayoutResponse = { rationale: string; elements: LayoutPatch[]; model?: string; provider?: string; usage?: {prompt_tokens?:number;completion_tokens?:number} };
 type LayoutRole = "background" | "logo" | "headline" | "text" | "cta" | "legal" | "image" | "icon" | "ui";
 
@@ -61,7 +62,7 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number)
   return output;
 }
 
-async function renderPreview(format: Format, elements: BannerElement[]) {
+async function renderPreview(format: Format, elements: BannerElement[], background = "#ffffff") {
   try {
     if (document.fonts?.ready) await document.fonts.ready;
     const maxEdge = 680;
@@ -72,7 +73,7 @@ async function renderPreview(format: Format, elements: BannerElement[]) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return undefined;
     ctx.scale(previewScale, previewScale);
-    ctx.fillStyle = "#ffffff";
+    ctx.fillStyle = background;
     ctx.fillRect(0, 0, format.width, format.height);
 
     for (const element of elements) {
@@ -110,6 +111,23 @@ async function renderPreview(format: Format, elements: BannerElement[]) {
   }
 }
 
+async function renderAssetPreview(asset: AssetLibraryItem) {
+  try {
+    const image = await loadImage(asset.assetUrl);
+    const maxEdge = 420;
+    const scale = Math.min(1, maxEdge / Math.max(image.naturalWidth, image.naturalHeight));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const context = canvas.getContext("2d");
+    if (!context) return undefined;
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/jpeg", 0.72);
+  } catch {
+    return undefined;
+  }
+}
+
 const cloneFrameMap = (source: FormatKeyframes): FormatKeyframes => Object.fromEntries(
   Object.entries(source).map(([id, list]) => [id, list.map((f) => ({ ...f, id: crypto.randomUUID(), bezier: f.bezier ? [...f.bezier] as typeof f.bezier : undefined }))]),
 );
@@ -134,10 +152,11 @@ const mapAllFrames = (source: FormatKeyframes, fromElements: BannerElement[], to
   })) as FormatKeyframes;
 };
 
-async function askAi(master: Format, masterElements: BannerElement[], target: Format, baseline: BannerElement[], signal?: AbortSignal) {
-  const [masterPreview, targetPreview] = await Promise.all([
-    renderPreview(master, masterElements),
-    renderPreview(target, baseline),
+async function askAi(master: Format, masterElements: BannerElement[], target: Format, baseline: BannerElement[], assets: AssetLibraryItem[], masterBackground: string, targetBackground: string, signal?: AbortSignal) {
+  const [masterPreview, targetPreview, assetPreviews] = await Promise.all([
+    renderPreview(master, masterElements, masterBackground),
+    renderPreview(target, baseline, targetBackground),
+    Promise.all(assets.map(async (asset) => ({ ...asset, previewDataUrl: await renderAssetPreview(asset) }))),
   ]);
   const response = await fetch("/api/layout-director", {
     method: "POST",
@@ -146,6 +165,7 @@ async function askAi(master: Format, masterElements: BannerElement[], target: Fo
     body: JSON.stringify({
       master: { width: master.width, height: master.height, elements: serialize(masterElements), previewDataUrl: masterPreview },
       target: { id: target.id, width: target.width, height: target.height, elements: serialize(baseline), previewDataUrl: targetPreview },
+      assets: assetPreviews.map(({ assetUrl: _assetUrl, ...asset }) => asset),
     }),
   });
   const json = await response.json().catch(() => ({}));
@@ -153,15 +173,18 @@ async function askAi(master: Format, masterElements: BannerElement[], target: Fo
   return json as LayoutResponse;
 }
 
-const applyPatches = (baseline: BannerElement[], patches: LayoutPatch[]) => {
+const applyPatches = (baseline: BannerElement[], patches: LayoutPatch[], assets: AssetLibraryItem[]) => {
   const map = new Map(patches.map((p) => [p.id, p]));
+  const assetMap = new Map(assets.map((asset) => [asset.id, asset]));
   return baseline.map((element, index) => {
     const patch = map.get(element.id);
     if (!patch) return element;
     const role = roleOf(element, index, baseline.length);
     const isText = element.kind !== "image";
+    const replacement = !isText && patch.assetId ? assetMap.get(patch.assetId) : undefined;
     return {
       ...element,
+      ...(replacement ? { name: replacement.name, assetUrl: replacement.assetUrl } : {}),
       x: patch.x,
       y: patch.y,
       width: patch.width,
@@ -240,8 +263,9 @@ async function adaptOne(project: ProjectState, target: Format, signal?: AbortSig
   const baseline = adaptMasterToFormat(masterElements, target).elements;
   const clonedMasterFrames = cloneFrameMap(masterFrames);
   const baselineFrames = mapAllFrames(clonedMasterFrames, masterElements, baseline);
-  const ai = await askAi(masterFormat, masterElements, target, baseline, signal);
-  const aiLayout = applyPatches(baseline, ai.elements);
+  const assets = selectAssetCandidates(project.assets ?? [], target);
+  const ai = await askAi(masterFormat, masterElements, target, baseline, assets, project.backgrounds.master?.color ?? "#ffffff", project.backgrounds[target.id]?.color ?? "#ffffff", signal);
+  const aiLayout = applyPatches(baseline, ai.elements, assets);
   const improved = repairComposition(target, aiLayout);
   const improvedFrames = mapAllFrames(baselineFrames, baseline, improved);
   return { elements: improved, keyframes: improvedFrames, rationale: ai.rationale, model: ai.model, provider: ai.provider };
