@@ -55,4 +55,22 @@ describe("deterministic layout composer", () => {
     expect(byId.logo.x + byId.logo.width).toBeLessThan(byId.headline.x + byId.headline.width + 1);
     expect(byId.bg.width).toBeGreaterThanOrEqual(100);
   });
+
+  it("preserves a centered master as a centered vertical rectangle composition", () => {
+    const headline = { ...createTextElement(), id: "headline", text: "Страховка", x: 35, y: 31, width: 30, fontSize: 48, textAlign: "center" as const };
+    const ui = { ...image("ui", "Frame 2131329454.png", 58), x: 21, y: 56 };
+    const shield = { ...image("shield", "shield.png", 6), x: 47, y: 8 };
+    const background = image("bg", "1200x628-bg.jpg", 100);
+    const target = format("medium", 300, 250);
+    const result = composeLayout(target, [background, headline, shield, ui], {
+      ui: { width: 900, height: 260 }, shield: { width: 100, height: 120 }, bg: { width: 300, height: 250 },
+    }, { anchor: true });
+    const byId = Object.fromEntries(result.map((element) => [element.id, element]));
+    const uiHeight = byId.ui.width / 100 * target.width * (260 / 900) / target.height * 100;
+    expect(byId.shield.x + byId.shield.width / 2).toBeCloseTo(50);
+    expect(byId.headline.x + byId.headline.width / 2).toBeCloseTo(50);
+    expect(byId.headline.textAlign).toBe("center");
+    expect(byId.ui.x + byId.ui.width / 2).toBeCloseTo(50);
+    expect(byId.ui.y + uiHeight).toBeLessThanOrEqual(96);
+  });
 });
