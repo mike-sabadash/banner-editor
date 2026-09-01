@@ -145,7 +145,10 @@ async function runOpenRouter(payload: LayoutDirectorRequest) {
         models: [model, "z-ai/glm-5.3-flash"],
         messages: [{ role: "user", content: openRouterContent(payload) }],
         temperature: 0.12,
+        max_tokens: 2500,
+        reasoning: { effort: "low", exclude: true },
       }),
+      signal: AbortSignal.timeout(150_000),
     });
   } catch (error) {
     throw new Error(`OpenRouter network error · ${error instanceof Error ? error.message : String(error)}`);
@@ -166,7 +169,7 @@ async function runOpenRouter(payload: LayoutDirectorRequest) {
     const finishReason = body?.choices?.[0]?.finish_reason;
     throw new Error(`OpenRouter returned an empty layout${finishReason ? ` · finish_reason=${finishReason}` : ""}`);
   }
-  return sanitize(parseModelJson(text), payload);
+  return {...sanitize(parseModelJson(text), payload),model:String(body?.model||model),provider:String(body?.provider||body?.choices?.[0]?.provider||"OpenRouter"),usage:body?.usage};
 }
 
 async function runGemini(payload: LayoutDirectorRequest) {
@@ -197,6 +200,12 @@ export async function runLayoutDirector(payload: LayoutDirectorRequest) {
 export function layoutDirectorMiddleware() {
   return async (req: IncomingMessage, res: ServerResponse, next: () => void) => {
     if (!req.url?.startsWith("/api/layout-director")) return next();
+    if (req.method === "GET" && req.url.startsWith("/api/layout-director/status")) {
+      res.statusCode = 200;
+      res.setHeader("content-type", "application/json");
+      res.end(JSON.stringify({ provider: process.env.OPENROUTER_API_KEY ? "OpenRouter" : process.env.GEMINI_API_KEY ? "Gemini" : "none", model: process.env.OPENROUTER_API_KEY ? process.env.OPENROUTER_LAYOUT_MODEL || "qwen/qwen3.8-flash" : process.env.GEMINI_LAYOUT_MODEL || "gemini-2.5-flash-lite", configured: Boolean(process.env.OPENROUTER_API_KEY || process.env.GEMINI_API_KEY) }));
+      return;
+    }
     if (req.method !== "POST") {
       res.statusCode = 405;
       res.setHeader("content-type", "application/json");
