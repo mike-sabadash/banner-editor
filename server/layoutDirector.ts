@@ -42,10 +42,10 @@ const geminiSchema = {
       items: {
         type: "OBJECT",
         properties: {
-          id: { type: "STRING" }, x: { type: "NUMBER" }, y: { type: "NUMBER" }, width: { type: "NUMBER" },
-          scale: { type: "NUMBER" }, fontSize: { type: "NUMBER" }, visible: { type: "BOOLEAN" }, assetId: { type: "STRING", nullable: true },
+          id: { type: "STRING" }, dx: { type: "NUMBER" }, dy: { type: "NUMBER" }, dWidth: { type: "NUMBER" },
+          dScale: { type: "NUMBER" }, dFontSize: { type: "NUMBER" },
         },
-        required: ["id", "x", "y", "width", "scale", "fontSize", "visible"],
+        required: ["id", "dx", "dy", "dWidth", "dScale", "dFontSize"],
       },
     },
   },
@@ -53,32 +53,24 @@ const geminiSchema = {
 };
 
 const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
-const textFontMax = (role: LayoutRole, width: number, height: number) => {
-  if (role === "headline") return clamp(Math.min(width * 0.12, height * 0.22), 11, 58);
-  if (role === "legal") return clamp(Math.min(width * 0.045, height * 0.07), 6, 16);
-  return clamp(Math.min(width * 0.075, height * 0.11), 7, 30);
+const finiteDelta = (value: unknown, limit: number) => {
+  const number = Number(value);
+  return Number.isFinite(number) ? clamp(number, -limit, limit) : 0;
 };
 
-function sanitize(result: any, request: LayoutDirectorRequest) {
+export function sanitize(result: any, request: LayoutDirectorRequest) {
   const allowed = new Map(request.target.elements.map((e) => [e.id, e]));
-  const allowedAssets = new Set((request.assets ?? []).map((asset) => asset.id));
   return {
     rationale: typeof result?.rationale === "string" ? result.rationale.slice(0, 900) : "AI layout",
     elements: Array.isArray(result?.elements)
       ? result.elements.filter((item: any) => allowed.has(item?.id)).map((item: any) => {
-          const original = allowed.get(item.id)!;
-          const background = original.role === "background";
-          const image = ["background", "logo", "image", "icon", "ui"].includes(original.role);
-          const text = !image;
           return {
             id: item.id,
-            x: clamp(Number(item.x ?? original.x), background ? -400 : 1, background ? 200 : 97),
-            y: clamp(Number(item.y ?? original.y), background ? -400 : 1, background ? 200 : 97),
-            width: clamp(Number(item.width ?? original.width), background ? 20 : 2, background ? 400 : 94),
-            scale: text ? 100 : clamp(Number(item.scale ?? original.scale), 10, background ? 900 : 160),
-            fontSize: image ? original.fontSize : clamp(Number(item.fontSize ?? original.fontSize), 6, textFontMax(original.role, request.target.width, request.target.height)),
-            visible: typeof item.visible === "boolean" ? item.visible : original.visible,
-            ...(image && allowedAssets.has(item.assetId) ? { assetId: item.assetId } : {}),
+            dx: finiteDelta(item.dx, 8),
+            dy: finiteDelta(item.dy, 8),
+            dWidth: finiteDelta(item.dWidth, 10),
+            dScale: finiteDelta(item.dScale, 10),
+            dFontSize: finiteDelta(item.dFontSize, 6),
           };
         }) : [],
   };
@@ -117,11 +109,24 @@ function payloadWithoutImages(payload: LayoutDirectorRequest) {
   };
 }
 
-function buildPrompt(payload: LayoutDirectorRequest) {
-  const ratio = payload.target.width / payload.target.height;
-  const formatHint = ratio >= 4 ? "extreme horizontal strip" : ratio < 0.8 ? "portrait / vertical" : "rectangle";
-  if (payload.phase === "review") return `You are the visual QA art director for an HTML5 banner resize. The first image is the MASTER reference. The second image is the already rendered TARGET draft at ${payload.target.width}x${payload.target.height} (${formatHint}). Inspect the actual draft and correct only visible composition failures. Return ONLY one valid JSON object and no markdown.\n\nJSON SHAPE:\n{\"rationale\":\"specific defects corrected\",\"elements\":[{\"id\":\"existing id\",\"x\":0,\"y\":0,\"width\":50,\"scale\":100,\"fontSize\":24,\"visible\":true}]}\nReturn every input element exactly once. Preserve ids and assets. Do not redesign a sound composition. Fix clipping, collisions, unsafe margins, unreadable text, poor hierarchy, uncovered background and elements that are implausibly large or small. Values x/y/width are percentages of the target. Text always uses scale=100 and is resized with width/fontSize. The deterministic renderer will enforce final safe bounds after your review.\n\nSTRUCTURE:\n${JSON.stringify(payloadWithoutImages(payload))}`;
-  return `You are the responsive art director for an HTML5 banner campaign. The first image is the MASTER composition. The second image is a rough deterministic TARGET resize. Later images are optional AI ASSET LIBRARY candidates in the exact order listed in STRUCTURE.assets. Recompose the TARGET as a designer would; do not merely scale the master. Target is ${payload.target.width}x${payload.target.height} (${formatHint}). Return ONLY one valid JSON object and no markdown.\n\nJSON SHAPE:\n{\"rationale\":\"short explanation including any asset replacement\",\"elements\":[{\"id\":\"existing id\",\"x\":0,\"y\":0,\"width\":50,\"scale\":100,\"fontSize\":24,\"visible\":true,\"assetId\":\"optional library asset id\"}]}\nReturn every input element exactly once.\n\nMANDATORY QUALITY RULES:\n- Preserve the same campaign, copy, assets, ids, visual hierarchy and recognizable brand intent.\n- No accidental overlaps. No clipped headline. No empty white/unpainted artboard. No giant typography that destroys hierarchy.\n- Background must COVER the entire target. Cropping is expected. x/y may be strongly negative for background crop. Preserve visually useful parts of the master background when possible.\n- Treat logo as a logo: smaller than headline, protected by safe margins, never stretched across the layout.\n- Treat icon/badge as attached supporting content near its related text, not as a hero image.\n- Treat ui/image panels as independent composition blocks: resize and reposition them deliberately.\n- Headline may wrap to more or fewer lines by changing width and fontSize. On portrait, build a vertical hierarchy. On strips, aggressively compact into a horizontal hierarchy.\n- Secondary copy must remain visually secondary.\n- Keep ordinary foreground content roughly inside 4% safe margins.\n- Values x/y/width are percentages of TARGET artboard. fontSize is real TARGET pixels.\n- CRITICAL: for ALL text elements return scale=100. Never use scale to resize text; use fontSize and width only.\n- For logo/icon/ui images prefer scale around 100 and resize mainly with width. Do not make logos or badges huge.\n- Study the MASTER screenshot for grouping, alignment, proximity, focal balance and whitespace. Use the rough TARGET screenshot only as a starting point and fix its failures.\n- Every returned element id must correspond to an input element. Do not invent or rename assets.\n- assetId is optional and is allowed only on an existing image element. Use it when a library candidate is more suitable than that element's master source; it replaces the source without creating a layer.\n- Prefer candidates whose filename contains target dimensions, whose aspect ratio matches, or whose name has an appropriate small/size-s/size-m hint. For small banners prefer the lighter suitable asset. Do not replace an image merely because a candidate exists.\n\nSTRUCTURE:\n${JSON.stringify(payloadWithoutImages(payload))}`;
+export function buildPrompt(payload: LayoutDirectorRequest) {
+  return `You are a visual QA art director for an HTML5 banner resize.
+The first image is the MASTER reference. The second image is a rough deterministic TARGET draft at ${payload.target.width}x${payload.target.height}.
+Inspect the draft and provide ONLY relative DELTAS to fix visible composition failures.
+Return ONLY one valid JSON object.
+JSON SHAPE: {"rationale":"string","elements":[{"id":"existing id","dx":0,"dy":0,"dWidth":0,"dScale":0,"dFontSize":0}]}
+
+RULES:
+- dx/dy are percentage points of the target width/height.
+- dWidth/dScale are percentage points.
+- dFontSize is real pixels.
+- Return 0 for elements that look fine. Do not invent new positions or restructure the whole layout.
+- Make small, surgical corrections (do not propose huge jumps).
+- Every returned element id must correspond to an input element.
+- This is ${payload.phase === "review" ? "the final visual review pass" : "the first correction pass"}; preserve the deterministic anchor.
+
+STRUCTURE:
+${JSON.stringify(payloadWithoutImages(payload))}`;
 }
 
 function openRouterContent(payload: LayoutDirectorRequest) {
@@ -147,7 +152,7 @@ function openRouterError(body: any, status: number) {
 async function runOpenRouter(payload: LayoutDirectorRequest) {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) throw new Error("OPENROUTER_API_KEY is not configured on the server");
-  const model = process.env.OPENROUTER_LAYOUT_MODEL || "qwen/qwen3.8-flash";
+  const model = process.env.OPENROUTER_LAYOUT_MODEL || "google/gemini-2.0-flash-001";
   let response: Response;
   try {
     response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -159,10 +164,10 @@ async function runOpenRouter(payload: LayoutDirectorRequest) {
         "X-Title": process.env.OPENROUTER_APP_NAME || "Banner Editor Layout Director",
       },
       body: JSON.stringify({
-        models: [model, "z-ai/glm-5.3-flash"],
+        models: [model, "openai/gpt-4o-mini"],
         messages: [{ role: "user", content: openRouterContent(payload) }],
-        temperature: 0.12,
-        max_tokens: 2500,
+        temperature: 0.1,
+        max_tokens: 800,
         reasoning: { effort: "low", exclude: true },
       }),
       signal: AbortSignal.timeout(150_000),
@@ -198,7 +203,7 @@ async function runGemini(payload: LayoutDirectorRequest) {
     headers: { "content-type": "application/json", "x-goog-api-key": apiKey },
     body: JSON.stringify({
       contents: [{ parts: [{ text: buildPrompt(payload) }] }],
-      generationConfig: { temperature: 0.12, responseMimeType: "application/json", responseSchema: geminiSchema },
+      generationConfig: { temperature: 0.1, maxOutputTokens: 800, responseMimeType: "application/json", responseSchema: geminiSchema },
     }),
   });
   const body = await response.json().catch(() => ({}));
@@ -220,7 +225,7 @@ export function layoutDirectorMiddleware() {
     if (req.method === "GET" && req.url.startsWith("/api/layout-director/status")) {
       res.statusCode = 200;
       res.setHeader("content-type", "application/json");
-      res.end(JSON.stringify({ provider: process.env.OPENROUTER_API_KEY ? "OpenRouter" : process.env.GEMINI_API_KEY ? "Gemini" : "none", model: process.env.OPENROUTER_API_KEY ? process.env.OPENROUTER_LAYOUT_MODEL || "qwen/qwen3.8-flash" : process.env.GEMINI_LAYOUT_MODEL || "gemini-2.5-flash-lite", configured: Boolean(process.env.OPENROUTER_API_KEY || process.env.GEMINI_API_KEY) }));
+      res.end(JSON.stringify({ provider: process.env.OPENROUTER_API_KEY ? "OpenRouter" : process.env.GEMINI_API_KEY ? "Gemini" : "none", model: process.env.OPENROUTER_API_KEY ? process.env.OPENROUTER_LAYOUT_MODEL || "google/gemini-2.0-flash-001" : process.env.GEMINI_LAYOUT_MODEL || "gemini-2.5-flash-lite", configured: Boolean(process.env.OPENROUTER_API_KEY || process.env.GEMINI_API_KEY) }));
       return;
     }
     if (req.method !== "POST") {
