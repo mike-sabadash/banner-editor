@@ -87,6 +87,8 @@ function applyAnchorTemplate(format: Format, elements: BannerElement[], roles: M
   const headline = elements.find((element) => roles.get(element.id) === "headline");
   const copy = elements.find((element) => roles.get(element.id) === "text");
   const ui = elements.find((element) => roles.get(element.id) === "ui");
+  const composition = [icon, logo, headline, copy, ui].filter((element): element is BannerElement => Boolean(element));
+  const centered = composition.length >= 2 && composition.filter((element) => Math.abs(element.x + element.width / 2 - 50) <= 12).length >= Math.ceil(composition.length * .6);
 
   return elements.map((element) => {
     const role = roles.get(element.id)!;
@@ -100,6 +102,18 @@ function applyAnchorTemplate(format: Format, elements: BannerElement[], roles: M
       return element;
     }
     if (portrait) {
+      if (centered) {
+        if (element.id === icon?.id) return { ...element, x: 46, y: 6, width: 8, scale: 100 };
+        if (element.id === logo?.id) return { ...element, x: 20, y: icon ? 16 : 7, width: 60, scale: 100 };
+        if (element.id === headline?.id) return { ...fitText(element, format, 84, 24, 42, 16), x: 8, y: logo ? 27 : 20, textAlign: "center" as const };
+        if (element.id === copy?.id) return { ...fitText(element, format, 76, 16, 22, 10), x: 12, y: 47, textAlign: "center" as const };
+        if (element.id === ui?.id) {
+          let next = { ...element, width: 84, scale: 100 };
+          const height = estimatedHeight(next, format, dimensions);
+          if (height > 31) next.width *= 31 / height;
+          return { ...next, x: (100 - next.width) / 2, y: 94 - estimatedHeight(next, format, dimensions) };
+        }
+      }
       if (element.id === icon?.id) return { ...element, x: 8, y: 6, width: 8, scale: 100 };
       if (element.id === logo?.id) return { ...element, x: 20, y: 6, width: 50, scale: 100 };
       if (element.id === headline?.id) return { ...fitText(element, format, 84, 24, 42, 16), x: 8, y: 20 };
@@ -111,6 +125,18 @@ function applyAnchorTemplate(format: Format, elements: BannerElement[], roles: M
         return { ...next, x: (100 - next.width) / 2, y: 94 - estimatedHeight(next, format, dimensions) };
       }
       return element;
+    }
+    if (centered) {
+      if (element.id === icon?.id) return { ...element, x: 46, y: 7, width: 8, scale: 100 };
+      if (element.id === logo?.id) return { ...element, x: 24, y: icon ? 17 : 8, width: 52, scale: 100 };
+      if (element.id === headline?.id) return { ...fitText(element, format, 84, 24, 32, 14), x: 8, y: logo ? 31 : 27, textAlign: "center" as const };
+      if (element.id === copy?.id) return { ...fitText(element, format, 76, 14, 18, 9), x: 12, y: 52, textAlign: "center" as const };
+      if (element.id === ui?.id) {
+        let next = { ...element, width: 82, scale: 100 };
+        const height = estimatedHeight(next, format, dimensions);
+        if (height > 30) next.width *= 30 / height;
+        return { ...next, x: (100 - next.width) / 2, y: 95 - estimatedHeight(next, format, dimensions) };
+      }
     }
     if (element.id === icon?.id) return { ...element, x: 8, y: 8, width: 8, scale: 100 };
     if (element.id === logo?.id) return { ...element, x: 20, y: 8, width: 42, scale: 100 };
