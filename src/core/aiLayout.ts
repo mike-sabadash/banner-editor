@@ -1,10 +1,11 @@
-import { adaptMasterToFormat, formats, type BannerElement, type Format } from "../model";
+import { adaptMasterToFormat, formats, type AssetLibraryItem, type BannerElement, type Format } from "../model";
 import type { FormatKeyframes, Keyframe } from "../timeline";
 import { editorActions, getEditorState, type ProjectState } from "./editorStore";
+import { applyBackgroundAsset, selectAssetCandidates, selectBackgroundAsset } from "./assetSelection";
+import { composeLayout, layoutRole, type ImageDimensions, type LayoutRole } from "./layoutComposer";
 
-type LayoutPatch = { id: string; x: number; y: number; width: number; scale: number; fontSize: number; visible: boolean };
+export type LayoutPatch = { id: string; dx: number; dy: number; dWidth: number; dScale: number; dFontSize: number };
 type LayoutResponse = { rationale: string; elements: LayoutPatch[]; model?: string; provider?: string; usage?: {prompt_tokens?:number;completion_tokens?:number} };
-type LayoutRole = "background" | "logo" | "headline" | "text" | "cta" | "legal" | "image" | "icon" | "ui";
 
 const imageCache = new Map<string, Promise<HTMLImageElement>>();
 const loadImage = (src: string) => {
@@ -17,18 +18,7 @@ const loadImage = (src: string) => {
   return imageCache.get(src)!;
 };
 
-const roleOf = (element: BannerElement, index: number, total: number): LayoutRole => {
-  const hay = `${element.kind} ${element.name} ${element.text}`.toLowerCase();
-  if (/logo|логотип/.test(hay) && element.kind === "image") return "logo";
-  if (/ui|interface|screen|widget|panel|card|mobile|onboard|404/.test(hay) && element.kind === "image") return "ui";
-  if (/icon|shield|badge|икон/.test(hay) && element.kind === "image") return "icon";
-  if (element.kind === "image" && (/background|\bbg\b|фон|1200x628/.test(hay) || element.width >= 88 || (index === 0 && total > 1 && element.width >= 70))) return "background";
-  if (/legal|disclaimer|terms|услов|18\+/.test(hay) || element.kind === "legal") return "legal";
-  if (/cta|button|кноп|купить|подробнее|узнать|перейти/.test(hay) || element.kind === "button") return "cta";
-  if (element.kind === "headline" || /headline|title|заголов/.test(hay)) return "headline";
-  if (element.kind === "image") return "image";
-  return "text";
-};
+const roleOf = layoutRole;
 
 const serialize = (elements: BannerElement[]) => elements.map((e, index) => ({
   id: e.id,
@@ -61,10 +51,10 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number)
   return output;
 }
 
-async function renderPreview(format: Format, elements: BannerElement[]) {
+async function renderPreview(format: Format, elements: BannerElement[], background = "#ffffff") {
   try {
     if (document.fonts?.ready) await document.fonts.ready;
-    const maxEdge = 680;
+    const maxEdge = 480;
     const previewScale = Math.min(1, maxEdge / Math.max(format.width, format.height));
     const canvas = document.createElement("canvas");
     canvas.width = Math.max(1, Math.round(format.width * previewScale));
@@ -72,7 +62,7 @@ async function renderPreview(format: Format, elements: BannerElement[]) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return undefined;
     ctx.scale(previewScale, previewScale);
-    ctx.fillStyle = "#ffffff";
+    ctx.fillStyle = background;
     ctx.fillRect(0, 0, format.width, format.height);
 
     for (const element of elements) {
@@ -110,6 +100,33 @@ async function renderPreview(format: Format, elements: BannerElement[]) {
   }
 }
 
+async function renderAssetPreview(asset: AssetLibraryItem) {
+  try {
+    const image = await loadImage(asset.assetUrl);
+    const maxEdge = 256;
+    const scale = Math.min(1, maxEdge / Math.max(image.naturalWidth, image.naturalHeight));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const context = canvas.getContext("2d");
+    if (!context) return undefined;
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/jpeg", 0.72);
+  } catch {
+    return undefined;
+  }
+}
+
+async function imageDimensions(elements: BannerElement[]) {
+  const entries = await Promise.all(elements.filter((element) => element.kind === "image" && element.assetUrl).map(async (element) => {
+    try {
+      const image = await loadImage(element.assetUrl!);
+      return [element.id, { width: image.naturalWidth, height: image.naturalHeight }] as const;
+    } catch { return null; }
+  }));
+  return Object.fromEntries(entries.filter(Boolean) as [string, { width: number; height: number }][]) as ImageDimensions;
+}
+
 const cloneFrameMap = (source: FormatKeyframes): FormatKeyframes => Object.fromEntries(
   Object.entries(source).map(([id, list]) => [id, list.map((f) => ({ ...f, id: crypto.randomUUID(), bezier: f.bezier ? [...f.bezier] as typeof f.bezier : undefined }))]),
 );
@@ -134,40 +151,52 @@ const mapAllFrames = (source: FormatKeyframes, fromElements: BannerElement[], to
   })) as FormatKeyframes;
 };
 
-async function askAi(master: Format, masterElements: BannerElement[], target: Format, baseline: BannerElement[], signal?: AbortSignal) {
-  const [masterPreview, targetPreview] = await Promise.all([
-    renderPreview(master, masterElements),
-    renderPreview(target, baseline),
+async function askAi(phase: "plan" | "review", master: Format, masterElements: BannerElement[], target: Format, baseline: BannerElement[], assets: AssetLibraryItem[], masterBackground: string, targetBackground: string, signal?: AbortSignal) {
+  const [masterPreview, targetPreview, assetPreviews] = await Promise.all([
+    renderPreview(master, masterElements, masterBackground),
+    renderPreview(target, baseline, targetBackground),
+    Promise.all(assets.map(async (asset) => ({ ...asset, previewDataUrl: await renderAssetPreview(asset) }))),
   ]);
-  const response = await fetch("/api/layout-director", {
-    method: "POST",
-    signal,
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      master: { width: master.width, height: master.height, elements: serialize(masterElements), previewDataUrl: masterPreview },
-      target: { id: target.id, width: target.width, height: target.height, elements: serialize(baseline), previewDataUrl: targetPreview },
-    }),
+  const body = JSON.stringify({
+    phase,
+    master: { width: master.width, height: master.height, elements: serialize(masterElements), previewDataUrl: masterPreview },
+    target: { id: target.id, width: target.width, height: target.height, elements: serialize(baseline), previewDataUrl: targetPreview },
+    assets: assetPreviews.map(({ assetUrl: _assetUrl, ...asset }) => asset),
   });
-  const json = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(json?.error || `AI Layout Director failed (${response.status})`);
-  return json as LayoutResponse;
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const response = await fetch("/api/layout-director", { method: "POST", signal, headers: { "content-type": "application/json" }, body });
+      const json = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(json?.error || `AI Layout Director failed (${response.status})`);
+      return json as LayoutResponse;
+    } catch (error) {
+      if (signal?.aborted) throw error;
+      lastError = error;
+      if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 700));
+    }
+  }
+  throw lastError;
 }
 
-const applyPatches = (baseline: BannerElement[], patches: LayoutPatch[]) => {
+export const applyDeltaPatches = (baseline: BannerElement[], patches: LayoutPatch[], target: Format) => {
   const map = new Map(patches.map((p) => [p.id, p]));
   return baseline.map((element, index) => {
     const patch = map.get(element.id);
     if (!patch) return element;
     const role = roleOf(element, index, baseline.length);
     const isText = element.kind !== "image";
+    const dWidth = clamp(Number(patch.dWidth) || 0, -10, 10);
+    const width = clamp(element.width + dWidth, isText ? 10 : role === "background" ? 20 : 2, role === "background" ? 400 : 92);
+    const safe = role === "background" ? -400 : 4;
+    const maxX = role === "background" ? 200 : Math.max(4, 96 - width);
     return {
       ...element,
-      x: patch.x,
-      y: patch.y,
-      width: patch.width,
-      scale: isText ? 100 : role === "background" ? patch.scale : 100,
-      fontSize: isText ? patch.fontSize : element.fontSize,
-      visible: patch.visible,
+      x: clamp(element.x + clamp(Number(patch.dx) || 0, -8, 8), safe, maxX),
+      y: clamp(element.y + clamp(Number(patch.dy) || 0, -8, 8), safe, role === "background" ? 200 : 96),
+      width,
+      scale: isText ? 100 : clamp(element.scale + clamp(Number(patch.dScale) || 0, -10, 10), 25, 180),
+      fontSize: isText ? clamp(element.fontSize + clamp(Number(patch.dFontSize) || 0, -6, 6), 6, Math.max(6, target.height * .38)) : element.fontSize,
     };
   });
 };
@@ -237,14 +266,29 @@ async function adaptOne(project: ProjectState, target: Format, signal?: AbortSig
   const masterFormat = formats.find((f) => f.id === "master")!;
   const masterElements = project.elementsByFormat.master ?? [];
   const masterFrames = project.keyframesByFormat.master ?? {};
-  const baseline = adaptMasterToFormat(masterElements, target).elements;
+  const selectedBackground = selectBackgroundAsset(project.assets ?? [], target);
+  const baseline = applyBackgroundAsset(adaptMasterToFormat(masterElements, target).elements, selectedBackground);
+  const anchor = composeLayout(target, baseline, await imageDimensions(baseline), { anchor: true, referenceFormat: masterFormat, referenceElements: masterElements });
   const clonedMasterFrames = cloneFrameMap(masterFrames);
-  const baselineFrames = mapAllFrames(clonedMasterFrames, masterElements, baseline);
-  const ai = await askAi(masterFormat, masterElements, target, baseline, signal);
-  const aiLayout = applyPatches(baseline, ai.elements);
-  const improved = repairComposition(target, aiLayout);
-  const improvedFrames = mapAllFrames(baselineFrames, baseline, improved);
-  return { elements: improved, keyframes: improvedFrames, rationale: ai.rationale, model: ai.model, provider: ai.provider };
+  const anchorFrames = mapAllFrames(clonedMasterFrames, masterElements, anchor);
+  const assets = selectAssetCandidates(project.assets ?? [], target);
+  const background = project.backgrounds[target.id]?.color ?? "#ffffff";
+  const ai = await askAi("plan", masterFormat, masterElements, target, anchor, assets, project.backgrounds.master?.color ?? "#ffffff", background, signal);
+  const planned = applyDeltaPatches(anchor, ai.elements, target);
+  const draft = composeLayout(target, planned, await imageDimensions(planned));
+  let improved = draft;
+  let reviewRationale = "";
+  try {
+    const review = await askAi("review", masterFormat, masterElements, target, draft, [], project.backgrounds.master?.color ?? "#ffffff", background, signal);
+    const reviewed = applyDeltaPatches(draft, review.elements, target);
+    improved = composeLayout(target, reviewed, await imageDimensions(reviewed));
+    reviewRationale = review.rationale;
+  } catch (error) {
+    if (signal?.aborted) throw error;
+    reviewRationale = "visual review unavailable; deterministic constraints applied";
+  }
+  const improvedFrames = mapAllFrames(anchorFrames, anchor, improved);
+  return { elements: improved, keyframes: improvedFrames, rationale: `${ai.rationale} · Review: ${reviewRationale}`, model: ai.model, provider: ai.provider };
 }
 
 export async function aiAdaptFormat(formatId: string, signal?: AbortSignal) {
@@ -295,8 +339,9 @@ export async function aiAdaptAll(
       if (signal?.aborted || (error instanceof DOMException && error.name === "AbortError")) throw error;
       const reason = error instanceof Error ? error.message : "AI failed";
       const master = project.elementsByFormat.master ?? [];
-      const baseline = adaptMasterToFormat(master, target).elements;
-      const repaired = repairComposition(target, baseline);
+      const selectedBackground = selectBackgroundAsset(project.assets ?? [], target);
+      const baseline = applyBackgroundAsset(adaptMasterToFormat(master, target).elements, selectedBackground);
+      const repaired = composeLayout(target, baseline, await imageDimensions(baseline), { anchor: true, referenceFormat: formats.find((format) => format.id === "master")!, referenceElements: master });
       const cloned = cloneFrameMap(project.keyframesByFormat.master ?? {});
       project = {
         ...project,

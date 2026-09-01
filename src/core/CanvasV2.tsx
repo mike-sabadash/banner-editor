@@ -227,6 +227,7 @@ export default function CanvasV2() {
   >
     <Stage width={preview.width * zoom} height={preview.height * zoom} scaleX={scaleX} scaleY={scaleY} onPointerDown={(event) => { if (!spaceDown && event.target === event.target.getStage()) editorActions.select(null); }} className="core-stage">
       <Layer>
+        <Rect x={0} y={0} width={format.width} height={format.height} fill={state.backgrounds[state.activeFormat]?.color??"#ffffff"} listening={false}/>
         {elements.filter((element) => element.visible&&state.playhead>=(element.inPoint??0)-.001&&state.playhead<=(element.outPoint??state.duration)+.001).map((element) => <CanvasObject key={element.id} element={element} setGuides={setGuides} />)}
         {guides.map((guide)=><Line key={guide} points={guide==="left"?[0,0,0,format.height]:guide==="right"?[format.width,0,format.width,format.height]:guide==="top"?[0,0,format.width,0]:[0,format.height,format.width,format.height]} stroke="#ff2db2" strokeWidth={1}/>)}
       </Layer>

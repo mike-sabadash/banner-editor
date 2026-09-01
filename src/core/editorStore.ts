@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { adaptMasterToFormat, createTextElement, defaultBannerSettings, formats, type BannerElement, type BannerSettings } from "../model";
+import { adaptMasterToFormat, createTextElement, defaultBannerSettings, formats, type AssetLibraryItem, type BannerElement, type BannerSettings } from "../model";
 import { interpolateValue, type AnimatableProperty, type Bezier, type Easing, type FormatKeyframes, type Keyframe } from "../timeline";
 
 export type ProjectState = {
@@ -10,6 +10,7 @@ export type ProjectState = {
   elementsByFormat: Record<string, BannerElement[]>;
   keyframesByFormat: Record<string, FormatKeyframes>;
   backgrounds: Record<string, { color: string }>;
+  assets: AssetLibraryItem[];
   settings: BannerSettings;
   formatOverrides: Record<string, boolean>;
   selectedId: string | null;
@@ -25,7 +26,7 @@ const blankElements=()=>Object.fromEntries(formats.map((f)=>[f.id,[] as BannerEl
 const blankFrames=()=>Object.fromEntries(formats.map((f)=>[f.id,{} as FormatKeyframes]));
 const blankBackgrounds=()=>Object.fromEntries(formats.map((f)=>[f.id,{color:"#ffffff"}]));
 const blankOverrides=()=>Object.fromEntries(formats.map((f)=>[f.id,false]));
-const fresh=():ProjectState=>({version:2,title:"Untitled campaign",duration:6,activeFormat:"master",elementsByFormat:blankElements(),keyframesByFormat:blankFrames(),backgrounds:blankBackgrounds(),settings:{...defaultBannerSettings},formatOverrides:blankOverrides(),selectedId:null,selectedIds:[],selectedKeyframeId:null,selectedKeyframeIds:[],playhead:0,canvasZoom:1});
+const fresh=():ProjectState=>({version:2,title:"Untitled campaign",duration:6,activeFormat:"master",elementsByFormat:blankElements(),keyframesByFormat:blankFrames(),backgrounds:blankBackgrounds(),assets:[],settings:{...defaultBannerSettings},formatOverrides:blankOverrides(),selectedId:null,selectedIds:[],selectedKeyframeId:null,selectedKeyframeIds:[],playhead:0,canvasZoom:1});
 const load=():ProjectState=>{try{const raw=localStorage.getItem(STORAGE_KEY),parsed=raw?JSON.parse(raw):null;return parsed?{...fresh(),...parsed,selectedIds:parsed.selectedIds??(parsed.selectedId?[parsed.selectedId]:[]),selectedKeyframeIds:parsed.selectedKeyframeIds??(parsed.selectedKeyframeId?[parsed.selectedKeyframeId]:[]),formatOverrides:{...blankOverrides(),...(parsed.formatOverrides??{})}}:fresh()}catch{return fresh()}};
 let state=load();
 let past:ProjectState[]=[],future:ProjectState[]=[],historyGroup="",historyTimer:ReturnType<typeof setTimeout>|null=null;
@@ -48,6 +49,10 @@ const adaptedState=(s:ProjectState,force=false)=>{
 const touchOverride=(s:ProjectState)=>s.activeFormat==="master"?s.formatOverrides:{...s.formatOverrides,[s.activeFormat]:true};
 
 export const editorActions={
+  setBackgroundColor(color:string){patch((s)=>({backgrounds:{...s.backgrounds,[s.activeFormat]:{color}}}))},
+  addAsset(asset:AssetLibraryItem){patch((s)=>({assets:[...s.assets.filter((item)=>item.id!==asset.id),asset]}))},
+  removeAsset(id:string){patch((s)=>({assets:s.assets.filter((item)=>item.id!==id)}))},
+  addAssetToCanvas(id:string){const asset=state.assets.find((item)=>item.id===id);if(asset)this.addImage(asset.name,asset.assetUrl)},
   setPlayhead(time:number,keepKeySelection=false){patch({playhead:Math.max(0,Math.min(state.duration,time)),...(keepKeySelection?{}:{selectedKeyframeId:null})},{history:false})},
   setCanvasZoom(zoom:number){patch({canvasZoom:Math.max(.25,Math.min(3,zoom))},{history:false})},
   select(id:string|null,additive=false){if(!id){patch({selectedId:null,selectedIds:[],selectedKeyframeId:null,selectedKeyframeIds:[]},{history:false});return}const current=state.selectedIds??[];const selectedIds=additive?(current.includes(id)?current.filter((item)=>item!==id):[...current,id]):[id];patch({selectedId:selectedIds.at(-1)??null,selectedIds,selectedKeyframeId:null,selectedKeyframeIds:[]},{history:false})},
