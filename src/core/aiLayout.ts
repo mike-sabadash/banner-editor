@@ -134,13 +134,14 @@ const mapAllFrames = (source: FormatKeyframes, fromElements: BannerElement[], to
   })) as FormatKeyframes;
 };
 
-async function askAi(master: Format, masterElements: BannerElement[], target: Format, baseline: BannerElement[]) {
+async function askAi(master: Format, masterElements: BannerElement[], target: Format, baseline: BannerElement[], signal?: AbortSignal) {
   const [masterPreview, targetPreview] = await Promise.all([
     renderPreview(master, masterElements),
     renderPreview(target, baseline),
   ]);
   const response = await fetch("/api/layout-director", {
     method: "POST",
+    signal,
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
       master: { width: master.width, height: master.height, elements: serialize(masterElements), previewDataUrl: masterPreview },
@@ -232,26 +233,26 @@ function repairComposition(target: Format, elements: BannerElement[]) {
   });
 }
 
-async function adaptOne(project: ProjectState, target: Format) {
+async function adaptOne(project: ProjectState, target: Format, signal?: AbortSignal) {
   const masterFormat = formats.find((f) => f.id === "master")!;
   const masterElements = project.elementsByFormat.master ?? [];
   const masterFrames = project.keyframesByFormat.master ?? {};
   const baseline = adaptMasterToFormat(masterElements, target).elements;
   const clonedMasterFrames = cloneFrameMap(masterFrames);
   const baselineFrames = mapAllFrames(clonedMasterFrames, masterElements, baseline);
-  const ai = await askAi(masterFormat, masterElements, target, baseline);
+  const ai = await askAi(masterFormat, masterElements, target, baseline, signal);
   const aiLayout = applyPatches(baseline, ai.elements);
   const improved = repairComposition(target, aiLayout);
   const improvedFrames = mapAllFrames(baselineFrames, baseline, improved);
   return { elements: improved, keyframes: improvedFrames, rationale: ai.rationale };
 }
 
-export async function aiAdaptFormat(formatId: string) {
+export async function aiAdaptFormat(formatId: string, signal?: AbortSignal) {
   const original = getEditorState();
   if (!(original.elementsByFormat.master ?? []).length) throw new Error("Master is empty");
   const target = formats.find((f) => f.id === formatId);
   if (!target || target.id === "master") throw new Error("Choose a resize format");
-  const result = await adaptOne(original, target);
+  const result = await adaptOne(original, target, signal);
   const next: ProjectState = {
     ...original,
     elementsByFormat: { ...original.elementsByFormat, [target.id]: result.elements },
@@ -262,15 +263,26 @@ export async function aiAdaptFormat(formatId: string) {
   return result.rationale;
 }
 
-export async function aiAdaptAll(onProgress?: (label: string) => void) {
+export type AiFormatStatus = "running" | "ready" | "fallback";
+
+export async function aiAdaptAll(
+  onProgress?: (label: string) => void,
+  onFormatStatus?: (formatId: string, status: AiFormatStatus) => void,
+  signal?: AbortSignal,
+) {
   let project = getEditorState();
   if (!(project.elementsByFormat.master ?? []).length) throw new Error("Master is empty");
+  const targets = formats.filter((format) => format.id !== "master");
   const messages: string[] = [];
   const failures: string[] = [];
-  for (const target of formats.filter((f) => f.id !== "master")) {
-    onProgress?.(`Vision AI: ${target.label}…`);
+
+  for (const [index, target] of targets.entries()) {
+    if (signal?.aborted) throw new DOMException("AI adaptation cancelled", "AbortError");
+    onFormatStatus?.(target.id, "running");
+    onProgress?.(`AI ${index + 1}/${targets.length}: ${target.label}…`);
+
     try {
-      const result = await adaptOne(project, target);
+      const result = await adaptOne(project, target, signal);
       project = {
         ...project,
         elementsByFormat: { ...project.elementsByFormat, [target.id]: result.elements },
@@ -278,7 +290,9 @@ export async function aiAdaptAll(onProgress?: (label: string) => void) {
         formatOverrides: { ...project.formatOverrides, [target.id]: false },
       };
       messages.push(`${target.label}: ${result.rationale}`);
+      onFormatStatus?.(target.id, "ready");
     } catch (error) {
+      if (signal?.aborted || (error instanceof DOMException && error.name === "AbortError")) throw error;
       const reason = error instanceof Error ? error.message : "AI failed";
       const master = project.elementsByFormat.master ?? [];
       const baseline = adaptMasterToFormat(master, target).elements;
@@ -292,11 +306,20 @@ export async function aiAdaptAll(onProgress?: (label: string) => void) {
       };
       failures.push(`${target.label}: ${reason}`);
       messages.push(`${target.label}: FALLBACK — ${reason}`);
+      onFormatStatus?.(target.id, "fallback");
     }
+
+    const live = getEditorState();
+    editorActions.importProject({
+      ...live,
+      elementsByFormat: project.elementsByFormat,
+      keyframesByFormat: project.keyframesByFormat,
+      formatOverrides: project.formatOverrides,
+    });
   }
-  editorActions.importProject(project);
+
   if (failures.length) {
-    onProgress?.(`AI failed for ${failures.length} format(s) · repaired rules fallback applied`);
+    onProgress?.(`Completed with ${failures.length} fallback format(s)`);
     throw new Error(`AI did not complete ${failures.length} format(s). Repaired fallback applied. ${failures[0]}`);
   }
   onProgress?.("Vision AI adaptation complete");
