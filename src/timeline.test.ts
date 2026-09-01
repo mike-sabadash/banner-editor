@@ -39,6 +39,11 @@ describe("timeline", () => {
   it("keeps playback alive with invalid persisted keyframes", () => {
     expect(interpolateValue(10, [undefined, null], "x", Number.NaN)).toBe(10);
   });
+  it("holds the nearest keyed value outside the keyed interval", () => {
+    const frames=[{id:"opacity-start",time:2,property:"opacity" as const,value:0},{id:"opacity-end",time:4,property:"opacity" as const,value:100}];
+    expect(interpolateValue(100,frames,"opacity",1)).toBe(0);
+    expect(interpolateValue(0,frames,"opacity",5)).toBe(100);
+  });
   it("applies a changed curve to the active keyframe", () => {
     const frames = [
       {
