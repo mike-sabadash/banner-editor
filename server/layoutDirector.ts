@@ -142,7 +142,7 @@ async function runOpenRouter(payload: LayoutDirectorRequest) {
         "X-Title": process.env.OPENROUTER_APP_NAME || "Banner Editor Layout Director",
       },
       body: JSON.stringify({
-        models: [model, "openrouter/free"],
+        models: [model, "dots-studio/dots-3-note-preview:free", "openrouter/free"],
         messages: [{ role: "user", content: openRouterContent(payload) }],
         temperature: 0.12,
       }),
