@@ -33,9 +33,12 @@ export function applyTextCase(text: string, textCase: TextCase = "none") {
 
 export function animatedText(text: string, time: number, animation?: TextAnimation) {
   if (!animation || animation.type === "none") return text;
+  const local = Math.max(0, time - (animation.start ?? 0));
+  if (time < (animation.start ?? 0)) return "";
+  if (animation.type !== "typewriter") return text;
   const speed = Math.max(10, animation.typeSpeed);
-  const count = clamp(Math.floor(time * 1000 / speed), 0, text.length);
+  const count = clamp(Math.floor(local * 1000 / speed), 0, text.length);
   const visible = text.slice(0, count);
-  const cursor = animation.cursor && count < text.length && Math.floor(time * 2) % 2 === 0 ? "|" : "";
+  const cursor = animation.cursor && count < text.length && Math.floor(local * 2) % 2 === 0 ? "|" : "";
   return visible + cursor;
 }
