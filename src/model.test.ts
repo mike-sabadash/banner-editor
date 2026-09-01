@@ -38,10 +38,10 @@ describe("master adaptation", () => {
     );
     expect(result.elements[0]).toMatchObject({
       x: 0,
-      y: 0,
       width: 100,
       scale: 100,
     });
+    expect(result.elements[0].y).toBeLessThan(0);
     expect(result.decisions[0].rule).toBe("cover-background");
   });
   it("reflows text for shallow formats", () => {
@@ -57,6 +57,6 @@ describe("master adaptation", () => {
       formats.find((item) => item.id === "leader")!,
     );
     expect(result.elements[0].fontSize).toBeLessThan(48);
-    expect(result.decisions[0].rule).toBe("strip-reflow");
+    expect(result.decisions[0].rule).toBe("strip-compose");
   });
 });

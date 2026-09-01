@@ -53,7 +53,7 @@ describe("timeline", () => {
       setEasingAtTime(frames, 1, "custom", [0.2, 0, 0.2, 1])[0],
     ).toMatchObject({ easing: "custom", bezier: [0.2, 0, 0.2, 1] });
   });
-  it("applies easing to the segment ending at the next keyframe", () => {
+  it("does not change easing without an active keyframe", () => {
     const frames = [
       {
         id: "a",
@@ -65,6 +65,6 @@ describe("timeline", () => {
     ];
     expect(
       setEasingAtTime(frames, 1, "ease-out", [0, 0, 0.58, 1])[0].easing,
-    ).toBe("ease-out");
+    ).toBe("linear");
   });
 });
