@@ -48,4 +48,20 @@ describe("format background selection", () => {
     expect(result.assetUrl).toBe(replacement.assetUrl);
     expect(result.width).toBe(100);
   });
+
+  it("understands hyphens and a width-only filename from the real pixel geometry", () => {
+    const selected = selectBackgroundAsset([
+      asset("green-wide.jpg", 1200, 628, 40_000),
+      asset("campaign-728-final.jpg", 728, 90, 12_000),
+    ], { id: "leader", label: "Leaderboard", width: 728, height: 90, status: "ready" });
+    expect(selected?.name).toBe("campaign-728-final.jpg");
+  });
+
+  it("does not mistake an exact-size foreground asset for a background", () => {
+    const selected = selectBackgroundAsset([
+      asset("product-300-250.png", 300, 250, 8_000),
+      asset("promo-base-300.jpg", 300, 250, 17_000),
+    ], { id: "medium", label: "Medium", width: 300, height: 250, status: "ready" });
+    expect(selected?.name).toBe("promo-base-300.jpg");
+  });
 });
