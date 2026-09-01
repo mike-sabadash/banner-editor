@@ -214,7 +214,7 @@ export default function CanvasV2() {
     <Stage width={preview.width * zoom} height={preview.height * zoom} scaleX={scaleX} scaleY={scaleY} onPointerDown={(event) => { if (!spaceDown && event.target === event.target.getStage()) editorActions.select(null); }} className="core-stage">
       <Layer>
         {elements.filter((element) => element.visible).map((element) => <CanvasObject key={element.id} element={element} setGuides={setGuides} />)}
-        {guides.includes("left")&&<Line points={[0,0,0,format.height]} stroke="#ff2db2" strokeWidth={1}/>} {guides.includes("right")&&<Line points={[format.width,0,format.width,format.height]} stroke="#ff2db2" strokeWidth={1}/>} {guides.includes("top")&&<Line points={[0,0,format.width,0]} stroke="#ff2db2" strokeWidth={1}/>} {guides.includes("bottom")&&<Line points={[0,format.height,format.width,format.height]} stroke="#ff2db2" strokeWidth={1}/>} 
+        {guides.map((guide)=><Line key={guide} points={guide==="left"?[0,0,0,format.height]:guide==="right"?[format.width,0,format.width,format.height]:guide==="top"?[0,0,format.width,0]:[0,format.height,format.width,format.height]} stroke="#ff2db2" strokeWidth={1}/>)}
       </Layer>
     </Stage>
   </div>;
