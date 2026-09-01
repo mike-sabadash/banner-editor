@@ -19,6 +19,9 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
+    preview: {
+      allowedHosts: ["banners.rechord.online"],
+    },
     plugins: [
       react(),
       {
