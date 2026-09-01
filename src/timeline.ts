@@ -47,7 +47,8 @@ export const interpolateValue=(baseValue:number,frames:Array<Keyframe|null|undef
   const valid=frames.filter((frame):frame is Keyframe=>Boolean(frame)&&frame!.property===property&&Number.isFinite(frame!.time)&&Number.isFinite(frame!.value)).sort((a,b)=>a.time-b.time);
   if(!valid.length)return baseValue;
   const first=valid[0];
-  if(time<first.time){if(first.time<=.001)return first.value;const p=easeProgress(time/first.time,first.easing,first.bezier);return baseValue+(first.value-baseValue)*p}
+  // A first key at 3s marks the beginning of motion, not an implicit animation from 0s.
+  if(time<first.time)return first.time<=.001?first.value:baseValue;
   let before=first;for(const f of valid){if(f.time<=time)before=f;else break}
   const after=valid.find((f)=>f.time>time);
   if(!after)return before.value;

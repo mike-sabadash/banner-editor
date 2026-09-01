@@ -29,6 +29,12 @@ function CanvasObject({ element }: { element: BannerElement }) {
   const artWidth = (display.width / 100) * format.width;
   const ratio = image && image.naturalWidth ? image.naturalHeight / image.naturalWidth : .65;
   const text = animatedText(applyTextCase(display.text, display.textCase), state.playhead, display.textAnimation);
+  const animation = display.textAnimation, localTime = Math.max(0, state.playhead - (animation?.start ?? 0));
+  const progress = Math.max(0, Math.min(1, localTime / (animation?.duration ?? .55)));
+  const motionOpacity = !animation || animation.type === "none" || animation.type === "typewriter" ? 1 : progress;
+  const motionY = animation?.type === "rise" ? (1 - progress) * format.height * .08 : 0;
+  const motionScale = animation?.type === "bounce" ? (progress < .72 ? .78 + progress * .46 : 1 + Math.sin((progress - .72) * 18) * .06 * (1 - progress)) : 1;
+  const motionX = animation?.type === "shake" && progress < 1 ? Math.sin(localTime * 38) * (1 - progress) * 9 : 0;
 
   useEffect(() => {
     if (!selected || !nodeRef.current || !transformerRef.current) return;
@@ -48,6 +54,7 @@ function CanvasObject({ element }: { element: BannerElement }) {
         x: (node.x() / format.width) * 100,
         y: (node.y() / format.height) * 100,
         width: nextWidth,
+        textSizing: "fixed",
         scale: 100,
         rotation: node.rotation(),
       }, false);
@@ -66,23 +73,34 @@ function CanvasObject({ element }: { element: BannerElement }) {
 
   const common = {
     ref: nodeRef,
-    x: artX,
-    y: artY,
+    x: artX + motionX,
+    y: artY + motionY,
     rotation: display.rotation,
-    scaleX: display.scale / 100,
-    scaleY: display.scale / 100,
-    opacity: display.opacity / 100,
+    scaleX: display.scale / 100 * motionScale,
+    scaleY: display.scale / 100 * motionScale,
+    opacity: display.opacity / 100 * motionOpacity,
     draggable: !element.locked,
     onPointerDown: (event: any) => { event.cancelBubble = true; editorActions.select(element.id); },
     onDragEnd: (event: any) => commitPosition(event.target),
     onTransformEnd: (event: any) => commitTransform(event.target),
+    onDblClick: (event: any) => {
+      if (element.kind === "image" || !nodeRef.current) return;
+      const node = nodeRef.current, stage = event.target.getStage(), rect = node.getClientRect(), stageRect = stage.container().getBoundingClientRect();
+      node.hide(); transformerRef.current?.hide(); node.getLayer()?.batchDraw();
+      const input = document.createElement("textarea");
+      input.value = element.text; input.style.cssText = `position:fixed;z-index:9999;left:${stageRect.left + rect.x}px;top:${stageRect.top + rect.y}px;width:${Math.max(80, rect.width)}px;height:${Math.max(36, rect.height)}px;padding:0;border:1px solid #2878ff;outline:none;resize:none;background:transparent;color:${element.color};font:${element.fontSize * (stage.scaleX() || 1)}px ${element.fontFamily};line-height:${element.lineHeight / 100};`;
+      document.body.appendChild(input); input.focus(); input.select();
+      const finish = () => { editorActions.updateElement(element.id, { text: input.value, textSizing: "auto" }, false); input.remove(); node.show(); transformerRef.current?.show(); node.getLayer()?.batchDraw(); };
+      input.addEventListener("blur", finish, { once: true });
+      input.addEventListener("keydown", (key) => { if (key.key === "Escape") { input.value = element.text; input.blur(); } if (key.key === "Enter" && (key.metaKey || key.ctrlKey)) input.blur(); });
+    },
   };
 
   return <>
     {element.kind === "image" ? (
       <KonvaImage {...common} image={image ?? undefined} width={artWidth} height={artWidth * ratio} />
     ) : (
-      <Text {...common} text={text} width={artWidth} fontFamily={element.fontFamily} fontSize={element.fontSize} lineHeight={element.lineHeight / 100} fill={element.color} align={element.textAlign ?? "left"} wrap="word" />
+      <Text {...common} text={text} width={display.textSizing === "fixed" ? artWidth : undefined} fontFamily={element.fontFamily} fontSize={element.fontSize} lineHeight={element.lineHeight / 100} fill={element.color} align={element.textAlign ?? "left"} wrap="word" />
     )}
     {selected && !element.locked && <Transformer
       ref={transformerRef}
