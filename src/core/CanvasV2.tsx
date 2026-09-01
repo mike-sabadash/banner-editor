@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Image as KonvaImage, Layer, Stage, Text, Transformer } from "react-konva";
 import { formats, fitPreview, type BannerElement } from "../model";
+import { animatedText, applyTextCase } from "./interaction";
 import { editorActions, getDisplayElement, useEditorState } from "./editorStore";
 
 const useHtmlImage = (src?: string) => {
@@ -27,18 +28,33 @@ function CanvasObject({ element }: { element: BannerElement }) {
   const artY = (display.y / 100) * format.height;
   const artWidth = (display.width / 100) * format.width;
   const ratio = image && image.naturalWidth ? image.naturalHeight / image.naturalWidth : .65;
+  const text = animatedText(applyTextCase(display.text, display.textCase), state.playhead, display.textAnimation);
 
   useEffect(() => {
     if (!selected || !nodeRef.current || !transformerRef.current) return;
     transformerRef.current.nodes([nodeRef.current]);
     transformerRef.current.getLayer()?.batchDraw();
-  }, [selected, image]);
+  }, [selected, image, element.kind]);
 
   const commitPosition = (node: any) => editorActions.updateElement(element.id, {
     x: (node.x() / format.width) * 100,
     y: (node.y() / format.height) * 100,
   });
+
   const commitTransform = (node: any) => {
+    if (element.kind !== "image") {
+      const nextWidth = Math.max(5, Math.min(100, (artWidth * Math.abs(node.scaleX()) / format.width) * 100));
+      editorActions.updateElement(element.id, {
+        x: (node.x() / format.width) * 100,
+        y: (node.y() / format.height) * 100,
+        width: nextWidth,
+        scale: 100,
+        rotation: node.rotation(),
+      }, false);
+      node.scaleX(1);
+      node.scaleY(1);
+      return;
+    }
     const absoluteScale = Math.max(5, Math.min(600, node.scaleX() * 100));
     editorActions.updateElement(element.id, {
       x: (node.x() / format.width) * 100,
@@ -66,9 +82,20 @@ function CanvasObject({ element }: { element: BannerElement }) {
     {element.kind === "image" ? (
       <KonvaImage {...common} image={image ?? undefined} width={artWidth} height={artWidth * ratio} />
     ) : (
-      <Text {...common} text={element.text} width={artWidth} fontFamily={element.fontFamily} fontSize={element.fontSize} lineHeight={element.lineHeight / 100} fill={element.color} />
+      <Text {...common} text={text} width={artWidth} fontFamily={element.fontFamily} fontSize={element.fontSize} lineHeight={element.lineHeight / 100} fill={element.color} align={element.textAlign ?? "left"} wrap="word" />
     )}
-    {selected && !element.locked && <Transformer ref={transformerRef} rotateEnabled keepRatio={element.kind === "image"} flipEnabled={false} anchorSize={9} borderStroke="#2878ff" anchorStroke="#2878ff" anchorFill="#ffffff" boundBoxFunc={(oldBox, newBox) => Math.abs(newBox.width) < 8 || Math.abs(newBox.height) < 8 ? oldBox : newBox} />}
+    {selected && !element.locked && <Transformer
+      ref={transformerRef}
+      rotateEnabled
+      keepRatio={element.kind === "image"}
+      flipEnabled={false}
+      enabledAnchors={element.kind === "image" ? ["top-left","top-right","bottom-left","bottom-right"] : ["middle-left","middle-right"]}
+      anchorSize={9}
+      borderStroke="#2878ff"
+      anchorStroke="#2878ff"
+      anchorFill="#ffffff"
+      boundBoxFunc={(oldBox, newBox) => Math.abs(newBox.width) < 8 || Math.abs(newBox.height) < 8 ? oldBox : newBox}
+    />}
   </>;
 }
 
@@ -76,12 +103,67 @@ export default function CanvasV2() {
   const state = useEditorState();
   const format = formats.find((f) => f.id === state.activeFormat)!;
   const preview = fitPreview(format.width, format.height, 760, 460);
-  const scaleX = preview.width / format.width, scaleY = preview.height / format.height;
+  const zoom = state.canvasZoom ?? 1;
+  const scaleX = preview.width / format.width * zoom, scaleY = preview.height / format.height * zoom;
   const elements = state.elementsByFormat[state.activeFormat] ?? [];
-  return <div className="core-canvas-shell">
-    <Stage width={preview.width} height={preview.height} scaleX={scaleX} scaleY={scaleY} onPointerDown={(event) => { if (event.target === event.target.getStage()) editorActions.select(null); }} className="core-stage">
+  const shellRef = useRef<HTMLDivElement>(null);
+  const panStart = useRef<{ x: number; y: number; left: number; top: number } | null>(null);
+  const [spaceDown, setSpaceDown] = useState(false);
+  const [panning, setPanning] = useState(false);
+
+  useEffect(() => {
+    const editable = (target: EventTarget | null) => target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement;
+    const down = (event: KeyboardEvent) => {
+      if (event.code !== "Space" || editable(event.target)) return;
+      event.preventDefault();
+      setSpaceDown(true);
+    };
+    const up = (event: KeyboardEvent) => {
+      if (event.code !== "Space") return;
+      setSpaceDown(false);
+      setPanning(false);
+      panStart.current = null;
+    };
+    addEventListener("keydown", down);
+    addEventListener("keyup", up);
+    return () => { removeEventListener("keydown", down); removeEventListener("keyup", up); };
+  }, []);
+
+  const beginPan = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!spaceDown || !shellRef.current) return;
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    panStart.current = { x: event.clientX, y: event.clientY, left: shellRef.current.scrollLeft, top: shellRef.current.scrollTop };
+    setPanning(true);
+  };
+  const movePan = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!panning || !panStart.current || !shellRef.current) return;
+    shellRef.current.scrollLeft = panStart.current.left - (event.clientX - panStart.current.x);
+    shellRef.current.scrollTop = panStart.current.top - (event.clientY - panStart.current.y);
+  };
+  const endPan = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+    panStart.current = null;
+    setPanning(false);
+  };
+  const zoomWheel = (event: React.WheelEvent<HTMLDivElement>) => {
+    if (!event.ctrlKey && !event.metaKey) return;
+    event.preventDefault();
+    editorActions.setCanvasZoom(zoom * (event.deltaY < 0 ? 1.1 : .9));
+  };
+
+  return <div
+    ref={shellRef}
+    className={`core-canvas-shell ${spaceDown ? "can-pan" : ""} ${panning ? "is-panning" : ""}`}
+    onPointerDown={beginPan}
+    onPointerMove={movePan}
+    onPointerUp={endPan}
+    onPointerCancel={endPan}
+    onWheel={zoomWheel}
+  >
+    <Stage width={preview.width * zoom} height={preview.height * zoom} scaleX={scaleX} scaleY={scaleY} onPointerDown={(event) => { if (!spaceDown && event.target === event.target.getStage()) editorActions.select(null); }} className="core-stage">
       <Layer>
-        {elements.filter((e) => e.visible).map((element) => <CanvasObject key={element.id} element={element} />)}
+        {elements.filter((element) => element.visible).map((element) => <CanvasObject key={element.id} element={element} />)}
       </Layer>
     </Stage>
   </div>;
