@@ -1,54 +1,1115 @@
 import BezierEditor from "bezier-easing-editor";
-import { AlignCenter, AlignJustify, AlignLeft, AlignRight, CaseLower, CaseSensitive, CaseUpper, Download, Eye, EyeOff, Image as ImageIcon, Lock, Maximize2, Minus, Plus, Redo2, RefreshCw, Sparkles, Trash2, Type, Undo2, Unlock, Upload, type LucideIcon } from "lucide-react";
+import {
+  AlignCenter,
+  AlignJustify,
+  AlignLeft,
+  AlignRight,
+  CaseLower,
+  CaseSensitive,
+  CaseUpper,
+  Download,
+  Eye,
+  EyeOff,
+  Image as ImageIcon,
+  Lock,
+  Maximize2,
+  Minus,
+  Plus,
+  Redo2,
+  RefreshCw,
+  Sparkles,
+  Trash2,
+  Type,
+  Undo2,
+  Unlock,
+  Upload,
+  type LucideIcon,
+} from "lucide-react";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { formats } from "../model";
-import { EASING_PRESETS, easeProgress, type Bezier, type Easing } from "../timeline";
+import {
+  EASING_PRESETS,
+  easeProgress,
+  type Bezier,
+  type Easing,
+} from "../timeline";
 import { aiAdaptAll, aiAdaptFormat, type AiFormatStatus } from "./aiLayout";
 import CanvasV2 from "./CanvasV2";
 import TimelineV2, { TransformInspector } from "./TimelineV2";
-import { editorActions, useEditorState, type ProjectState } from "./editorStore";
+import {
+  editorActions,
+  useEditorState,
+  type ProjectState,
+} from "./editorStore";
 import "./core.css";
 import "./core-audit.css";
 
-const FONTS=["Manrope","Inter","Arial","Helvetica Neue","Roboto","PT Sans","PT Serif","Noto Sans","Georgia","Times New Roman"];
-const download=(blob:Blob,name:string)=>{const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
-const pretty=(name:string)=>name.replaceAll("-"," ").replace(/\b\w/g,(m)=>m.toUpperCase());
-const TEXT_MOTION=["none","fade","rise","slide-left","slide-right","zoom","pop","bounce","shake","rotate","typewriter"] as const;
-const TEXT_MOTION_DEFAULTS:Record<(typeof TEXT_MOTION)[number],{duration:number;easing:string;distance:number}>={
-  none:{duration:.65,easing:"linear",distance:40},fade:{duration:.65,easing:"outCubic",distance:40},rise:{duration:.7,easing:"outCubic",distance:40},
-  "slide-left":{duration:.7,easing:"outCubic",distance:54},"slide-right":{duration:.7,easing:"outCubic",distance:54},zoom:{duration:.7,easing:"outCubic",distance:40},
-  pop:{duration:.75,easing:"outBack",distance:40},bounce:{duration:.9,easing:"outBounce",distance:40},shake:{duration:.65,easing:"outCubic",distance:36},rotate:{duration:.75,easing:"outBack",distance:40},typewriter:{duration:1,easing:"linear",distance:40},
+const FONTS = [
+  "Manrope",
+  "Inter",
+  "Arial",
+  "Helvetica Neue",
+  "Roboto",
+  "PT Sans",
+  "PT Serif",
+  "Noto Sans",
+  "Georgia",
+  "Times New Roman",
+];
+const download = (blob: Blob, name: string) => {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 };
-const BEZIER_FOR_PRESET:Record<string,Bezier>={linear:[0,0,1,1],inCubic:[.32,0,.67,0],outCubic:[.33,1,.68,1],inOutCubic:[.65,0,.35,1],outBack:[.34,1.56,.64,1],inBack:[.36,0,.66,-.56],"ease-in":[.42,0,1,1],"ease-out":[0,0,.58,1],"ease-in-out":[.42,0,.58,1]};
-const ALIGN_BUTTONS=[{value:"left" as const,Icon:AlignLeft},{value:"center" as const,Icon:AlignCenter},{value:"right" as const,Icon:AlignRight},{value:"justify" as const,Icon:AlignJustify}];
-const CASE_BUTTONS=[{value:"none" as const,Icon:CaseSensitive},{value:"uppercase" as const,Icon:CaseUpper},{value:"lowercase" as const,Icon:CaseLower}];
-const easingPreviewStyle=(preset:string)=>({"--ease-preview":`linear(${Array.from({length:41},(_,index)=>easeProgress(index/40,preset).toFixed(4)).join(",")})`} as CSSProperties);
+const pretty = (name: string) =>
+  name.replaceAll("-", " ").replace(/\b\w/g, (m) => m.toUpperCase());
+const TEXT_MOTION = [
+  "none",
+  "fade",
+  "rise",
+  "slide-left",
+  "slide-right",
+  "zoom",
+  "pop",
+  "bounce",
+  "shake",
+  "rotate",
+  "typewriter",
+] as const;
+const TEXT_MOTION_DEFAULTS: Record<
+  (typeof TEXT_MOTION)[number],
+  { duration: number; easing: string; distance: number }
+> = {
+  none: { duration: 0.65, easing: "linear", distance: 40 },
+  fade: { duration: 0.65, easing: "outCubic", distance: 40 },
+  rise: { duration: 0.7, easing: "outCubic", distance: 40 },
+  "slide-left": { duration: 0.7, easing: "outCubic", distance: 54 },
+  "slide-right": { duration: 0.7, easing: "outCubic", distance: 54 },
+  zoom: { duration: 0.7, easing: "outCubic", distance: 40 },
+  pop: { duration: 0.75, easing: "outBack", distance: 40 },
+  bounce: { duration: 0.9, easing: "outBounce", distance: 40 },
+  shake: { duration: 0.65, easing: "outCubic", distance: 36 },
+  rotate: { duration: 0.75, easing: "outBack", distance: 40 },
+  typewriter: { duration: 1, easing: "linear", distance: 40 },
+};
+const BEZIER_FOR_PRESET: Record<string, Bezier> = {
+  linear: [0, 0, 1, 1],
+  inCubic: [0.32, 0, 0.67, 0],
+  outCubic: [0.33, 1, 0.68, 1],
+  inOutCubic: [0.65, 0, 0.35, 1],
+  outBack: [0.34, 1.56, 0.64, 1],
+  inBack: [0.36, 0, 0.66, -0.56],
+  "ease-in": [0.42, 0, 1, 1],
+  "ease-out": [0, 0, 0.58, 1],
+  "ease-in-out": [0.42, 0, 0.58, 1],
+};
+const ALIGN_BUTTONS = [
+  { value: "left" as const, Icon: AlignLeft },
+  { value: "center" as const, Icon: AlignCenter },
+  { value: "right" as const, Icon: AlignRight },
+  { value: "justify" as const, Icon: AlignJustify },
+];
+const CASE_BUTTONS = [
+  { value: "none" as const, Icon: CaseSensitive },
+  { value: "uppercase" as const, Icon: CaseUpper },
+  { value: "lowercase" as const, Icon: CaseLower },
+];
+const easingPreviewStyle = (preset: string) =>
+  ({
+    "--ease-preview": `linear(${Array.from({ length: 41 }, (_, index) => easeProgress(index / 40, preset).toFixed(4)).join(",")})`,
+  }) as CSSProperties;
 
-export default function EditorCoreV2(){
-  const state=useEditorState(),imageInput=useRef<HTMLInputElement>(null),assetInput=useRef<HTMLInputElement>(null),projectInput=useRef<HTMLInputElement>(null),aiAbort=useRef<AbortController|null>(null);
-  const [aiBusy,setAiBusy]=useState(false),[aiStatus,setAiStatus]=useState(""),[aiProgress,setAiProgress]=useState<Record<string,AiFormatStatus>>({});
-  const elements=state.elementsByFormat[state.activeFormat]??[],selected=elements.find((e)=>e.id===state.selectedId)??null;
-  const selectedKey=state.selectedId&&state.selectedKeyframeId?(state.keyframesByFormat[state.activeFormat]?.[state.selectedId]??[]).find((f)=>f.id===state.selectedKeyframeId)??null:null;
-  const format=formats.find((f)=>f.id===state.activeFormat)!;
-  const save=()=>download(new Blob([editorActions.exportProject()],{type:"application/json"}),`${state.title.replace(/[^a-z0-9-_]+/gi,"-").toLowerCase()||"banner-project"}.banner.json`);
-  const open=async(file?:File)=>{if(!file)return;try{const parsed=JSON.parse(await file.text()) as ProjectState;if(parsed.version!==2)throw new Error("Unsupported project version");editorActions.importProject(parsed)}catch(error){alert(error instanceof Error?error.message:"Could not open project")}};
-  const addFiles=async(files:FileList|null)=>{if(!files)return;for(const file of Array.from(files)){if(!file.type.startsWith("image/"))continue;const url=await new Promise<string>((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result));reader.onerror=reject;reader.readAsDataURL(file)});const size=await new Promise<{width:number;height:number}>((resolve)=>{const image=new Image();image.onload=()=>resolve({width:image.naturalWidth,height:image.naturalHeight});image.onerror=()=>resolve({width:0,height:0});image.src=url});editorActions.addImage(file.name,url,undefined,size)}if(imageInput.current)imageInput.current.value=""};
-  const addAssets=async(files:FileList|null)=>{if(!files)return;for(const file of Array.from(files)){if(!file.type.startsWith("image/"))continue;const url=await new Promise<string>((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result));reader.onerror=reject;reader.readAsDataURL(file)});const size=await new Promise<{width:number;height:number}>((resolve)=>{const image=new Image();image.onload=()=>resolve({width:image.naturalWidth,height:image.naturalHeight});image.onerror=()=>resolve({width:0,height:0});image.src=url});editorActions.addAsset({id:crypto.randomUUID(),name:file.name,assetUrl:url,width:size.width,height:size.height,bytes:file.size})}if(assetInput.current)assetInput.current.value=""};
-  const setEasing=(easing:Easing,curve?:Bezier)=>{if(!selectedKey)return;editorActions.setSelectedKeyEasing(easing,curve??(selectedKey.bezier??[.42,0,.58,1]) as Bezier)};
-  const curve=(selectedKey?.bezier??[.42,0,.58,1]) as Bezier;
-  const finishAi=()=>{aiAbort.current=null;setAiBusy(false)};
-  const cancelAi=()=>{aiAbort.current?.abort();setAiStatus("Cancelling AI…")};
-  useEffect(()=>{const editable=(target:EventTarget|null)=>target instanceof HTMLInputElement||target instanceof HTMLTextAreaElement||target instanceof HTMLSelectElement||(target instanceof HTMLElement&&target.isContentEditable);const keyboard=(event:KeyboardEvent)=>{if(editable(event.target))return;const command=event.metaKey||event.ctrlKey;if(command&&event.key.toLowerCase()==="z"){event.preventDefault();event.shiftKey?editorActions.redo():editorActions.undo();return}if(event.ctrlKey&&event.key.toLowerCase()==="y"){event.preventDefault();editorActions.redo();return}if(event.key.startsWith("Arrow")&&state.selectedIds?.length&&!state.selectedKeyframeIds?.length){event.preventDefault();const step=event.shiftKey?10:1;editorActions.nudgeSelected(event.key==="ArrowLeft"?-step:event.key==="ArrowRight"?step:0,event.key==="ArrowUp"?-step:event.key==="ArrowDown"?step:0);return}if((event.key==="Backspace"||event.key==="Delete")&&state.selectedKeyframeIds?.length){event.preventDefault();editorActions.deleteSelectedKeyframes();return}if((event.key==="Backspace"||event.key==="Delete")&&state.selectedId){event.preventDefault();editorActions.removeSelected()}};addEventListener("keydown",keyboard);return()=>removeEventListener("keydown",keyboard)},[state.selectedId,state.selectedIds,state.selectedKeyframeIds]);
-  const runAiAll=async()=>{const controller=new AbortController();aiAbort.current=controller;setAiBusy(true);setAiProgress({});setAiStatus("Preparing rule-based layouts…");try{const messages=await aiAdaptAll(setAiStatus,(formatId,status)=>setAiProgress((current)=>({...current,[formatId]:status})),controller.signal);setAiStatus(`AI ready · ${messages.length} formats`)}catch(error){setAiStatus(controller.signal.aborted?"AI adaptation cancelled":error instanceof Error?error.message:"AI Layout Director failed")}finally{finishAi()}};
-  const runAiCurrent=async()=>{const controller=new AbortController();aiAbort.current=controller;setAiBusy(true);setAiProgress({[state.activeFormat]:"running"});setAiStatus(`AI: ${format.label}…`);try{const rationale=await aiAdaptFormat(state.activeFormat,controller.signal);setAiProgress({[state.activeFormat]:"ready"});setAiStatus(rationale||"AI resize ready")}catch(error){if(!controller.signal.aborted)setAiProgress({[state.activeFormat]:"fallback"});setAiStatus(controller.signal.aborted?"AI adaptation cancelled":error instanceof Error?error.message:"AI Layout Director failed")}finally{finishAi()}};
-  return <div className="core-app" style={{"--timeline-height":`${state.timelineHeight??232}px`} as CSSProperties}>
-    <header className="core-topbar"><div className="core-brand"><b>B</b><button className="core-back" onClick={()=>{location.href="./"}}>Campaign</button><span><strong>{state.title}</strong><small>{format.label} · Format editor</small></span></div><nav><button title="Undo · Cmd/Ctrl+Z" aria-label="Undo" disabled={!editorActions.canUndo()} onClick={()=>editorActions.undo()}><Undo2 size={15}/></button><button title="Redo · Cmd/Ctrl+Shift+Z" aria-label="Redo" disabled={!editorActions.canRedo()} onClick={()=>editorActions.redo()}><Redo2 size={15}/></button><button onClick={()=>{if(confirm("Create a new project? Unsaved changes will be cleared."))editorActions.newProject()}}>New</button><button onClick={()=>projectInput.current?.click()}>Open</button><button className="primary" onClick={save}><Download size={15}/> Save project</button></nav><input ref={projectInput} hidden type="file" accept=".json,.banner.json,application/json" onChange={(e)=>{void open(e.target.files?.[0]);e.currentTarget.value=""}}/></header>
-    <main className="core-main"><aside className="core-sidebar"><div className="core-section-head"><span>PROJECT ASSETS</span><b>Library</b></div><input ref={assetInput} hidden type="file" multiple accept="image/*" onChange={(e)=>void addAssets(e.target.files)}/><input ref={imageInput} hidden type="file" multiple accept="image/*" onChange={(e)=>void addFiles(e.target.files)}/><button className="core-upload" onClick={()=>assetInput.current?.click()}><Upload size={15}/> Import to Library</button><div className="core-assets">{state.assets.map((asset)=><div className="core-asset" key={asset.id} draggable onDragStart={(event)=>{event.dataTransfer.setData("application/x-banner-asset",asset.id);event.dataTransfer.effectAllowed="copy"}}><img src={asset.assetUrl}/><button className="core-asset-name" title="Double-click or drag to canvas" onDoubleClick={()=>editorActions.addAssetToCanvas(asset.id)}><b>{asset.name}</b><small>{asset.width}×{asset.height} · {Math.max(1,Math.round(asset.bytes/1024))} KB</small></button><button className="core-asset-delete" title="Remove from library" onClick={()=>editorActions.removeAsset(asset.id)}><Trash2 size={12}/></button></div>)}</div><button className="core-upload" onClick={()=>editorActions.addText()}><Type size={15}/> Add text</button><div className="core-section-head formats"><span>CANVAS</span><b>Background</b></div><label className="core-background-color"><input type="color" value={state.backgrounds[state.activeFormat]?.color??"#ffffff"} onChange={(event)=>editorActions.setBackgroundColor(event.target.value)}/><span>{state.backgrounds[state.activeFormat]?.color??"#ffffff"}</span></label><div className="core-section-head formats"><span>CAMPAIGN</span><b>Formats</b></div>{formats.map((f)=><button key={f.id} className={`core-format ${state.activeFormat===f.id?"active":""}`} onClick={()=>editorActions.setFormat(f.id)}><i style={{aspectRatio:`${f.width}/${f.height}`}}/><span><b>{f.label}</b><small>{f.width} × {f.height}{f.id!=="master"?aiProgress[f.id]==="running"?" · AI…":aiProgress[f.id]==="ready"?" · AI ready":aiProgress[f.id]==="fallback"?" · fallback":state.formatOverrides[f.id]?" · manual":" · auto":""}</small></span></button>)}</aside>
-      <section className="core-workspace"><div className="core-stagebar"><b>{format.label}</b><span>{format.width} × {format.height}</span><div className="core-zoom"><button title="Zoom out" onClick={()=>editorActions.setCanvasZoom((state.canvasZoom??1)/1.2)}><Minus size={13}/></button><span>{Math.round((state.canvasZoom??1)*100)}%</span><button title="Zoom in" onClick={()=>editorActions.setCanvasZoom((state.canvasZoom??1)*1.2)}><Plus size={13}/></button><button title="Fit canvas" onClick={()=>editorActions.setCanvasZoom(1)}><Maximize2 size={13}/></button></div><div className="core-ai-status">{aiStatus}</div>{state.activeFormat==="master"?<><button disabled={aiBusy} className="core-ai-button" onClick={()=>void runAiAll()}><Sparkles size={14}/>{aiBusy?"AI adapting…":"AI adapt all"}</button>{aiBusy&&<button className="core-ai-cancel" onClick={cancelAi}>Cancel</button>}<button className="core-legacy-adapt" onClick={()=>editorActions.adaptAll(true)}><RefreshCw size={14}/> Rules only</button></>:<><button disabled={aiBusy} className="core-ai-button" onClick={()=>void runAiCurrent()}><Sparkles size={14}/>{aiBusy?"AI adapting…":"AI improve resize"}</button>{aiBusy&&<button className="core-ai-cancel" onClick={cancelAi}>Cancel</button>}<button onClick={()=>editorActions.resetFormatFromMaster()}><RefreshCw size={14}/> Reset from master</button></>}<button onClick={()=>editorActions.addText()}><Plus size={14}/> Text</button><button onClick={()=>imageInput.current?.click()}><ImageIcon size={14}/> Image</button></div><CanvasV2/></section>
-      <aside className="core-right"><div className="core-section-head"><span>LAYERS</span><b>{elements.length} layers</b></div><div className="core-layers">{elements.slice().reverse().map((el)=><div key={el.id} className={`core-layer ${(state.selectedIds??[]).includes(el.id)?"active":""}`}><button onClick={()=>editorActions.updateElement(el.id,{visible:!el.visible},false)}>{el.visible?<Eye size={14}/>:<EyeOff size={14}/>}</button><button className="name" onClick={(event)=>editorActions.select(el.id,event.shiftKey||event.metaKey||event.ctrlKey)}>{el.kind==="image"?<ImageIcon size={14}/>:<Type size={14}/>}<span>{el.name}</span></button><button onClick={()=>editorActions.updateElement(el.id,{locked:!el.locked},false)}>{el.locked?<Lock size={14}/>:<Unlock size={14}/>}</button></div>)}</div>
-        {/* @ts-ignore */}
-        {selected&&<><div className="core-link-mode"><button className={selected.contentLinked!==false?"active":""} onClick={()=>editorActions.updateElement(selected.id,{contentLinked:selected.contentLinked===false},false)}>{selected.contentLinked!==false?"Linked across formats":"Local to this format"}</button><small>{selected.contentLinked!==false?"Content updates everywhere; layout stays local":"Changes affect only this format"}</small></div><div className="core-object-actions"><button onClick={()=>editorActions.removeSelected()}><Trash2 size={14}/> Delete layer</button></div><div className="core-section-head core-properties-head"><span>PROPERTIES {selectedKey?"· KEYFRAME":""}</span><b>{selected.name}</b></div>{selected.kind!=="image"&&<section className="core-text-panel"><div className="core-section-head"><span>TEXT</span><b>Typography</b></div><textarea value={selected.text} onChange={(e)=>editorActions.updateElement(selected.id,{text:e.target.value},false)}/><label>Font<select value={selected.fontFamily} onChange={(e)=>editorActions.updateElement(selected.id,{fontFamily:e.target.value},false)}>{FONTS.map((f)=><option key={f}>{f}</option>)}</select></label><div className="core-text-grid"><label>Size<input type="number" min="6" max="300" value={selected.fontSize} onChange={(e)=>editorActions.updateElement(selected.id,{fontSize:Number(e.target.value)},false)}/></label><label>Line<input type="number" min="50" max="300" value={selected.lineHeight} onChange={(e)=>editorActions.updateElement(selected.id,{lineHeight:Number(e.target.value)},false)}/></label><label>Width<input type="number" min="5" max="100" value={selected.width} onChange={(e)=>editorActions.updateElement(selected.id,{width:Number(e.target.value),textSizing:"fixed"},false)}/></label><label>Color<input type="color" value={selected.color} onChange={(e)=>editorActions.updateElement(selected.id,{color:e.target.value},false)}/></label></div><div className="core-icon-controls"><span>Align</span>{[["left",AlignLeft],["center",AlignCenter],["right",AlignRight],["justify",AlignJustify]].map(([value,Icon])=>{const I=Icon as typeof AlignLeft;return <button key={value} className={(selected.textAlign??"left")===value?"active":""} title={value} onClick={()=>editorActions.updateElement(selected.id,{textAlign:value as "left"|"center"|"right"|"justify"},false)}><I size={15}/></button>})}</div><div className="core-icon-controls"><span>Case</span>{[["none",CaseSensitive],["uppercase",CaseUpper],["lowercase",CaseLower]].map(([value,Icon])=>{const I=Icon as typeof CaseSensitive;return <button key={value} className={(selected.textCase??"none")===value?"active":""} title={value} onClick={()=>editorActions.updateElement(selected.id,{textCase:value as "none"|"uppercase"|"lowercase"},false)}><I size={15}/></button>})}</div><div className="core-text-motion"><div className="core-section-head"><span>TEXT ANIMATION</span><b>Presets</b></div><div className="core-motion-presets">{TEXT_MOTION.map((type)=><button key={type} className={(selected.textAnimation?.type??"none")===type?"active":""} onClick={()=>editorActions.updateElement(selected.id,{textAnimation:{type,typeSpeed:selected.textAnimation?.typeSpeed??60,cursor:selected.textAnimation?.cursor??true,start:state.playhead,...TEXT_MOTION_DEFAULTS[type]}},false)}><i className={`motion-${type}`}>Aa</i><span>{pretty(type)}</span></button>)}</div>{selected.textAnimation?.type!=="none"&&<div className="core-motion-settings"><label>Duration, sec<input type="number" min=".1" max="8" step=".05" value={selected.textAnimation?.duration??.65} onChange={(e)=>editorActions.updateElement(selected.id,{textAnimation:{...selected.textAnimation!,duration:Number(e.target.value)}},false)}/></label><label>Easing<select value={selected.textAnimation?.easing??"outCubic"} onChange={(e)=>editorActions.updateElement(selected.id,{textAnimation:{...selected.textAnimation!,easing:e.target.value}},false)}><option value="linear">Linear</option><option value="outCubic">Smooth out</option><option value="inOutCubic">Smooth in/out</option><option value="outBack">Overshoot</option><option value="outBounce">Bounce</option></select></label><label>Distance, px<input type="number" min="0" max="500" step="1" value={selected.textAnimation?.distance??40} onChange={(e)=>editorActions.updateElement(selected.id,{textAnimation:{...selected.textAnimation!,distance:Number(e.target.value)}},false)}/></label></div>}{selected.textAnimation?.type==="typewriter"&&<><label>Speed, ms/character<input type="number" min="10" max="1000" step="10" value={selected.textAnimation.typeSpeed} onChange={(e)=>editorActions.updateElement(selected.id,{textAnimation:{...selected.textAnimation!,typeSpeed:Number(e.target.value)}},false)}/></label><label className="core-check"><input type="checkbox" checked={selected.textAnimation.cursor} onChange={(e)=>editorActions.updateElement(selected.id,{textAnimation:{...selected.textAnimation!,cursor:e.target.checked}},false)}/> Blinking cursor</label></>}</div></section>}
-        {selectedKey&&<section className="core-easing"><div className="core-section-head"><span>KEYFRAME GROUP</span><b>Motion / Easing</b></div><p className="core-motion-help">Compare the same object over the same distance. Hover to preview; the selected preset keeps playing.</p><div className="core-easing-presets">{EASING_PRESETS.filter((p)=>p!=="custom").map((preset)=><button key={preset} className={`core-ease-card ${selectedKey.easing===preset?"active":""}`} style={easingPreviewStyle(preset)} onClick={()=>setEasing(preset)} title={`Apply ${pretty(preset)}`}><span className="core-ease-demo" aria-hidden="true"><i/></span><span className="core-ease-name">{pretty(preset)}</span></button>)}</div><button className={`core-custom-ease ${selectedKey.easing==="custom"?"active":""}`} onClick={()=>setEasing("custom",BEZIER_FOR_PRESET[selectedKey.easing??"linear"]??curve)}>Edit selected as cubic Bézier</button>{selectedKey.easing==="custom"&&<div className="core-bezier-editor"><BezierEditor value={curve} onChange={(value)=>setEasing("custom",value as Bezier)} width={260} height={170} padding={[14,14,22,22]}/><div className="core-bezier-fields">{curve.map((v,i)=><input key={i} aria-label={["Control 1 X","Control 1 Y","Control 2 X","Control 2 Y"][i]} title={["Control 1 X","Control 1 Y","Control 2 X","Control 2 Y"][i]} type="number" min={i===0||i===2?0:-3} max={i===0||i===2?1:3} step="0.01" value={v} onChange={(e)=>{const next=[...curve] as Bezier;const value=Number(e.target.value);next[i]=i===0||i===2?Math.max(0,Math.min(1,value)):Math.max(-3,Math.min(3,value));setEasing("custom",next)}}/>)}</div></div>}<button className="danger" onClick={()=>editorActions.deleteSelectedKeyframe()}>Delete keyframe</button></section>}<TransformInspector element={selected}/></>}</aside>
-    </main><TimelineV2/>
-  </div>;
+export default function EditorCoreV2() {
+  const state = useEditorState(),
+    imageInput = useRef<HTMLInputElement>(null),
+    assetInput = useRef<HTMLInputElement>(null),
+    projectInput = useRef<HTMLInputElement>(null),
+    aiAbort = useRef<AbortController | null>(null);
+  const [aiBusy, setAiBusy] = useState(false),
+    [aiStatus, setAiStatus] = useState(""),
+    [aiProgress, setAiProgress] = useState<Record<string, AiFormatStatus>>({});
+  const elements = state.elementsByFormat[state.activeFormat] ?? [],
+    selected = elements.find((e) => e.id === state.selectedId) ?? null;
+  const selectedKey =
+    state.selectedId && state.selectedKeyframeId
+      ? ((
+          state.keyframesByFormat[state.activeFormat]?.[state.selectedId] ?? []
+        ).find((f) => f.id === state.selectedKeyframeId) ?? null)
+      : null;
+  const format = formats.find((f) => f.id === state.activeFormat)!;
+  const save = () =>
+    download(
+      new Blob([editorActions.exportProject()], { type: "application/json" }),
+      `${state.title.replace(/[^a-z0-9-_]+/gi, "-").toLowerCase() || "banner-project"}.banner.json`,
+    );
+  const open = async (file?: File) => {
+    if (!file) return;
+    try {
+      const parsed = JSON.parse(await file.text()) as ProjectState;
+      if (parsed.version !== 2) throw new Error("Unsupported project version");
+      editorActions.importProject(parsed);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Could not open project");
+    }
+  };
+  const addFiles = async (files: FileList | null) => {
+    if (!files) return;
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith("image/")) continue;
+      const url = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      const size = await new Promise<{ width: number; height: number }>(
+        (resolve) => {
+          const image = new Image();
+          image.onload = () =>
+            resolve({ width: image.naturalWidth, height: image.naturalHeight });
+          image.onerror = () => resolve({ width: 0, height: 0 });
+          image.src = url;
+        },
+      );
+      editorActions.addImage(file.name, url, undefined, size);
+    }
+    if (imageInput.current) imageInput.current.value = "";
+  };
+  const addAssets = async (files: FileList | null) => {
+    if (!files) return;
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith("image/")) continue;
+      const url = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      const size = await new Promise<{ width: number; height: number }>(
+        (resolve) => {
+          const image = new Image();
+          image.onload = () =>
+            resolve({ width: image.naturalWidth, height: image.naturalHeight });
+          image.onerror = () => resolve({ width: 0, height: 0 });
+          image.src = url;
+        },
+      );
+      editorActions.addAsset({
+        id: crypto.randomUUID(),
+        name: file.name,
+        assetUrl: url,
+        width: size.width,
+        height: size.height,
+        bytes: file.size,
+      });
+    }
+    if (assetInput.current) assetInput.current.value = "";
+  };
+  const setEasing = (easing: Easing, curve?: Bezier) => {
+    if (!selectedKey) return;
+    editorActions.setSelectedKeyEasing(
+      easing,
+      curve ?? ((selectedKey.bezier ?? [0.42, 0, 0.58, 1]) as Bezier),
+    );
+  };
+  const curve = (selectedKey?.bezier ?? [0.42, 0, 0.58, 1]) as Bezier;
+  const finishAi = () => {
+    aiAbort.current = null;
+    setAiBusy(false);
+  };
+  const cancelAi = () => {
+    aiAbort.current?.abort();
+    setAiStatus("Cancelling AI…");
+  };
+  useEffect(() => {
+    const editable = (target: EventTarget | null) =>
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      target instanceof HTMLSelectElement ||
+      (target instanceof HTMLElement && target.isContentEditable);
+    const keyboard = (event: KeyboardEvent) => {
+      if (editable(event.target)) return;
+      const command = event.metaKey || event.ctrlKey;
+      if (command && event.key.toLowerCase() === "z") {
+        event.preventDefault();
+        event.shiftKey ? editorActions.redo() : editorActions.undo();
+        return;
+      }
+      if (event.ctrlKey && event.key.toLowerCase() === "y") {
+        event.preventDefault();
+        editorActions.redo();
+        return;
+      }
+      if (
+        event.key.startsWith("Arrow") &&
+        state.selectedIds?.length &&
+        !state.selectedKeyframeIds?.length
+      ) {
+        event.preventDefault();
+        const step = event.shiftKey ? 10 : 1;
+        editorActions.nudgeSelected(
+          event.key === "ArrowLeft"
+            ? -step
+            : event.key === "ArrowRight"
+              ? step
+              : 0,
+          event.key === "ArrowUp"
+            ? -step
+            : event.key === "ArrowDown"
+              ? step
+              : 0,
+        );
+        return;
+      }
+      if (
+        (event.key === "Backspace" || event.key === "Delete") &&
+        state.selectedKeyframeIds?.length
+      ) {
+        event.preventDefault();
+        editorActions.deleteSelectedKeyframes();
+        return;
+      }
+      if (
+        (event.key === "Backspace" || event.key === "Delete") &&
+        state.selectedId
+      ) {
+        event.preventDefault();
+        editorActions.setSelectedVisibility(false, "format");
+      }
+    };
+    addEventListener("keydown", keyboard);
+    return () => removeEventListener("keydown", keyboard);
+  }, [state.selectedId, state.selectedIds, state.selectedKeyframeIds]);
+  const runAiAll = async () => {
+    const controller = new AbortController();
+    aiAbort.current = controller;
+    setAiBusy(true);
+    setAiProgress({});
+    setAiStatus("Preparing rule-based layouts…");
+    try {
+      const messages = await aiAdaptAll(
+        setAiStatus,
+        (formatId, status) =>
+          setAiProgress((current) => ({ ...current, [formatId]: status })),
+        controller.signal,
+      );
+      setAiStatus(`AI ready · ${messages.length} formats`);
+    } catch (error) {
+      setAiStatus(
+        controller.signal.aborted
+          ? "AI adaptation cancelled"
+          : error instanceof Error
+            ? error.message
+            : "AI Layout Director failed",
+      );
+    } finally {
+      finishAi();
+    }
+  };
+  const runAiCurrent = async () => {
+    const controller = new AbortController();
+    aiAbort.current = controller;
+    setAiBusy(true);
+    setAiProgress({ [state.activeFormat]: "running" });
+    setAiStatus(`AI: ${format.label}…`);
+    try {
+      const rationale = await aiAdaptFormat(
+        state.activeFormat,
+        controller.signal,
+      );
+      setAiProgress({ [state.activeFormat]: "ready" });
+      setAiStatus(rationale || "AI resize ready");
+    } catch (error) {
+      if (!controller.signal.aborted)
+        setAiProgress({ [state.activeFormat]: "fallback" });
+      setAiStatus(
+        controller.signal.aborted
+          ? "AI adaptation cancelled"
+          : error instanceof Error
+            ? error.message
+            : "AI Layout Director failed",
+      );
+    } finally {
+      finishAi();
+    }
+  };
+  return (
+    <div
+      className="core-app"
+      style={
+        {
+          "--timeline-height": `${state.timelineHeight ?? 232}px`,
+        } as CSSProperties
+      }
+    >
+      <header className="core-topbar">
+        <div className="core-brand">
+          <b>B</b>
+          <button
+            className="core-back"
+            onClick={() => {
+              location.href = "./";
+            }}
+          >
+            Campaign
+          </button>
+          <span>
+            <strong>{state.title}</strong>
+            <small>{format.label} · Format editor</small>
+          </span>
+        </div>
+        <nav>
+          <button
+            title="Undo · Cmd/Ctrl+Z"
+            aria-label="Undo"
+            disabled={!editorActions.canUndo()}
+            onClick={() => editorActions.undo()}
+          >
+            <Undo2 size={15} />
+          </button>
+          <button
+            title="Redo · Cmd/Ctrl+Shift+Z"
+            aria-label="Redo"
+            disabled={!editorActions.canRedo()}
+            onClick={() => editorActions.redo()}
+          >
+            <Redo2 size={15} />
+          </button>
+          <button
+            onClick={() => {
+              if (
+                confirm(
+                  "Create a new project? Unsaved changes will be cleared.",
+                )
+              )
+                editorActions.newProject();
+            }}
+          >
+            New
+          </button>
+          <button onClick={() => projectInput.current?.click()}>Open</button>
+          <button className="primary" onClick={save}>
+            <Download size={15} /> Save project
+          </button>
+        </nav>
+        <input
+          ref={projectInput}
+          hidden
+          type="file"
+          accept=".json,.banner.json,application/json"
+          onChange={(e) => {
+            void open(e.target.files?.[0]);
+            e.currentTarget.value = "";
+          }}
+        />
+      </header>
+      <main className="core-main">
+        <aside className="core-sidebar">
+          <div className="core-section-head">
+            <span>PROJECT ASSETS</span>
+            <b>Library</b>
+          </div>
+          <input
+            ref={assetInput}
+            hidden
+            type="file"
+            multiple
+            accept="image/*"
+            onChange={(e) => void addAssets(e.target.files)}
+          />
+          <input
+            ref={imageInput}
+            hidden
+            type="file"
+            multiple
+            accept="image/*"
+            onChange={(e) => void addFiles(e.target.files)}
+          />
+          <button
+            className="core-upload"
+            onClick={() => assetInput.current?.click()}
+          >
+            <Upload size={15} /> Import to Library
+          </button>
+          <div className="core-assets">
+            {state.assets.map((asset) => (
+              <div
+                className="core-asset"
+                key={asset.id}
+                draggable
+                onDragStart={(event) => {
+                  event.dataTransfer.setData(
+                    "application/x-banner-asset",
+                    asset.id,
+                  );
+                  event.dataTransfer.effectAllowed = "copy";
+                }}
+              >
+                <img src={asset.assetUrl} />
+                <button
+                  className="core-asset-name"
+                  title="Double-click or drag to canvas"
+                  onDoubleClick={() => editorActions.addAssetToCanvas(asset.id)}
+                >
+                  <b>{asset.name}</b>
+                  <small>
+                    {asset.width}×{asset.height} ·{" "}
+                    {Math.max(1, Math.round(asset.bytes / 1024))} KB
+                  </small>
+                </button>
+                <button
+                  className="core-asset-delete"
+                  title="Remove from library"
+                  onClick={() => editorActions.removeAsset(asset.id)}
+                >
+                  <Trash2 size={12} />
+                </button>
+              </div>
+            ))}
+          </div>
+          <button
+            className="core-upload"
+            onClick={() => editorActions.addText()}
+          >
+            <Type size={15} /> Add text
+          </button>
+          <div className="core-section-head formats">
+            <span>CANVAS</span>
+            <b>Background</b>
+          </div>
+          <label className="core-background-color">
+            <input
+              type="color"
+              value={state.backgrounds[state.activeFormat]?.color ?? "#ffffff"}
+              onChange={(event) =>
+                editorActions.setBackgroundColor(event.target.value)
+              }
+            />
+            <span>
+              {state.backgrounds[state.activeFormat]?.color ?? "#ffffff"}
+            </span>
+          </label>
+          <div className="core-section-head formats">
+            <span>CAMPAIGN</span>
+            <b>Formats</b>
+          </div>
+          {formats.map((f) => (
+            <button
+              key={f.id}
+              className={`core-format ${state.activeFormat === f.id ? "active" : ""}`}
+              onClick={() => editorActions.setFormat(f.id)}
+            >
+              <i style={{ aspectRatio: `${f.width}/${f.height}` }} />
+              <span>
+                <b>{f.label}</b>
+                <small>
+                  {f.width} × {f.height}
+                  {f.id !== "master"
+                    ? aiProgress[f.id] === "running"
+                      ? " · AI…"
+                      : aiProgress[f.id] === "ready"
+                        ? " · AI ready"
+                        : aiProgress[f.id] === "fallback"
+                          ? " · fallback"
+                          : state.formatOverrides[f.id]
+                            ? " · manual"
+                            : " · auto"
+                    : ""}
+                </small>
+              </span>
+            </button>
+          ))}
+        </aside>
+        <section className="core-workspace">
+          <div className="core-stagebar">
+            <b>{format.label}</b>
+            <span>
+              {format.width} × {format.height}
+            </span>
+            <div className="core-zoom">
+              <button
+                title="Zoom out"
+                onClick={() =>
+                  editorActions.setCanvasZoom((state.canvasZoom ?? 1) / 1.2)
+                }
+              >
+                <Minus size={13} />
+              </button>
+              <span>{Math.round((state.canvasZoom ?? 1) * 100)}%</span>
+              <button
+                title="Zoom in"
+                onClick={() =>
+                  editorActions.setCanvasZoom((state.canvasZoom ?? 1) * 1.2)
+                }
+              >
+                <Plus size={13} />
+              </button>
+              <button
+                title="Fit canvas"
+                onClick={() => editorActions.setCanvasZoom(1)}
+              >
+                <Maximize2 size={13} />
+              </button>
+            </div>
+            <div className="core-ai-status">{aiStatus}</div>
+            {state.activeFormat === "master" ? (
+              <>
+                <button
+                  disabled={aiBusy}
+                  className="core-ai-button"
+                  onClick={() => void runAiAll()}
+                >
+                  <Sparkles size={14} />
+                  {aiBusy ? "AI adapting…" : "AI adapt all"}
+                </button>
+                {aiBusy && (
+                  <button className="core-ai-cancel" onClick={cancelAi}>
+                    Cancel
+                  </button>
+                )}
+                <button
+                  className="core-legacy-adapt"
+                  onClick={() => editorActions.adaptAll(true)}
+                >
+                  <RefreshCw size={14} /> Rules only
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  disabled={aiBusy}
+                  className="core-ai-button"
+                  onClick={() => void runAiCurrent()}
+                >
+                  <Sparkles size={14} />
+                  {aiBusy ? "AI adapting…" : "AI improve resize"}
+                </button>
+                {aiBusy && (
+                  <button className="core-ai-cancel" onClick={cancelAi}>
+                    Cancel
+                  </button>
+                )}
+                <button onClick={() => editorActions.resetFormatFromMaster()}>
+                  <RefreshCw size={14} /> Reset from master
+                </button>
+              </>
+            )}
+            <button onClick={() => editorActions.addText()}>
+              <Plus size={14} /> Text
+            </button>
+            <button onClick={() => imageInput.current?.click()}>
+              <ImageIcon size={14} /> Image
+            </button>
+          </div>
+          <CanvasV2 />
+        </section>
+        <aside className="core-right">
+          <div className="core-section-head">
+            <span>LAYERS</span>
+            <b>{elements.length} layers</b>
+          </div>
+          <div className="core-layers">
+            {elements
+              .slice()
+              .reverse()
+              .map((el) => (
+                <div
+                  key={el.id}
+                  className={`core-layer ${(state.selectedIds ?? []).includes(el.id) ? "active" : ""}`}
+                >
+                  <button
+                    onClick={() =>
+                      editorActions.updateElement(
+                        el.id,
+                        { visible: !el.visible },
+                        false,
+                      )
+                    }
+                  >
+                    {el.visible ? <Eye size={14} /> : <EyeOff size={14} />}
+                  </button>
+                  <button
+                    className="name"
+                    onClick={(event) =>
+                      editorActions.select(
+                        el.id,
+                        event.shiftKey || event.metaKey || event.ctrlKey,
+                      )
+                    }
+                  >
+                    {el.kind === "image" ? (
+                      <ImageIcon size={14} />
+                    ) : (
+                      <Type size={14} />
+                    )}
+                    <span>{el.name}</span>
+                  </button>
+                  <button
+                    onClick={() =>
+                      editorActions.updateElement(
+                        el.id,
+                        { locked: !el.locked },
+                        false,
+                      )
+                    }
+                  >
+                    {el.locked ? <Lock size={14} /> : <Unlock size={14} />}
+                  </button>
+                </div>
+              ))}
+          </div>
+          {/* @ts-ignore */}
+          {selected && (
+            <>
+              <div className="core-link-mode">
+                <button
+                  className={selected.contentLinked !== false ? "active" : ""}
+                  onClick={() =>
+                    editorActions.updateElement(
+                      selected.id,
+                      { contentLinked: selected.contentLinked === false },
+                      false,
+                    )
+                  }
+                >
+                  {selected.contentLinked !== false
+                    ? "Linked across formats"
+                    : "Local to this format"}
+                </button>
+                <small>
+                  {selected.contentLinked !== false
+                    ? "Content updates everywhere; layout stays local"
+                    : "Changes affect only this format"}
+                </small>
+              </div>
+              <div className="core-object-actions">
+                <button onClick={() => editorActions.setSelectedVisibility(false,"format")} title="Keeps the linked campaign object"><EyeOff size={14}/> Hide in this format</button>
+                <button onClick={() => editorActions.setSelectedVisibility(false,"family")} title="Hide in related aspect-ratio formats"><EyeOff size={14}/> Hide in family</button>
+                <button className="danger" onClick={() => {if(confirm("Remove this linked object and its animation from every format?"))editorActions.removeSelectedScoped("campaign")}} title="Destructive campaign-wide removal"><Trash2 size={14}/> Remove everywhere</button>
+              </div>
+              <div className="core-section-head core-properties-head">
+                <span>PROPERTIES {selectedKey ? "· KEYFRAME" : ""}</span>
+                <b>{selected.name}</b>
+              </div>
+              {selected.kind !== "image" && (
+                <section className="core-text-panel">
+                  <div className="core-section-head">
+                    <span>TEXT</span>
+                    <b>Typography</b>
+                  </div>
+                  <textarea
+                    value={selected.text}
+                    onChange={(e) =>
+                      editorActions.updateElement(
+                        selected.id,
+                        { text: e.target.value },
+                        false,
+                      )
+                    }
+                  />
+                  <label>
+                    Font
+                    <select
+                      value={selected.fontFamily}
+                      onChange={(e) =>
+                        editorActions.updateElement(
+                          selected.id,
+                          { fontFamily: e.target.value },
+                          false,
+                        )
+                      }
+                    >
+                      {FONTS.map((f) => (
+                        <option key={f}>{f}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <div className="core-text-grid">
+                    <label>
+                      Size
+                      <input
+                        type="number"
+                        min="6"
+                        max="300"
+                        value={selected.fontSize}
+                        onChange={(e) =>
+                          editorActions.updateElement(
+                            selected.id,
+                            { fontSize: Number(e.target.value) },
+                            false,
+                          )
+                        }
+                      />
+                    </label>
+                    <label>
+                      Line
+                      <input
+                        type="number"
+                        min="50"
+                        max="300"
+                        value={selected.lineHeight}
+                        onChange={(e) =>
+                          editorActions.updateElement(
+                            selected.id,
+                            { lineHeight: Number(e.target.value) },
+                            false,
+                          )
+                        }
+                      />
+                    </label>
+                    <label>
+                      Width
+                      <input
+                        type="number"
+                        min="5"
+                        max="100"
+                        value={selected.width}
+                        onChange={(e) =>
+                          editorActions.updateElement(
+                            selected.id,
+                            {
+                              width: Number(e.target.value),
+                              textSizing: "fixed",
+                            },
+                            false,
+                          )
+                        }
+                      />
+                    </label>
+                    <label>
+                      Color
+                      <input
+                        type="color"
+                        value={selected.color}
+                        onChange={(e) =>
+                          editorActions.updateElement(
+                            selected.id,
+                            { color: e.target.value },
+                            false,
+                          )
+                        }
+                      />
+                    </label>
+                  </div>
+                  <div className="core-icon-controls">
+                    <span>Align</span>
+                    {ALIGN_BUTTONS.map(({value,Icon:I}) => {
+                      return (
+                        <button
+                          key={value}
+                          className={
+                            (selected.textAlign ?? "left") === value
+                              ? "active"
+                              : ""
+                          }
+                          title={value}
+                          onClick={() =>
+                            editorActions.updateElement(
+                              selected.id,
+                              {
+                                textAlign: value,
+                              },
+                              false,
+                            )
+                          }
+                        >
+                          <I size={15} />
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="core-icon-controls">
+                    <span>Case</span>
+                    {CASE_BUTTONS.map(({value,Icon:I}) => {
+                      return (
+                        <button
+                          key={value}
+                          className={
+                            (selected.textCase ?? "none") === value
+                              ? "active"
+                              : ""
+                          }
+                          title={value}
+                          onClick={() =>
+                            editorActions.updateElement(
+                              selected.id,
+                              {
+                                textCase: value,
+                              },
+                              false,
+                            )
+                          }
+                        >
+                          <I size={15} />
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="core-text-motion">
+                    <div className="core-section-head">
+                      <span>TEXT ANIMATION</span>
+                      <b>Presets</b>
+                    </div>
+                    <div className="core-motion-presets">
+                      {TEXT_MOTION.map((type) => (
+                        <button
+                          key={type}
+                          className={
+                            (selected.textAnimation?.type ?? "none") === type
+                              ? "active"
+                              : ""
+                          }
+                          onClick={() =>
+                            editorActions.updateElement(
+                              selected.id,
+                              {
+                                textAnimation: {
+                                  type,
+                                  typeSpeed:
+                                    selected.textAnimation?.typeSpeed ?? 60,
+                                  cursor:
+                                    selected.textAnimation?.cursor ?? true,
+                                  start: state.playhead,
+                                  ...TEXT_MOTION_DEFAULTS[type],
+                                },
+                              },
+                              false,
+                            )
+                          }
+                        >
+                          <i className={`motion-${type}`}>Aa</i>
+                          <span>{pretty(type)}</span>
+                        </button>
+                      ))}
+                    </div>
+                    {selected.textAnimation?.type !== "none" && (
+                      <div className="core-motion-settings">
+                        <label>
+                          Duration, sec
+                          <input
+                            type="number"
+                            min=".1"
+                            max="8"
+                            step=".05"
+                            value={selected.textAnimation?.duration ?? 0.65}
+                            onChange={(e) =>
+                              editorActions.updateElement(
+                                selected.id,
+                                {
+                                  textAnimation: {
+                                    ...selected.textAnimation!,
+                                    duration: Number(e.target.value),
+                                  },
+                                },
+                                false,
+                              )
+                            }
+                          />
+                        </label>
+                        <label>
+                          Easing
+                          <select
+                            value={selected.textAnimation?.easing ?? "outCubic"}
+                            onChange={(e) =>
+                              editorActions.updateElement(
+                                selected.id,
+                                {
+                                  textAnimation: {
+                                    ...selected.textAnimation!,
+                                    easing: e.target.value,
+                                  },
+                                },
+                                false,
+                              )
+                            }
+                          >
+                            <option value="linear">Linear</option>
+                            <option value="outCubic">Smooth out</option>
+                            <option value="inOutCubic">Smooth in/out</option>
+                            <option value="outBack">Overshoot</option>
+                            <option value="outBounce">Bounce</option>
+                          </select>
+                        </label>
+                        <label>
+                          Distance, px
+                          <input
+                            type="number"
+                            min="0"
+                            max="500"
+                            step="1"
+                            value={selected.textAnimation?.distance ?? 40}
+                            onChange={(e) =>
+                              editorActions.updateElement(
+                                selected.id,
+                                {
+                                  textAnimation: {
+                                    ...selected.textAnimation!,
+                                    distance: Number(e.target.value),
+                                  },
+                                },
+                                false,
+                              )
+                            }
+                          />
+                        </label>
+                      </div>
+                    )}
+                    {selected.textAnimation?.type === "typewriter" && (
+                      <>
+                        <label>
+                          Speed, ms/character
+                          <input
+                            type="number"
+                            min="10"
+                            max="1000"
+                            step="10"
+                            value={selected.textAnimation.typeSpeed}
+                            onChange={(e) =>
+                              editorActions.updateElement(
+                                selected.id,
+                                {
+                                  textAnimation: {
+                                    ...selected.textAnimation!,
+                                    typeSpeed: Number(e.target.value),
+                                  },
+                                },
+                                false,
+                              )
+                            }
+                          />
+                        </label>
+                        <label className="core-check">
+                          <input
+                            type="checkbox"
+                            checked={selected.textAnimation.cursor}
+                            onChange={(e) =>
+                              editorActions.updateElement(
+                                selected.id,
+                                {
+                                  textAnimation: {
+                                    ...selected.textAnimation!,
+                                    cursor: e.target.checked,
+                                  },
+                                },
+                                false,
+                              )
+                            }
+                          />{" "}
+                          Blinking cursor
+                        </label>
+                      </>
+                    )}
+                  </div>
+                </section>
+              )}
+              {selectedKey && (
+                <section className="core-easing">
+                  <div className="core-section-head">
+                    <span>KEYFRAME GROUP</span>
+                    <b>Motion / Easing</b>
+                  </div>
+                  <p className="core-motion-help">
+                    Compare the same object over the same distance. Hover to
+                    preview; the selected preset keeps playing.
+                  </p>
+                  <div className="core-easing-presets">
+                    {EASING_PRESETS.filter((p) => p !== "custom").map(
+                      (preset) => (
+                        <button
+                          key={preset}
+                          className={`core-ease-card ${selectedKey.easing === preset ? "active" : ""}`}
+                          style={easingPreviewStyle(preset)}
+                          onClick={() => setEasing(preset)}
+                          title={`Apply ${pretty(preset)}`}
+                        >
+                          <span className="core-ease-demo" aria-hidden="true">
+                            <i />
+                          </span>
+                          <span className="core-ease-name">
+                            {pretty(preset)}
+                          </span>
+                        </button>
+                      ),
+                    )}
+                  </div>
+                  <button
+                    className={`core-custom-ease ${selectedKey.easing === "custom" ? "active" : ""}`}
+                    onClick={() =>
+                      setEasing(
+                        "custom",
+                        BEZIER_FOR_PRESET[selectedKey.easing ?? "linear"] ??
+                          curve,
+                      )
+                    }
+                  >
+                    Edit selected as cubic Bézier
+                  </button>
+                  {selectedKey.easing === "custom" && (
+                    <div className="core-bezier-editor">
+                      <BezierEditor
+                        value={curve}
+                        onChange={(value) =>
+                          setEasing("custom", value as Bezier)
+                        }
+                        width={260}
+                        height={170}
+                        padding={[14, 14, 22, 22]}
+                      />
+                      <div className="core-bezier-fields">
+                        {curve.map((v, i) => (
+                          <input
+                            key={i}
+                            aria-label={
+                              [
+                                "Control 1 X",
+                                "Control 1 Y",
+                                "Control 2 X",
+                                "Control 2 Y",
+                              ][i]
+                            }
+                            title={
+                              [
+                                "Control 1 X",
+                                "Control 1 Y",
+                                "Control 2 X",
+                                "Control 2 Y",
+                              ][i]
+                            }
+                            type="number"
+                            min={i === 0 || i === 2 ? 0 : -3}
+                            max={i === 0 || i === 2 ? 1 : 3}
+                            step="0.01"
+                            value={v}
+                            onChange={(e) => {
+                              const next = [...curve] as Bezier;
+                              const value = Number(e.target.value);
+                              next[i] =
+                                i === 0 || i === 2
+                                  ? Math.max(0, Math.min(1, value))
+                                  : Math.max(-3, Math.min(3, value));
+                              setEasing("custom", next);
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <button
+                    className="danger"
+                    onClick={() => editorActions.deleteSelectedKeyframe()}
+                  >
+                    Delete keyframe
+                  </button>
+                </section>
+              )}
+              <TransformInspector element={selected} />
+            </>
+          )}
+        </aside>
+      </main>
+      <TimelineV2 />
+    </div>
+  );
 }

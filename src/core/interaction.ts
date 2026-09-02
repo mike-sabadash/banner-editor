@@ -6,8 +6,9 @@ export const MAGNET_PX = 8;
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
-export function snapTimelineTime(raw: number, duration: number, width: number, extraTargets: number[] = []) {
-  const frame = clamp(Math.round(raw * FRAME_RATE) / FRAME_RATE, 0, duration);
+export function snapTimelineTime(raw: number, duration: number, width: number, extraTargets: number[] = [], frameRate = FRAME_RATE, enabled = true) {
+  if (!enabled) return clamp(raw, 0, duration);
+  const frame = clamp(Math.round(raw * frameRate) / frameRate, 0, duration);
   const grid = clamp(Math.round(raw / GRID_STEP) * GRID_STEP, 0, duration);
   const candidates = [grid, ...extraTargets.filter((value) => value >= 0 && value <= duration)];
   const nearest = candidates.reduce((best, value) => Math.abs(value - raw) < Math.abs(best - raw) ? value : best, grid);

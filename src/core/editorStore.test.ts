@@ -65,4 +65,29 @@ describe("linked format instances", () => {
     editorActions.reorderElement(first.id,1);
     expect(getEditorState().elementsByFormat.master.map((item)=>item.id)).toEqual([second.id,first.id]);
   });
+
+  it("edits campaign duration and constrains layers and keys", () => {
+    editorActions.addText();
+    const id=getEditorState().elementsByFormat.master[0].id;
+    editorActions.setPlayhead(5);
+    editorActions.toggleKeyAtCurrent(id);
+    editorActions.setDuration(3);
+    expect(getEditorState().duration).toBe(3);
+    expect(getEditorState().elementsByFormat.master[0].outPoint).toBe(3);
+    expect(getEditorState().keyframesByFormat.master[id].every((frame)=>frame.time<=3)).toBe(true);
+    editorActions.setDuration(8);
+    expect(getEditorState().elementsByFormat.master[0].outPoint).toBe(8);
+  });
+
+  it("hides a linked layer locally and removes it campaign-wide explicitly", () => {
+    editorActions.addText();
+    const id=getEditorState().elementsByFormat.master[0].id;
+    editorActions.setFormat("medium");
+    editorActions.select(id);
+    editorActions.setSelectedVisibility(false,"format");
+    expect(getEditorState().elementsByFormat.medium[0].visible).toBe(false);
+    expect(getEditorState().elementsByFormat.master[0].visible).toBe(true);
+    editorActions.removeSelectedScoped("campaign");
+    expect(Object.values(getEditorState().elementsByFormat).flat().some((item)=>item.id===id)).toBe(false);
+  });
 });

@@ -1,7 +1,15 @@
 .core-app{grid-template-rows:54px minmax(0,1fr) var(--timeline-height,232px)}
 .core-timeline{grid-template-rows:36px minmax(0,1fr)}
 .core-timeline-toolbar{height:36px}
-.core-timeline-toolbar button{width:26px;height:26px}
+.core-timeline-toolbar>button{width:26px;height:26px}
+.core-timecode{min-width:45px;color:#5f655d;font-variant-numeric:tabular-nums}
+.core-timeline-tools{display:flex;align-items:center;gap:5px;margin-left:8px}
+.core-timeline-tools label{height:26px;display:flex;align-items:center;gap:4px;padding:0 6px;border:1px solid #d6d9d3;border-radius:6px;background:#fff;color:#777d74;font-size:8px}
+.core-timeline-tools input{width:42px;height:20px;border:0;border-left:1px solid #e2e4df;padding:0 3px;outline:0;font:inherit;font-size:10px;font-variant-numeric:tabular-nums}
+.core-timeline-tools select{height:20px;border:0;border-left:1px solid #e2e4df;background:#fff;padding-left:4px;font-size:9px;outline:0}
+.core-timeline-tools button{width:auto;height:26px;padding:0 7px;border-radius:6px;display:flex;gap:4px;font-size:9px}
+.core-timeline-tools button.active{border-color:#879cf1;background:#edf0ff;color:#244fc1}
+.core-timeline-tools button:disabled{opacity:.35;cursor:default}
 .core-timeline-resizer{position:absolute;z-index:40;left:0;right:0;top:-5px;width:100%;height:10px;padding:0;border:0;background:transparent;cursor:row-resize;touch-action:none}
 .core-timeline-resizer span{position:absolute;left:50%;top:3px;width:36px;height:3px;border-radius:3px;background:#aeb3aa;opacity:0;transform:translateX(-50%);transition:opacity .12s}
 .core-timeline-resizer:hover span,.core-timeline-resizer:focus-visible span{opacity:1}
@@ -18,6 +26,9 @@
 .core-link-mode button{height:28px;border:1px solid #cfd4cc;border-radius:5px;background:#f7f8f5;text-align:left;padding:0 8px;font-size:9px;cursor:pointer}
 .core-link-mode button.active{border-color:#8ca0ed;background:#edf0ff;color:#284cbd;font-weight:700}
 .core-link-mode small{font-size:8px;line-height:1.35;color:#7b8178}
+.core-object-actions{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.core-object-actions button{min-width:0;padding:0 6px;font-size:8px}
+.core-object-actions button.danger{grid-column:1/-1;color:#a3473e;border-color:#e4c4c0;background:#fff8f7}
 .core-back{width:auto!important;height:26px!important;border:0!important;background:transparent!important;padding:0 4px!important;color:#626860;font-size:9px}
 .core-back:before{content:"←";margin-right:4px}
 .core-ai-status,.core-ai-button,.core-ai-cancel,.core-legacy-adapt{display:none!important}
