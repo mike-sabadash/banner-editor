@@ -61,6 +61,9 @@
         cursor: pointer;
         margin-top: 5px;
       }
+      button:active {
+        transform: translateY(1px);
+      }
       button.primary {
         background: #285be7;
         border-color: #285be7;
@@ -138,8 +141,8 @@
         ><button id="motion-all">Sync motion everywhere</button>
       </div>
       <div class="hint">
-        Content syncs by slot. Motion copies timing and relative movement, so
-        every format keeps its local layout.
+        Content syncs by slot. Motion copies manual keyframes and Motion styles,
+        while every format keeps its local layout.
       </div>
     </div>
     <div class="card">
@@ -161,11 +164,18 @@
         });
       document.querySelector("#link").onclick = () =>
         send("link", { slotId: document.querySelector("#slot").value });
-      document.querySelector("#sync").onclick = () => send("sync");
-      document.querySelector("#motion-family").onclick = () =>
+      document.querySelector("#sync").onclick = () => {
+        status.textContent = "Syncing selected slot…";
+        send("sync");
+      };
+      document.querySelector("#motion-family").onclick = () => {
+        status.textContent = "Syncing Motion to family…";
         send("sync-motion", { scope: "family" });
-      document.querySelector("#motion-all").onclick = () =>
+      };
+      document.querySelector("#motion-all").onclick = () => {
+        status.textContent = "Syncing Motion everywhere…";
         send("sync-motion", { scope: "all" });
+      };
       document.querySelector("#export").onclick = () => send("export");
       onmessage = (event) => {
         const m = event.data.pluginMessage;
@@ -180,7 +190,7 @@
         if (m.type === "motion-synced")
           status.textContent =
             m.error ||
-            `Copied ${m.tracks} Motion track(s) to ${m.count} ${m.scope === "family" ? "family" : "campaign"} layer(s).`;
+            `Copied ${m.tracks || 0} manual track(s) and ${m.styles || 0} Motion style(s) to ${m.count} ${m.scope === "family" ? "family" : "campaign"} layer(s).`;
         if (m.type === "error") status.textContent = `Error: ${m.message}`;
         if (m.type === "exported") {
           const blob = new Blob([JSON.stringify(m.document, null, 2)], {
