@@ -44,8 +44,8 @@
         <button id="motion-family">Sync motion to family</button>
         <button id="motion-all">Sync motion everywhere</button>
       </div>
-      <div class="status sync-status" id="sync-status">Select an animated layer, or its format if it contains only one animated layer.</div>
-      <div class="hint">Each format now has its own Motion timeline. Sync copies the selected layer's Motion to matching campaign slots.</div>
+      <div class="status sync-status" id="sync-status">Select the animated layer, or select its format and choose the campaign slot above.</div>
+      <div class="hint">If a format is selected, Motion sync uses the chosen campaign slot to find the source layer. Effective Motion keyframes are copied even when Figma does not expose them as manual tracks.</div>
     </div>
     <div class="card">
       <b>3. Send to web editor</b>
@@ -56,23 +56,24 @@
     <script>
       const status=document.querySelector('#status');
       const syncStatus=document.querySelector('#sync-status');
+      const slot=document.querySelector('#slot');
       const familyBtn=document.querySelector('#motion-family');
       const allBtn=document.querySelector('#motion-all');
       const send=(type,extra={})=>parent.postMessage({pluginMessage:{type,...extra}},'*');
       const busy=(button,text)=>{button.dataset.label=button.textContent;button.textContent=text;button.classList.add('busy');syncStatus.textContent=text;};
       const done=(message,ok=true)=>{for(const button of [familyBtn,allBtn]){if(button.dataset.label){button.textContent=button.dataset.label;delete button.dataset.label;}button.classList.remove('busy','success');}syncStatus.textContent=message;if(ok){const button=window.__lastMotionButton;if(button){button.classList.add('success');setTimeout(()=>button.classList.remove('success'),900);}}};
       document.querySelector('#create').onclick=()=>send('create',{name:document.querySelector('#name').value,duration:Number(document.querySelector('#duration').value)});
-      document.querySelector('#link').onclick=()=>send('link',{slotId:document.querySelector('#slot').value});
+      document.querySelector('#link').onclick=()=>send('link',{slotId:slot.value});
       document.querySelector('#sync').onclick=()=>{syncStatus.textContent='Syncing content…';send('sync');};
-      familyBtn.onclick=()=>{window.__lastMotionButton=familyBtn;busy(familyBtn,'Syncing…');send('sync-motion',{scope:'family'});};
-      allBtn.onclick=()=>{window.__lastMotionButton=allBtn;busy(allBtn,'Syncing…');send('sync-motion',{scope:'all'});};
+      familyBtn.onclick=()=>{window.__lastMotionButton=familyBtn;busy(familyBtn,'Syncing…');send('sync-motion',{scope:'family',slotId:slot.value});};
+      allBtn.onclick=()=>{window.__lastMotionButton=allBtn;busy(allBtn,'Syncing…');send('sync-motion',{scope:'all',slotId:slot.value});};
       document.querySelector('#export').onclick=()=>send('export');
       onmessage=(event)=>{
         const m=event.data.pluginMessage;if(!m)return;
         if(m.type==='created')status.textContent='Created five independent linked format components.';
         if(m.type==='linked')status.textContent=`Linked ${m.count} selected layer(s).`;
         if(m.type==='synced'){const text=m.error||`Updated ${m.count} matching layer(s).`;syncStatus.textContent=text;status.textContent=text;}
-        if(m.type==='motion-synced'){const text=m.error||`${m.sourceName||'Layer'}: Motion copied to ${m.count} ${m.scope==='family'?'family':'campaign'} format(s)${m.migrated?' · old variant set converted to independent formats':''}.`;done(text,!m.error);status.textContent=text;}
+        if(m.type==='motion-synced'){const text=m.error||`${m.sourceName||'Layer'} (${m.slotId||'slot'}): Motion copied to ${m.count} ${m.scope==='family'?'family':'campaign'} format(s).`;done(text,!m.error);status.textContent=text;}
         if(m.type==='error'){done(`Error: ${m.message}`,false);status.textContent=`Error: ${m.message}`;}
         if(m.type==='exported'){
           const blob=new Blob([JSON.stringify(m.document,null,2)],{type:'application/json'}),a=document.createElement('a');
