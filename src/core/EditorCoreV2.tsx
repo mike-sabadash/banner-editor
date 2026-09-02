@@ -120,6 +120,12 @@ const easingPreviewStyle = (preset: string) =>
   ({
     "--ease-preview": `linear(${Array.from({ length: 41 }, (_, index) => easeProgress(index / 40, preset).toFixed(4)).join(",")})`,
   }) as CSSProperties;
+const EASING_DESCRIPTIONS: Record<string, string> = {
+  linear: "Constant speed", inCubic: "Slow start", outCubic: "Soft stop",
+  inOutCubic: "Soft start and stop", inSine: "Gentle start", outSine: "Gentle stop",
+  inOutSine: "Gentle both ends", outBack: "Overshoot at end",
+  inBack: "Pull back, then move", outBounce: "Bounce at end",
+};
 
 export default function EditorCoreV2() {
   const state = useEditorState(),
@@ -1027,9 +1033,7 @@ export default function EditorCoreV2() {
                           <span className="core-ease-demo" aria-hidden="true">
                             <i />
                           </span>
-                          <span className="core-ease-name">
-                            {pretty(preset)}
-                          </span>
+                          <span className="core-ease-name"><b>{pretty(preset)}</b><small>{EASING_DESCRIPTIONS[preset] ?? "Timing curve"}</small></span>
                         </button>
                       ),
                     )}
