@@ -4,6 +4,7 @@ import EditorCoreV2 from "./core/EditorCoreV2";
 import CampaignHub from "./campaign/CampaignHub";
 import "./styles.css";
 import "./campaign/campaign.css";
+import "./campaign/delivery.css";
 
 function Product(){
   const params=new URLSearchParams(location.search);
