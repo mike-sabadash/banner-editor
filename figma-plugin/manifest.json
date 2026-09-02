@@ -2,7 +2,7 @@
   "name": "Banner Campaign MVP",
   "id": "banner-campaign-mvp-local",
   "api": "1.0.0",
-  "main": "code-autosource.js",
+  "main": "code-timeline-safe.js",
   "ui": "ui.html",
   "editorType": ["figma"],
   "documentAccess": "dynamic-page",
