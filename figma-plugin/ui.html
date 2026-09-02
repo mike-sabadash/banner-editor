@@ -72,6 +72,15 @@
         grid-template-columns: 1fr 72px;
         gap: 7px;
       }
+      .motion-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 7px;
+        margin-top: 5px;
+      }
+      .motion-grid button {
+        font-size: 10px;
+      }
       .status {
         min-height: 28px;
         padding: 8px;
@@ -124,8 +133,13 @@
         </select></label
       ><button id="link">Assign slot to selection</button
       ><button id="sync">Sync selected slot across formats</button>
+      <div class="motion-grid">
+        <button id="motion-family">Sync motion to family</button
+        ><button id="motion-all">Sync motion everywhere</button>
+      </div>
       <div class="hint">
-        Geometry and Motion stay local. Text/fill is copied by slot.
+        Content syncs by slot. Motion copies timing and relative movement, so
+        every format keeps its local layout.
       </div>
     </div>
     <div class="card">
@@ -148,6 +162,10 @@
       document.querySelector("#link").onclick = () =>
         send("link", { slotId: document.querySelector("#slot").value });
       document.querySelector("#sync").onclick = () => send("sync");
+      document.querySelector("#motion-family").onclick = () =>
+        send("sync-motion", { scope: "family" });
+      document.querySelector("#motion-all").onclick = () =>
+        send("sync-motion", { scope: "all" });
       document.querySelector("#export").onclick = () => send("export");
       onmessage = (event) => {
         const m = event.data.pluginMessage;
@@ -159,6 +177,10 @@
         if (m.type === "synced")
           status.textContent =
             m.error || `Updated ${m.count} matching layer(s).`;
+        if (m.type === "motion-synced")
+          status.textContent =
+            m.error ||
+            `Copied ${m.tracks} Motion track(s) to ${m.count} ${m.scope === "family" ? "family" : "campaign"} layer(s).`;
         if (m.type === "error") status.textContent = `Error: ${m.message}`;
         if (m.type === "exported") {
           const blob = new Blob([JSON.stringify(m.document, null, 2)], {
