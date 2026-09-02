@@ -34,6 +34,7 @@ export type BannerElement = {
   outPoint?: number;
   locked: boolean;
   visible: boolean;
+  contentLinked?: boolean;
 };
 export type Format = {
   id: string;
@@ -86,6 +87,7 @@ export const createTextElement = (
   textAnimation: { type: "none", typeSpeed: 60, cursor: true },
   locked: false,
   visible: true,
+  contentLinked: true,
 });
 export const platformProfiles = [
   { id: "google", name: "Google Ads HTML5", maxZip: 150, maxDuration: 30, click: "clickTag", maxFiles: null },

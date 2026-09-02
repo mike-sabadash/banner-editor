@@ -174,6 +174,7 @@ export default function CanvasV2() {
   const [spaceDown, setSpaceDown] = useState(false);
   const [panning, setPanning] = useState(false);
   const [guides, setGuides] = useState<Array<"left"|"right"|"top"|"bottom">>([]);
+  const [assetDragOver,setAssetDragOver]=useState(false);
 
   useEffect(() => {
     const node=shellRef.current;if(!node)return;
@@ -185,7 +186,7 @@ export default function CanvasV2() {
   useEffect(() => {
     const editable = (target: EventTarget | null) => target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement;
     const down = (event: KeyboardEvent) => {
-      if (event.code !== "Space" || editable(event.target)) return;
+      if (event.code !== "Space" || editable(event.target) || !shellRef.current?.matches(":hover")) return;
       event.preventDefault();
       setSpaceDown(true);
     };
@@ -219,7 +220,10 @@ export default function CanvasV2() {
   };
   return <div
     ref={shellRef}
-    className={`core-canvas-shell ${spaceDown ? "can-pan" : ""} ${panning ? "is-panning" : ""}`}
+    className={`core-canvas-shell ${spaceDown ? "can-pan" : ""} ${panning ? "is-panning" : ""} ${assetDragOver?"asset-drag-over":""}`}
+    onDragOver={(event)=>{if(event.dataTransfer.types.includes("application/x-banner-asset")){event.preventDefault();event.dataTransfer.dropEffect="copy";setAssetDragOver(true)}}}
+    onDragLeave={(event)=>{if(!event.currentTarget.contains(event.relatedTarget as Node))setAssetDragOver(false)}}
+    onDrop={(event)=>{event.preventDefault();setAssetDragOver(false);const id=event.dataTransfer.getData("application/x-banner-asset");if(!id)return;const stage=event.currentTarget.querySelector(".konvajs-content")?.getBoundingClientRect();if(!stage)return;editorActions.addAssetToCanvas(id,{x:Math.max(0,Math.min(96,(event.clientX-stage.left)/stage.width*100)),y:Math.max(0,Math.min(96,(event.clientY-stage.top)/stage.height*100))})}}
     onPointerDown={beginPan}
     onPointerMove={movePan}
     onPointerUp={endPan}

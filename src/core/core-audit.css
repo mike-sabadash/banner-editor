@@ -1,0 +1,23 @@
+.core-app{grid-template-rows:54px minmax(0,1fr) var(--timeline-height,232px)}
+.core-timeline{grid-template-rows:36px minmax(0,1fr)}
+.core-timeline-toolbar{height:36px}
+.core-timeline-toolbar button{width:26px;height:26px}
+.core-timeline-resizer{position:absolute;z-index:40;left:0;right:0;top:-5px;width:100%;height:10px;padding:0;border:0;background:transparent;cursor:row-resize;touch-action:none}
+.core-timeline-resizer span{position:absolute;left:50%;top:3px;width:36px;height:3px;border-radius:3px;background:#aeb3aa;opacity:0;transform:translateX(-50%);transition:opacity .12s}
+.core-timeline-resizer:hover span,.core-timeline-resizer:focus-visible span{opacity:1}
+.core-layer-head,.core-ruler{position:sticky;top:0;z-index:12;height:30px;background:#fafbf8}
+.core-ruler{z-index:11}
+.core-ruler>i.medium{top:12px}.core-ruler>i.minor{top:20px}.core-ruler>i span{top:5px;font-size:8px}
+.core-layer-cell,.core-track{height:28px}
+.core-layer-cell{grid-template-columns:22px minmax(0,1fr) 24px 22px;padding:0 4px}
+.core-layer-cell button{height:22px}.core-layer-name{font-size:9px!important}
+.core-key{width:9px;height:9px}.core-range-handle{height:18px}
+.core-canvas-shell.asset-drag-over{outline:2px solid #2878ff;outline-offset:-2px;background-color:#edf1ff}
+.core-asset[draggable=true]{cursor:grab}.core-asset[draggable=true]:active{cursor:grabbing}
+.core-link-mode{display:grid;gap:4px;margin:12px 0 8px;padding:8px;border:1px solid #d9ddd6;border-radius:7px;background:#fff}
+.core-link-mode button{height:28px;border:1px solid #cfd4cc;border-radius:5px;background:#f7f8f5;text-align:left;padding:0 8px;font-size:9px;cursor:pointer}
+.core-link-mode button.active{border-color:#8ca0ed;background:#edf0ff;color:#284cbd;font-weight:700}
+.core-link-mode small{font-size:8px;line-height:1.35;color:#7b8178}
+.core-back{width:auto!important;height:26px!important;border:0!important;background:transparent!important;padding:0 4px!important;color:#626860;font-size:9px}
+.core-back:before{content:"←";margin-right:4px}
+.core-ai-status,.core-ai-button,.core-ai-cancel,.core-legacy-adapt{display:none!important}

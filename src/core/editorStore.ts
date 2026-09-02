@@ -19,6 +19,7 @@ export type ProjectState = {
   selectedKeyframeIds: string[];
   playhead: number;
   canvasZoom: number;
+  timelineHeight: number;
 };
 
 const STORAGE_KEY="banner-editor:core-v2";
@@ -26,7 +27,7 @@ const blankElements=()=>Object.fromEntries(formats.map((f)=>[f.id,[] as BannerEl
 const blankFrames=()=>Object.fromEntries(formats.map((f)=>[f.id,{} as FormatKeyframes]));
 const blankBackgrounds=()=>Object.fromEntries(formats.map((f)=>[f.id,{color:"#ffffff"}]));
 const blankOverrides=()=>Object.fromEntries(formats.map((f)=>[f.id,false]));
-const fresh=():ProjectState=>({version:2,title:"Untitled campaign",duration:6,activeFormat:"master",elementsByFormat:blankElements(),keyframesByFormat:blankFrames(),backgrounds:blankBackgrounds(),assets:[],settings:{...defaultBannerSettings},formatOverrides:blankOverrides(),selectedId:null,selectedIds:[],selectedKeyframeId:null,selectedKeyframeIds:[],playhead:0,canvasZoom:1});
+const fresh=():ProjectState=>({version:2,title:"Untitled campaign",duration:6,activeFormat:"master",elementsByFormat:blankElements(),keyframesByFormat:blankFrames(),backgrounds:blankBackgrounds(),assets:[],settings:{...defaultBannerSettings},formatOverrides:blankOverrides(),selectedId:null,selectedIds:[],selectedKeyframeId:null,selectedKeyframeIds:[],playhead:0,canvasZoom:1,timelineHeight:232});
 const load=():ProjectState=>{try{const raw=localStorage.getItem(STORAGE_KEY),parsed=raw?JSON.parse(raw):null;return parsed?{...fresh(),...parsed,selectedIds:parsed.selectedIds??(parsed.selectedId?[parsed.selectedId]:[]),selectedKeyframeIds:parsed.selectedKeyframeIds??(parsed.selectedKeyframeId?[parsed.selectedKeyframeId]:[]),formatOverrides:{...blankOverrides(),...(parsed.formatOverrides??{})}}:fresh()}catch{return fresh()}};
 let state=load();
 let past:ProjectState[]=[],future:ProjectState[]=[],historyGroup="",historyTimer:ReturnType<typeof setTimeout>|null=null;
@@ -52,20 +53,32 @@ export const editorActions={
   setBackgroundColor(color:string){patch((s)=>({backgrounds:{...s.backgrounds,[s.activeFormat]:{color}}}))},
   addAsset(asset:AssetLibraryItem){patch((s)=>({assets:[...s.assets.filter((item)=>item.id!==asset.id),asset]}))},
   removeAsset(id:string){patch((s)=>({assets:s.assets.filter((item)=>item.id!==id)}))},
-  addAssetToCanvas(id:string){const asset=state.assets.find((item)=>item.id===id);if(asset)this.addImage(asset.name,asset.assetUrl)},
+  addAssetToCanvas(id:string,position?:{x:number;y:number}){const asset=state.assets.find((item)=>item.id===id);if(asset)this.addImage(asset.name,asset.assetUrl,position)},
   setPlayhead(time:number,keepKeySelection=false){patch({playhead:Math.max(0,Math.min(state.duration,time)),...(keepKeySelection?{}:{selectedKeyframeId:null})},{history:false})},
   setCanvasZoom(zoom:number){patch({canvasZoom:Math.max(.25,Math.min(3,zoom))},{history:false})},
+  setTimelineHeight(height:number){patch({timelineHeight:Math.max(116,Math.min(window.innerHeight-150,height))},{history:false})},
   select(id:string|null,additive=false){if(!id){patch({selectedId:null,selectedIds:[],selectedKeyframeId:null,selectedKeyframeIds:[]},{history:false});return}const current=state.selectedIds??[];const selectedIds=additive?(current.includes(id)?current.filter((item)=>item!==id):[...current,id]):[id];patch({selectedId:selectedIds.at(-1)??null,selectedIds,selectedKeyframeId:null,selectedKeyframeIds:[]},{history:false})},
   setFormat(id:string){patch((s)=>{let next:Partial<ProjectState>={activeFormat:id,selectedId:null,selectedIds:[],selectedKeyframeId:null,selectedKeyframeIds:[],playhead:0};if(id!=="master"&&!(s.elementsByFormat[id]?.length)){const format=formats.find((f)=>f.id===id);if(format)next={...next,elementsByFormat:{...s.elementsByFormat,[id]:adaptMasterToFormat(s.elementsByFormat.master??[],format).elements},keyframesByFormat:{...s.keyframesByFormat,[id]:cloneFrames(s.keyframesByFormat.master??{})}}}return next},{history:false})},
   adaptAll(force=true){patch((s)=>({...adaptedState(s,force),formatOverrides:force?blankOverrides():s.formatOverrides}))},
   resetFormatFromMaster(id=state.activeFormat){if(id==="master")return;patch((s)=>{const format=formats.find((f)=>f.id===id);if(!format)return{};return{elementsByFormat:{...s.elementsByFormat,[id]:adaptMasterToFormat(s.elementsByFormat.master??[],format).elements},keyframesByFormat:{...s.keyframesByFormat,[id]:cloneFrames(s.keyframesByFormat.master??{})},formatOverrides:{...s.formatOverrides,[id]:false},selectedId:null,selectedKeyframeId:null,playhead:0}})},
   addText(){const el=createTextElement();patch((s)=>{const elementsByFormat={...s.elementsByFormat,[s.activeFormat]:[...(s.elementsByFormat[s.activeFormat]??[]),el]};const base={elementsByFormat,selectedId:el.id,selectedIds:[el.id],formatOverrides:touchOverride(s)};return s.activeFormat==="master"?{...base,...adaptedState({...s,elementsByFormat} as ProjectState,false)}:base})},
-  addImage(name:string,url:string){const el:BannerElement={id:crypto.randomUUID(),kind:"image",name,text:"",assetUrl:url,x:25,y:25,width:40,scale:100,rotation:0,opacity:100,fontFamily:"Arial",fontSize:16,lineHeight:100,color:"#000000",inPoint:0,outPoint:state.duration,locked:false,visible:true};patch((s)=>{const elementsByFormat={...s.elementsByFormat,[s.activeFormat]:[...(s.elementsByFormat[s.activeFormat]??[]),el]};const base={elementsByFormat,selectedId:el.id,selectedIds:[el.id],formatOverrides:touchOverride(s)};return s.activeFormat==="master"?{...base,...adaptedState({...s,elementsByFormat} as ProjectState,false)}:base})},
+  addImage(name:string,url:string,position?:{x:number;y:number}){const el:BannerElement={id:crypto.randomUUID(),kind:"image",name,text:"",assetUrl:url,x:position?.x??25,y:position?.y??25,width:40,scale:100,rotation:0,opacity:100,fontFamily:"Arial",fontSize:16,lineHeight:100,color:"#000000",inPoint:0,outPoint:state.duration,locked:false,visible:true,contentLinked:true};patch((s)=>{const elementsByFormat={...s.elementsByFormat,[s.activeFormat]:[...(s.elementsByFormat[s.activeFormat]??[]),el]};const base={elementsByFormat,selectedId:el.id,selectedIds:[el.id],formatOverrides:touchOverride(s)};return s.activeFormat==="master"?{...base,...adaptedState({...s,elementsByFormat} as ProjectState,false)}:base})},
   nudgeSelected(dxPixels:number,dyPixels:number){const format=formats.find((f)=>f.id===state.activeFormat);if(!format)return;for(const id of state.selectedIds??[]){const target=elementList().find((e)=>e.id===id);if(!target||target.locked)continue;this.updateElement(id,{x:currentValue(target,"x")+dxPixels/format.width*100,y:currentValue(target,"y")+dyPixels/format.height*100},true)}},
   setLayerRange(id:string,inPoint:number,outPoint:number){patch((s)=>({elementsByFormat:{...s.elementsByFormat,[s.activeFormat]:(s.elementsByFormat[s.activeFormat]??[]).map((e)=>e.id===id?{...e,inPoint:Math.max(0,Math.min(outPoint-.03,inPoint)),outPoint:Math.min(s.duration,Math.max(inPoint+.03,outPoint))}:e)}}),{group:`range:${id}`})},
   updateElement(id:string,values:Partial<BannerElement>,keyed=true){const target=elementList().find((e)=>e.id===id);if(!target)return;const anim=Object.entries(values).filter(([k])=>["x","y","scale","rotation","opacity"].includes(k)) as [AnimatableProperty,number][];const stat=Object.fromEntries(Object.entries(values).filter(([k])=>!["x","y","scale","rotation","opacity"].includes(k))) as Partial<BannerElement>;const hasKey=(frameMap()[id]??[]).some((f)=>Math.abs(f.time-state.playhead)<.035);
     const group=`element:${id}:${Object.keys(values).sort().join(",")}`;
-    if(Object.keys(stat).length||!keyed||(!hasKey&&state.playhead<=.001))patch((s)=>{const elementsByFormat={...s.elementsByFormat,[s.activeFormat]:(s.elementsByFormat[s.activeFormat]??[]).map((e)=>e.id===id?{...e,...stat,...(!keyed||(!hasKey&&s.playhead<=.001)?Object.fromEntries(anim):{})}:e)};const base={elementsByFormat,formatOverrides:touchOverride(s)};return s.activeFormat==="master"?{...base,...adaptedState({...s,elementsByFormat} as ProjectState,false)}:base},{group});
+    if(Object.keys(stat).length||!keyed||(!hasKey&&state.playhead<=.001))patch((s)=>{
+      const source=(s.elementsByFormat[s.activeFormat]??[]).find((e)=>e.id===id);
+      const contentKeys=new Set(["text","assetUrl","name","fontFamily","color","textCase"]);
+      const shared=source?.contentLinked!==false&&Object.keys(stat).some((key)=>contentKeys.has(key));
+      const sharedPatch=Object.fromEntries(Object.entries(stat).filter(([key])=>contentKeys.has(key)));
+      const elementsByFormat=Object.fromEntries(Object.entries(s.elementsByFormat).map(([formatId,list])=>[formatId,list.map((e)=>e.id===id?{
+        ...e,
+        ...(formatId===s.activeFormat?stat:shared?sharedPatch:{}),
+        ...(formatId===s.activeFormat&&(!keyed||(!hasKey&&s.playhead<=.001))?Object.fromEntries(anim):{}),
+      }:e)]));
+      return{elementsByFormat,formatOverrides:touchOverride(s)};
+    },{group});
     if(keyed&&anim.length&&(state.playhead>.001||hasKey))this.upsertProperties(id,Object.fromEntries(anim),"inOutCubic",[.42,0,.58,1],group);
   },
   upsertProperties(id:string,values:Partial<Record<AnimatableProperty,number>>,easing:Easing="inOutCubic",bezier:Bezier=[.42,0,.58,1],historyGroup?:string){patch((s)=>{let list=[...(s.keyframesByFormat[s.activeFormat]?.[id]??[])];for(const[property,value]of Object.entries(values) as [AnimatableProperty,number][]){const existing=list.find((f)=>f.property===property&&Math.abs(f.time-s.playhead)<.035);const frame:Keyframe={id:existing?.id??crypto.randomUUID(),time:s.playhead,property,value,easing:existing?.easing??easing,bezier:existing?.bezier??bezier};list=[...list.filter((f)=>f.id!==frame.id),frame].sort((a,b)=>a.time-b.time)}const keyframesByFormat={...s.keyframesByFormat,[s.activeFormat]:{...(s.keyframesByFormat[s.activeFormat]??{}),[id]:list}};const base={keyframesByFormat,formatOverrides:touchOverride(s)};return s.activeFormat==="master"?{...base,...adaptedState({...s,keyframesByFormat} as ProjectState,false)}:base},{group:historyGroup})},
