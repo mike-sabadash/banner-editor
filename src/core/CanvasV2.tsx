@@ -3,6 +3,7 @@ import { Image as KonvaImage, Layer, Line, Rect, Stage, Text, Transformer } from
 import { formats, fitPreview, type BannerElement } from "../model";
 import { animatedText, applyTextCase } from "./interaction";
 import { editorActions, getDisplayElement, getEditorState, useEditorState } from "./editorStore";
+import { easeProgress } from "../timeline";
 
 const useHtmlImage = (src?: string) => {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
@@ -38,11 +39,14 @@ function CanvasObject({ element, setGuides }: { element: BannerElement; setGuide
   const ratio = image && image.naturalWidth ? image.naturalHeight / image.naturalWidth : .65;
   const text = animatedText(applyTextCase(display.text, display.textCase), state.playhead, display.textAnimation);
   const animation = display.textAnimation, localTime = Math.max(0, state.playhead - (animation?.start ?? 0));
-  const progress = Math.max(0, Math.min(1, localTime / (animation?.duration ?? .55)));
-  const motionOpacity = !animation || animation.type === "none" || animation.type === "typewriter" ? 1 : progress;
-  const motionY = animation?.type === "rise" ? (1 - progress) * format.height * .08 : 0;
-  const motionScale = animation?.type === "bounce" ? (progress < .72 ? .78 + progress * .46 : 1 + Math.sin((progress - .72) * 18) * .06 * (1 - progress)) : 1;
-  const motionX = animation?.type === "shake" && progress < 1 ? Math.sin(localTime * 38) * (1 - progress) * 9 : 0;
+  const progress = Math.max(0, Math.min(1, localTime / (animation?.duration ?? .65)));
+  const eased=easeProgress(progress,animation?.easing??"outCubic");
+  const distance=animation?.distance??40;
+  const motionOpacity = !animation || animation.type === "none" || animation.type === "typewriter" ? 1 : eased;
+  const motionY = animation?.type === "rise" ? (1 - eased) * distance : 0;
+  const motionScale = animation?.type === "zoom" ? .72+.28*eased : animation?.type === "pop" || animation?.type === "bounce" ? .65+.35*eased : 1;
+  const motionX = animation?.type === "slide-left" ? -(1-eased)*distance : animation?.type === "slide-right" ? (1-eased)*distance : animation?.type === "shake" && progress < 1 ? Math.sin(localTime*32)*(1-progress)*Math.min(18,distance*.3) : 0;
+  const motionRotation=animation?.type==="rotate"?(1-eased)*-18:0;
 
   useEffect(() => {
     if (!selected || !nodeRef.current || !transformerRef.current) return;
@@ -85,7 +89,7 @@ function CanvasObject({ element, setGuides }: { element: BannerElement; setGuide
     ref: nodeRef,
     x: artX + motionX,
     y: artY + motionY,
-    rotation: display.rotation,
+    rotation: display.rotation+motionRotation,
     scaleX: display.scale / 100 * motionScale,
     scaleY: display.scale / 100 * motionScale,
     opacity: display.opacity / 100 * motionOpacity,

@@ -11,12 +11,17 @@ Audit scope: campaign navigation, Library, canvas, layers, properties, timeline,
 | Layer density | Layer rows prioritize scan density over large touch-card spacing | Reduced from 38 px to 28 px |
 | Playback | Play/stop are visible; Space is contextual and does not collide with canvas pan | Corrected: timeline hover owns playback, canvas hover owns pan |
 | Keyframes | Diamonds live on their layer, grouped by time; dragging changes time and respects snapping | Existing implementation conforms; selection and delete remain grouped |
+| Auto-key | Editing an unanimated layer changes its base state; auto-key begins only after that layer has a key | Corrected and regression-tested |
+| Layer order | Timeline layers can be reordered directly to control stacking | Corrected with timeline drag-and-drop |
 | Layer range | In/out handles trim visibility without changing keyframe timing | Existing implementation conforms; handles remain available in compact rows |
-| Library | Imported assets remain reusable and can be clicked or dragged onto the Stage | Corrected: ordinary project Library, click-to-place and drag-to-position |
+| Library | Imported assets remain reusable and can be deliberately placed on the Stage | Corrected: ordinary project Library, double-click-to-place and drag-to-position |
+| Asset placement | Artwork enters at natural pixel size; oversized artwork is fitted, not arbitrarily reduced | Corrected: size is calculated against the active artboard and centered when no drop point is supplied |
 | Canvas | Drop position is respected; selection, transform handles, zoom and Space-pan are direct manipulation | Drop coordinates and drag-over feedback added |
 | Layers | Visibility and lock are independent from selection | Existing implementation conforms |
 | Properties | Static values edit the object; animated values at a keyed time edit that keyframe | Existing implementation conforms |
 | Easing | Easing belongs to the selected keyframe interval/group, not the entire timeline | Existing implementation conforms |
+| Easing editing | A preset can convert to editable cubic Bézier; X stays in 0–1 while Y supports overshoot | Corrected; complex multi-point motion uses multiple keyframe intervals |
+| Text motion | Entrance effects use eased progress and expose duration, easing and distance | Expanded to 11 presets with bounded previews and editable parameters |
 | Undo/redo | Destructive and transform operations are recoverable | Existing grouped history retained; duplicate Save action removed |
 | Format links | Shared semantic content must not imply shared geometry or animation | Corrected with linked/local content instances |
 | AI resize | Experimental generation must not be presented as deterministic production behavior | Removed from the primary format-editor toolbar |

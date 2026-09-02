@@ -7,8 +7,8 @@ export type ElementKind =
   | "image";
 export type TextAlign = "left" | "center" | "right" | "justify";
 export type TextCase = "none" | "uppercase" | "lowercase" | "capitalize";
-export type TextAnimationType = "none" | "typewriter" | "fade" | "rise" | "bounce" | "shake";
-export type TextAnimation = { type: TextAnimationType; typeSpeed: number; cursor: boolean; start?: number; duration?: number };
+export type TextAnimationType = "none" | "typewriter" | "fade" | "rise" | "slide-left" | "slide-right" | "zoom" | "pop" | "bounce" | "shake" | "rotate";
+export type TextAnimation = { type: TextAnimationType; typeSpeed: number; cursor: boolean; start?: number; duration?: number; easing?: string; distance?: number };
 export type AssetLibraryItem = { id:string; name:string; assetUrl:string; width:number; height:number; bytes:number };
 export type BannerElement = {
   id: string;
@@ -84,7 +84,7 @@ export const createTextElement = (
   textSizing: "fixed",
   inPoint: 0,
   outPoint: 6,
-  textAnimation: { type: "none", typeSpeed: 60, cursor: true },
+  textAnimation: { type: "none", typeSpeed: 60, cursor: true, easing:"outCubic", distance:40 },
   locked: false,
   visible: true,
   contentLinked: true,

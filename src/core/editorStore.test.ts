@@ -38,4 +38,31 @@ describe("linked format instances", () => {
     expect(placed.y).toBe(29);
     expect(placed.contentLinked).toBe(true);
   });
+
+  it("places images at natural size relative to the artboard", () => {
+    editorActions.addAsset({id:"master-bg",name:"master-bg.png",assetUrl:"data:image/png;base64,x",width:1200,height:628,bytes:100});
+    editorActions.addAssetToCanvas("master-bg");
+    expect(getEditorState().elementsByFormat.master[0].width).toBe(100);
+  });
+
+  it("does not auto-key until the layer already contains a keyframe", () => {
+    editorActions.addText();
+    const id=getEditorState().elementsByFormat.master[0].id;
+    editorActions.setPlayhead(2);
+    editorActions.updateElement(id,{x:44});
+    expect(getEditorState().keyframesByFormat.master[id]).toBeUndefined();
+    expect(getEditorState().elementsByFormat.master[0].x).toBe(44);
+
+    editorActions.toggleKeyAtCurrent(id);
+    editorActions.setPlayhead(3);
+    editorActions.updateElement(id,{x:60});
+    expect(getEditorState().keyframesByFormat.master[id].some((frame)=>frame.time===3&&frame.property==="x")).toBe(true);
+  });
+
+  it("changes layer stacking order", () => {
+    editorActions.addText();editorActions.addText();
+    const [first,second]=getEditorState().elementsByFormat.master;
+    editorActions.reorderElement(first.id,1);
+    expect(getEditorState().elementsByFormat.master.map((item)=>item.id)).toEqual([second.id,first.id]);
+  });
 });
