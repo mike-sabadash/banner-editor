@@ -1,4 +1,4 @@
-const NS="banner-campaign";
+const NS="banner_campaign";
 const FORMAT_DEFS=[
   {id:"master",name:"Master",width:1200,height:628,family:"Rectangle"},
   {id:"medium",name:"Medium rectangle",width:300,height:250,family:"Rectangle"},
