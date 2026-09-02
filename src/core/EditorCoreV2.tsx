@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { formats } from "../model";
+import { figmaCampaignToProject, isFigmaCampaign } from "../figmaCampaign";
 import {
   EASING_PRESETS,
   easeProgress,
@@ -121,10 +122,16 @@ const easingPreviewStyle = (preset: string) =>
     "--ease-preview": `linear(${Array.from({ length: 41 }, (_, index) => easeProgress(index / 40, preset).toFixed(4)).join(",")})`,
   }) as CSSProperties;
 const EASING_DESCRIPTIONS: Record<string, string> = {
-  linear: "Constant speed", inCubic: "Slow start", outCubic: "Soft stop",
-  inOutCubic: "Soft start and stop", inSine: "Gentle start", outSine: "Gentle stop",
-  inOutSine: "Gentle both ends", outBack: "Overshoot at end",
-  inBack: "Pull back, then move", outBounce: "Bounce at end",
+  linear: "Constant speed",
+  inCubic: "Slow start",
+  outCubic: "Soft stop",
+  inOutCubic: "Soft start and stop",
+  inSine: "Gentle start",
+  outSine: "Gentle stop",
+  inOutSine: "Gentle both ends",
+  outBack: "Overshoot at end",
+  inBack: "Pull back, then move",
+  outBounce: "Bounce at end",
 };
 
 export default function EditorCoreV2() {
@@ -154,8 +161,13 @@ export default function EditorCoreV2() {
     if (!file) return;
     try {
       const parsed = JSON.parse(await file.text()) as ProjectState;
-      if (parsed.version !== 2) throw new Error("Unsupported project version");
-      editorActions.importProject(parsed);
+      if (isFigmaCampaign(parsed))
+        editorActions.importProject(figmaCampaignToProject(parsed, state));
+      else {
+        if (parsed.version !== 2)
+          throw new Error("Unsupported project version");
+        editorActions.importProject(parsed);
+      }
     } catch (error) {
       alert(error instanceof Error ? error.message : "Could not open project");
     }
@@ -404,7 +416,7 @@ export default function EditorCoreV2() {
           ref={projectInput}
           hidden
           type="file"
-          accept=".json,.banner.json,application/json"
+          accept=".json,.banner.json,.figma-campaign.json,application/json"
           onChange={(e) => {
             void open(e.target.files?.[0]);
             e.currentTarget.value = "";
@@ -691,9 +703,36 @@ export default function EditorCoreV2() {
                 </small>
               </div>
               <div className="core-object-actions">
-                <button onClick={() => editorActions.setSelectedVisibility(false,"format")} title="Keeps the linked campaign object"><EyeOff size={14}/> Hide in this format</button>
-                <button onClick={() => editorActions.setSelectedVisibility(false,"family")} title="Hide in related aspect-ratio formats"><EyeOff size={14}/> Hide in family</button>
-                <button className="danger" onClick={() => {if(confirm("Remove this linked object and its animation from every format?"))editorActions.removeSelectedScoped("campaign")}} title="Destructive campaign-wide removal"><Trash2 size={14}/> Remove everywhere</button>
+                <button
+                  onClick={() =>
+                    editorActions.setSelectedVisibility(false, "format")
+                  }
+                  title="Keeps the linked campaign object"
+                >
+                  <EyeOff size={14} /> Hide in this format
+                </button>
+                <button
+                  onClick={() =>
+                    editorActions.setSelectedVisibility(false, "family")
+                  }
+                  title="Hide in related aspect-ratio formats"
+                >
+                  <EyeOff size={14} /> Hide in family
+                </button>
+                <button
+                  className="danger"
+                  onClick={() => {
+                    if (
+                      confirm(
+                        "Remove this linked object and its animation from every format?",
+                      )
+                    )
+                      editorActions.removeSelectedScoped("campaign");
+                  }}
+                  title="Destructive campaign-wide removal"
+                >
+                  <Trash2 size={14} /> Remove everywhere
+                </button>
               </div>
               <div className="core-section-head core-properties-head">
                 <span>PROPERTIES {selectedKey ? "· KEYFRAME" : ""}</span>
@@ -801,7 +840,7 @@ export default function EditorCoreV2() {
                   </div>
                   <div className="core-icon-controls">
                     <span>Align</span>
-                    {ALIGN_BUTTONS.map(({value,Icon:I}) => {
+                    {ALIGN_BUTTONS.map(({ value, Icon: I }) => {
                       return (
                         <button
                           key={value}
@@ -828,7 +867,7 @@ export default function EditorCoreV2() {
                   </div>
                   <div className="core-icon-controls">
                     <span>Case</span>
-                    {CASE_BUTTONS.map(({value,Icon:I}) => {
+                    {CASE_BUTTONS.map(({ value, Icon: I }) => {
                       return (
                         <button
                           key={value}
@@ -1033,7 +1072,12 @@ export default function EditorCoreV2() {
                           <span className="core-ease-demo" aria-hidden="true">
                             <i />
                           </span>
-                          <span className="core-ease-name"><b>{pretty(preset)}</b><small>{EASING_DESCRIPTIONS[preset] ?? "Timing curve"}</small></span>
+                          <span className="core-ease-name">
+                            <b>{pretty(preset)}</b>
+                            <small>
+                              {EASING_DESCRIPTIONS[preset] ?? "Timing curve"}
+                            </small>
+                          </span>
                         </button>
                       ),
                     )}
