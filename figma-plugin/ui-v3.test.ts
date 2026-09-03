@@ -5,6 +5,12 @@ const ui=readFileSync(new URL("./ui-v4.html",import.meta.url),"utf8");
 const manifest=JSON.parse(readFileSync(new URL("./manifest.json",import.meta.url),"utf8"));
 
 describe("final Figma campaign UI contract",()=>{
+  it("parses the inline UI script without syntax errors",()=>{
+    const script=ui.match(/<script>([\s\S]*?)<\/script>/)?.[1]||"";
+    expect(script.length).toBeGreaterThan(100);
+    expect(()=>new Function(script)).not.toThrow();
+  });
+
   it("separates campaign setup and creative editor",()=>{
     expect(ui).toContain("Campaign Setup");
     expect(ui).toContain("Creative Editor");
