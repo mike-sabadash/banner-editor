@@ -1,0 +1,128 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+*{box-sizing:border-box}body{margin:0;padding:10px 10px 86px;background:var(--figma-color-bg);color:var(--figma-color-text);font:11px/1.35 Inter,Arial,sans-serif}button,input,select,textarea{font:inherit;color:inherit;border:1px solid var(--figma-color-border);background:var(--figma-color-bg);border-radius:6px}button{min-height:30px;padding:0 9px;cursor:pointer}button:disabled{opacity:.4}input,select{height:30px;padding:0 8px}textarea{min-height:72px;padding:7px;resize:vertical}.head h1{font-size:15px;margin:0}.head p{font-size:9px;margin:2px 0 9px;color:var(--figma-color-text-secondary)}.tabs{display:grid;grid-template-columns:1fr 1fr;gap:3px;padding:3px;border:1px solid var(--figma-color-border);border-radius:8px;background:var(--figma-color-bg-secondary);margin-bottom:9px}.tabs button{border:0;background:transparent}.tabs button.on{background:var(--figma-color-bg);font-weight:650;box-shadow:0 1px 2px #0002}.view{display:none}.view.on{display:block}.card{border:1px solid var(--figma-color-border);border-radius:9px;margin-bottom:9px;overflow:hidden}.title{padding:10px 11px 7px;font-weight:650}.note{font-size:8.5px;color:var(--figma-color-text-secondary);font-weight:400;margin-top:2px}.body{padding:0 11px 11px}.grid{display:grid;grid-template-columns:1fr 72px;gap:6px}.field{display:grid;gap:3px}.field span,.eyebrow{font-size:8.5px;color:var(--figma-color-text-secondary)}.wide{width:100%}.primary{background:var(--figma-color-bg-brand,#0d99ff);border-color:transparent;color:#fff;font-weight:650}.ttline{display:grid;grid-template-columns:1fr auto;gap:6px}.attach{text-align:left;padding:7px 8px}.attach b{display:block}.attach span{font-size:8px;color:var(--figma-color-text-secondary)}.plan{display:none;margin-top:8px}.plan.open{display:block}.row{display:flex;gap:6px}.row>*{flex:1}.status{margin-top:7px;padding:7px 8px;border-radius:6px;background:var(--figma-color-bg-secondary);font-size:8.5px;color:var(--figma-color-text-secondary)}.sources{display:grid;gap:4px;margin-top:7px}.source{display:grid;grid-template-columns:1fr auto;gap:5px;border:1px solid var(--figma-color-border);border-radius:6px;padding:6px 7px}.source small{color:var(--figma-color-text-secondary)}.ok{color:var(--figma-color-icon-success,#14ae5c)}.warn{color:var(--figma-color-icon-warning,#b86200)}.chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}.chip{font-size:8px;border:1px solid var(--figma-color-border);border-radius:999px;padding:2px 5px}.layer-list{border:1px solid var(--figma-color-border);border-radius:7px;overflow:hidden}.layer{display:grid;grid-template-columns:1fr auto;gap:7px;padding:7px 8px;border-bottom:1px solid var(--figma-color-border);cursor:pointer}.layer:last-child{border-bottom:0}.layer.on{background:var(--figma-color-bg-secondary)}.layer small{display:block;color:var(--figma-color-text-secondary)}.detail{margin-top:6px;padding:7px;background:var(--figma-color-bg-secondary);border-radius:7px}.format{display:grid;grid-template-columns:1fr auto;font-size:8px;padding:4px 0;border-top:1px solid var(--figma-color-border)}.linked{color:var(--figma-color-icon-success,#14ae5c)}.local{color:var(--figma-color-icon-warning,#b86200)}.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:2px;background:var(--figma-color-bg-secondary);border:1px solid var(--figma-color-border);border-radius:7px}.seg button{border:0;background:transparent}.seg button.on{background:var(--figma-color-bg);font-weight:650}.group{border:1px solid var(--figma-color-border);border-radius:7px;margin-top:7px;overflow:hidden}.group>div:first-child{padding:7px 8px;font-weight:650;background:var(--figma-color-bg-secondary)}.prop{display:grid;grid-template-columns:18px 1fr auto;gap:6px;align-items:center;padding:7px 8px;border-top:1px solid var(--figma-color-border)}.prop small{display:block;color:var(--figma-color-text-secondary)}.pill{font-size:8px;padding:2px 5px;border-radius:999px;background:var(--figma-color-bg-secondary)}.footer{position:fixed;left:0;right:0;bottom:0;padding:8px 10px 10px;background:var(--figma-color-bg)}.footer>div{border:1px solid var(--figma-color-border);border-radius:8px;padding:6px}.footer small{display:block;margin-bottom:5px;color:var(--figma-color-text-secondary)}
+</style>
+</head>
+<body>
+<div class="head"><h1>Banner Campaign</h1><p>Delivery requirements + linked creative formats</p></div>
+<div class="tabs"><button class="on" data-view="setup">Campaign Setup</button><button data-view="creative">Creative Editor</button></div>
+<div id="setup" class="view on">
+  <div class="card"><div class="title">Campaign<div class="note">Create linked formats and required technical layers</div></div><div class="body"><div class="grid"><label class="field"><span>Name</span><input id="name" value="Product launch"></label><label class="field"><span>Duration</span><input id="duration" type="number" value="6"></label></div><button id="create" class="wide">Create 5 formats</button></div></div>
+  <div class="card"><div class="title">Delivery Plan / TT<div class="note">Optional at any time. Attaching requirements never resets creative work.</div></div><div class="body"><div class="ttline"><button id="attach" class="attach"><b>Attach Media Plan / TT</b><span>Excel · CSV · DOCX · PDF · links · notes</span></button><button id="pixel"><b>Pixel / TT</b></button></div><div id="plan" class="plan"><div class="row"><button id="files-btn">Add files</button><button id="clear">Clear</button></div><input id="files" type="file" hidden multiple accept=".xlsx,.xls,.csv,.tsv,.txt,.docx,.pdf"><textarea id="notes" class="wide" placeholder="Paste TT links, formats or client notes…"></textarea><button id="process" class="wide primary">Process Delivery Plan</button><div id="plan-status" class="status">Excel/CSV/TXT/DOCX parse locally. PDF/XLS and ambiguous input use the server OpenRouter gateway.</div><div id="sources" class="sources"></div><div id="formats" class="chips"></div></div></div></div>
+  <div class="card"><div class="title">Technical readiness<div class="note">Tracking pixel is a required campaign slot</div></div><div class="body"><div id="tech" class="status">Select or create a campaign.</div></div></div>
+</div>
+<div id="creative" class="view">
+  <div class="card"><div class="title">Campaign layers<div class="note">Linked identity is shared; local adaptations stay local</div></div><div class="body"><div id="campaign" class="eyebrow">Select a campaign format</div><div id="layers" class="layer-list"></div><div id="detail" class="detail" style="display:none"><b id="detail-name"></b><div id="format-state"></div><div class="row" style="margin-top:6px"><button id="link">Link selection</button><button id="missing">Create missing</button></div></div><div class="row" style="margin-top:7px"><select id="preset"></select><button id="add-preset">Add preset</button></div><div class="row" style="margin-top:6px"><input id="custom" placeholder="Custom layer"><select id="kind"><option value="text">Text</option><option value="visual">Visual</option><option value="generic">Generic</option></select><button id="add-custom">Add</button></div><div id="layer-status" class="status">Slots use internal IDs, not layer names.</div></div></div>
+  <div class="card"><div class="title">Update linked formats<div class="note">Choose scope and exactly which properties inherit</div></div><div class="body"><div class="seg" id="scope"><button data-scope="family">Family</button><button class="on" data-scope="all">All formats</button><button data-scope="selected">Selected</button></div><div class="group"><div>Design</div><label class="prop"><input type="checkbox" data-part="content"><span>Content<small>Text and fills</small></span><span class="pill">Optional</span></label><label class="prop"><input type="checkbox" data-part="appearance"><span>Appearance<small>Opacity and rotation</small></span><span class="pill">Optional</span></label></div><div class="group"><div>Motion</div><label class="prop"><input type="checkbox" checked data-part="motionType"><span>Motion properties<small>Which properties animate</small></span><span class="pill">Linked</span></label><label class="prop"><input type="checkbox" checked data-part="timing"><span>Timing<small>Keyframe timing</small></span><span class="pill">Linked</span></label><label class="prop"><input type="checkbox" checked data-part="easing"><span>Easing<small>Curve and motion feel</small></span><span class="pill">Linked</span></label><label class="prop"><input type="checkbox" data-part="geometry"><span>Motion geometry<small>Path and distance</small></span><span class="pill">Local</span></label><label class="prop"><input type="checkbox" data-part="layout"><span>Layout<small>Position and size</small></span><span class="pill">Local</span></label></div><div id="sync-status" class="status">Select a campaign layer.</div></div></div>
+  <div class="card"><div class="title">Export<div class="note">Includes campaign registry, tracking pixel and Delivery Plan</div></div><div class="body"><button id="export" class="wide">Export .figma-campaign.json</button><div id="status" class="status">Ready.</div></div></div>
+</div>
+<div class="footer"><div><small id="summary">No campaign layer selected</small><button id="update" class="wide primary" disabled>Update linked formats</button></div></div>
+<script>
+const GATEWAY='https://banners.rechord.online/api/delivery-plan/extract';
+const $=s=>document.querySelector(s);
+const send=(type,extra={})=>parent.postMessage({pluginMessage:{type,...extra}},'*');
+let state={slots:[],presets:[]},slotId='headline',scope='all',fileQueue=[],plan={sources:[],placements:[],formats:[]};
+const clean=s=>String(s??'').replace(/\s+/g,' ').trim();
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const SIZE=/(\d{2,4})\s*[x×х]\s*(\d{2,4})/i;
+
+document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
+  $('#'+b.dataset.view).classList.add('on');
+}));
+
+function current(){return state.slots.find(s=>s.id===slotId)||state.slots[0]||null}
+function selectedParts(){return [...document.querySelectorAll('[data-part]:checked')].map(x=>x.dataset.part)}
+function renderSummary(){const s=current();$('#summary').textContent=s?`${s.label} · ${scope} · ${selectedParts().join(', ')}`:'No campaign layer selected';$('#update').disabled=!s||!selectedParts().length}
+function render(next){
+  state=next||{slots:[],presets:[]};
+  if(!state.slots.some(s=>s.id===slotId))slotId=(state.slots.find(s=>s.id==='headline')||state.slots[0]||{}).id||'';
+  $('#campaign').textContent=state.campaignName?`${state.campaignName} · ${state.formatCount} formats`:'Select a campaign format';
+  $('#layers').innerHTML=state.slots.length?state.slots.map(s=>`<div class="layer ${s.id===slotId?'on':''}" data-id="${esc(s.id)}"><span><b>${esc(s.label)}</b><small>${esc(s.kind)}${s.required?' · required':''}</small></span><b class="${s.missingCount?'local':'linked'}">${s.linkedCount}/${s.totalCount}</b></div>`).join(''):'<div class="layer"><small>No campaign selected</small></div>';
+  document.querySelectorAll('.layer[data-id]').forEach(x=>x.addEventListener('click',()=>{slotId=x.dataset.id;render(state)}));
+  const s=current();$('#detail').style.display=s?'block':'none';
+  if(s){$('#detail-name').textContent=s.label;$('#format-state').innerHTML=(s.formats||[]).map(f=>`<div class="format"><span>${esc(f.name)}</span><b class="${f.linked?'linked':'local'}">${f.linked?'LINKED':'MISSING / LOCAL'}</b></div>`).join('');$('#missing').disabled=!s.missingCount;$('#link').disabled=!!s.technical}
+  $('#preset').innerHTML=(state.presets||[]).map(p=>`<option value="${esc(p.id)}">${esc(p.label)}</option>`).join('')||'<option value="">No presets</option>';
+  const px=state.slots.find(s=>s.id==='tracking_pixel');$('#tech').textContent=px?`Tracking pixel ${px.linkedCount}/${px.totalCount} · required technical slot`:'Tracking pixel not found.';
+  renderSummary();
+}
+
+$('#create').addEventListener('click',()=>send('create',{name:$('#name').value,duration:Number($('#duration').value)||6}));
+$('#link').addEventListener('click',()=>current()&&send('link',{slotId:current().id}));
+$('#missing').addEventListener('click',()=>current()&&send('create-missing',{slotId:current().id}));
+$('#add-preset').addEventListener('click',()=>$('#preset').value&&send('add-preset-slot',{presetId:$('#preset').value}));
+$('#add-custom').addEventListener('click',()=>send('add-custom-slot',{label:$('#custom').value,kind:$('#kind').value}));
+document.querySelectorAll('#scope button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('#scope button').forEach(x=>x.classList.remove('on'));b.classList.add('on');scope=b.dataset.scope;renderSummary()}));
+document.querySelectorAll('[data-part]').forEach(x=>x.addEventListener('change',renderSummary));
+$('#update').addEventListener('click',()=>{const s=current();if(s)send('granular-sync',{scope,slotId:s.id,parts:selectedParts()})});
+$('#export').addEventListener('click',()=>send('export'));
+$('#attach').addEventListener('click',()=>$('#plan').classList.toggle('open'));
+$('#pixel').addEventListener('click',()=>{$('#plan').classList.add('open');$('#notes').focus();$('#plan-status').textContent='Pixel is enforced by the required tracking_pixel slot. Add TT/tracking rules here.'});
+$('#files-btn').addEventListener('click',()=>$('#files').click());
+$('#files').addEventListener('change',e=>{fileQueue.push(...e.target.files);renderFiles()});
+$('#clear').addEventListener('click',()=>{fileQueue=[];plan={sources:[],placements:[],formats:[]};$('#notes').value='';renderFiles();renderPlan()});
+
+function renderFiles(){$('#sources').innerHTML=fileQueue.map(f=>`<div class="source"><span><b>${esc(f.name)}</b><br><small>${Math.max(1,Math.round(f.size/1024))} KB</small></span><span>queued</span></div>`).join('')}
+function csv(text){
+  const lines=text.replace(/^\uFEFF/,'').split(/\r?\n/).filter(Boolean);if(!lines.length)return[];
+  const ds=[',',';','\t'];const d=ds.sort((a,b)=>lines[0].split(b).length-lines[0].split(a).length)[0];
+  return lines.map(line=>{let q=false,c='',out=[];for(let i=0;i<line.length;i++){const ch=line[i];if(ch==='"'){if(q&&line[i+1]==='"'){c+='"';i++}else q=!q}else if(ch===d&&!q){out.push(clean(c));c=''}else c+=ch}out.push(clean(c));return out});
+}
+function rowsToPlacements(rows,source){
+  if(!rows.length)return[];const out=[];const headers=rows[0].map(x=>clean(x).toLowerCase());
+  for(let i=1;i<rows.length;i++){
+    const row=rows[i],joined=row.join(' '),m=joined.match(SIZE);if(!m)continue;
+    const get=(...names)=>{for(const n of names){const ix=headers.findIndex(h=>h.includes(n));if(ix>=0&&row[ix]!=null)return clean(row[ix])}return''};
+    const width=Number(get('width'))||Number(m[1]),height=Number(get('height'))||Number(m[2]);
+    out.push({source,platform:get('platform','площад'),size:`${width}×${height}`,width,height,creativeType:get('creative type','creative','тип'),ttUrl:get('tt url','requirements url','тт'),requirements:{maxZipKb:Number(get('max zip','weight','вес'))||null,maxDurationSec:Number(get('duration','длительность'))||null,clickTag:/^(true|yes|1|required|да)$/i.test(get('clicktag','click')),tracking:/^(true|yes|1|required|да)$/i.test(get('tracking pixel','tracking','pixel'))}});
+  }
+  if(!out.length){for(const r of rows){const joined=r.join(' '),m=joined.match(SIZE);if(m)out.push({source,platform:'',size:`${m[1]}×${m[2]}`,width:Number(m[1]),height:Number(m[2]),creativeType:'',ttUrl:'',requirements:{maxZipKb:null,maxDurationSec:null,clickTag:null,tracking:null}})}}
+  return out;
+}
+
+async function unzipEntry(buffer,wanted){
+  const view=new DataView(buffer);let eocd=-1;for(let i=buffer.byteLength-22;i>=Math.max(0,buffer.byteLength-65557);i--){if(view.getUint32(i,true)===0x06054b50){eocd=i;break}}if(eocd<0)throw new Error('Invalid XLSX ZIP');
+  const count=view.getUint16(eocd+10,true),central=view.getUint32(eocd+16,true);let p=central;
+  const dec=new TextDecoder();
+  for(let i=0;i<count;i++){
+    if(view.getUint32(p,true)!==0x02014b50)throw new Error('Invalid ZIP directory');
+    const method=view.getUint16(p+10,true),size=view.getUint32(p+20,true),nameLen=view.getUint16(p+28,true),extraLen=view.getUint16(p+30,true),commentLen=view.getUint16(p+32,true),local=view.getUint32(p+42,true);
+    const name=dec.decode(new Uint8Array(buffer,p+46,nameLen));
+    if(name===wanted){const ln=view.getUint16(local+26,true),le=view.getUint16(local+28,true),start=local+30+ln+le,data=new Uint8Array(buffer,start,size);if(method===0)return data;if(method!==8)throw new Error('Unsupported ZIP compression');const ds=new DecompressionStream('deflate-raw');return new Uint8Array(await new Response(new Blob([data]).stream().pipeThrough(ds)).arrayBuffer())}
+    p+=46+nameLen+extraLen+commentLen;
+  }
+  return null;
+}
+async function xlsx(file){
+  const buf=await file.arrayBuffer(),dec=new TextDecoder();
+  const sharedBytes=await unzipEntry(buf,'xl/sharedStrings.xml');const shared=[];
+  if(sharedBytes){const xml=new DOMParser().parseFromString(dec.decode(sharedBytes),'application/xml');xml.querySelectorAll('si').forEach(si=>shared.push([...si.querySelectorAll('t')].map(t=>t.textContent||'').join('')))}
+  const wbBytes=await unzipEntry(buf,'xl/workbook.xml'),relsBytes=await unzipEntry(buf,'xl/_rels/workbook.xml.rels');if(!wbBytes||!relsBytes)throw new Error('XLSX workbook metadata missing');
+  const wb=new DOMParser().parseFromString(dec.decode(wbBytes),'application/xml'),rels=new DOMParser().parseFromString(dec.decode(relsBytes),'application/xml');const first=wb.querySelector('sheet');if(!first)throw new Error('XLSX has no sheets');
+  const rid=first.getAttribute('r:id')||first.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id');let target='worksheets/sheet1.xml';rels.querySelectorAll('Relationship').forEach(r=>{if(r.getAttribute('Id')===rid)target=r.getAttribute('Target')||target});target=target.replace(/^\//,'').replace(/^xl\//,'');const sheetBytes=await unzipEntry(buf,'xl/'+target);if(!sheetBytes)throw new Error('XLSX first sheet missing');
+  const sheet=new DOMParser().parseFromString(dec.decode(sheetBytes),'application/xml'),rows=[];sheet.querySelectorAll('row').forEach(row=>{const vals=[];row.querySelectorAll('c').forEach(c=>{const ref=c.getAttribute('r')||'A1',letters=(ref.match(/[A-Z]+/)||['A'])[0];let col=0;for(const ch of letters)col=col*26+ch.charCodeAt(0)-64;col--;const type=c.getAttribute('t'),v=c.querySelector('v')?.textContent||'',inline=c.querySelector('is t')?.textContent||'';vals[col]=type==='s'?shared[Number(v)]??v:type==='inlineStr'?inline:v});rows.push(vals.map(x=>clean(x))) });return rows;
+}
+async function docx(file){const buf=await file.arrayBuffer(),bytes=await unzipEntry(buf,'word/document.xml');if(!bytes)throw new Error('DOCX document.xml missing');const xml=new DOMParser().parseFromString(new TextDecoder().decode(bytes),'application/xml');return [...xml.querySelectorAll('p')].map(p=>[...p.querySelectorAll('t')].map(t=>t.textContent||'').join('')).join('\n')}
+async function dataUrl(f){return new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=no;r.readAsDataURL(f)})}
+async function ai(file,text){const body={filename:file?.name||'Pasted notes',mimeType:file?.type||'text/plain',text:text||''};if(file&&/\.pdf$/i.test(file.name))body.dataUrl=await dataUrl(file);const r=await fetch(GATEWAY,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});if(!r.ok)throw new Error(`gateway ${r.status}`);return r.json()}
+async function processPlan(){
+  const sources=[],placements=[],fallback=[];
+  for(const f of fileQueue){const ext=f.name.split('.').pop().toLowerCase();try{if(['csv','tsv','txt'].includes(ext)){const rows=csv(await f.text());placements.push(...rowsToPlacements(rows,f.name));sources.push({name:f.name,status:'parsed',detail:`${rows.length} rows`})}else if(ext==='xlsx'){const rows=await xlsx(f);placements.push(...rowsToPlacements(rows,f.name));sources.push({name:f.name,status:'parsed',detail:`${rows.length} Excel rows`})}else if(ext==='docx'){const t=await docx(f);placements.push(...rowsToPlacements(t.split(/\r?\n/).map(x=>[x]),f.name));sources.push({name:f.name,status:'parsed',detail:'DOCX text extracted'})}else{fallback.push(f);sources.push({name:f.name,status:'ai',detail:'OpenRouter extraction'})}}catch(e){fallback.push(f);sources.push({name:f.name,status:'ai',detail:'Local parse failed → OpenRouter'})}}
+  const notes=$('#notes').value.trim();if(notes)placements.push(...rowsToPlacements(notes.split(/\r?\n/).map(x=>[x]),'Pasted notes'));
+  for(const f of fallback){try{const a=await ai(f,'');placements.push(...(a.placements||[]).map(p=>({...p,source:f.name})));const s=sources.find(x=>x.name===f.name);s.status='parsed';s.detail='Extracted by OpenRouter'}catch(e){const s=sources.find(x=>x.name===f.name);s.status='error';s.detail=e.message}}
+  if(notes&&!placements.some(p=>p.source==='Pasted notes'))try{const a=await ai(null,notes);placements.push(...(a.placements||[]).map(p=>({...p,source:'Pasted notes'}))}catch{}
+  plan={sources,placements,formats:[...new Set(placements.map(p=>p.size).filter(Boolean))]};localStorage.setItem('banner-editor:figma-delivery-plan',JSON.stringify(plan));renderPlan();
+}
+function renderPlan(){$('#sources').innerHTML=(plan.sources||[]).map(s=>`<div class="source"><span><b>${esc(s.name)}</b><br><small>${esc(s.detail)}</small></span><b class="${s.status==='parsed'?'ok':'warn'}">${esc(s.status)}</b></div>`).join('');$('#formats').innerHTML=(plan.formats||[]).map(f=>`<span class="chip">${esc(f)}</span>`).join('');$('#plan-status').textContent=plan.formats?.length?`${plan.formats.length} required formats recognized. Creative state was not changed.`:'No formats recognized yet.'}
+$('#process').addEventListener('click',async()=>{const b=$('#process');b.disabled=true;b.textContent='Processing…';try{await processPlan()}catch(e){$('#plan-status').textContent='Error: '+e.message}finally{b.disabled=false;b.textContent='Process Delivery Plan'}});
+try{const saved=JSON.parse(localStorage.getItem('banner-editor:figma-delivery-plan')||'null');if(saved){plan=saved;renderPlan()}}catch{}
+
+window.onmessage=e=>{const m=e.data.pluginMessage;if(!m)return;if(m.type==='campaign-state')render(m.state);if(m.type==='created')$('#status').textContent='Created 5 formats with CTA and tracking pixel.';if(m.type==='linked')$('#layer-status').textContent=m.error||`Linked ${m.count} layer(s).`;if(m.type==='slot-added'){$('#layer-status').textContent=m.error||`Added ${m.slot?.label||'layer'}.`;if(m.slot)slotId=m.slot.id}if(m.type==='missing-created')$('#layer-status').textContent=m.error||`Created in ${m.count} missing format(s).`;if(m.type==='granular-synced'){$('#sync-status').textContent=m.error||`${m.sourceName}: updated ${m.count} format(s).${m.preservedGeometry?' Local geometry preserved.':''}`;renderSummary()}if(m.type==='error')$('#status').textContent='Error: '+m.message;if(m.type==='exported'){const doc={...m.document,deliveryPlan:plan},blob=new Blob([JSON.stringify(doc,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`${doc.campaign.name.replace(/[^a-z0-9]+/gi,'-').toLowerCase()}.figma-campaign.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500)}};
+send('get-campaign-state');renderSummary();
+</script>
+</body>
+</html>
