@@ -59,4 +59,4 @@ async function extract(input){if(!API_KEY)throw new Error("OPENROUTER_API_KEY is
 
 export const server=http.createServer(async(req,res)=>{try{if(req.method==="OPTIONS"){cors(res);res.writeHead(204);return res.end();}if(req.method==="GET"&&req.url==="/healthz")return json(res,200,{ok:true,service:"banner-openrouter-gateway",model:MODEL,keyConfigured:Boolean(API_KEY)});if(req.method==="POST"&&req.url==="/api/delivery-plan/extract")return json(res,200,await extract(await readBody(req)));return json(res,404,{error:"Not found"});}catch(error){return json(res,500,{error:error instanceof Error?error.message:String(error)});}});
 
-if(import.meta.url===`file://${process.argv[1]}`)server.listen(PORT,"127.0.0.1",()=>console.log(`Banner OpenRouter gateway listening on 127.0.0.1:${PORT}`));
+server.listen(PORT,"127.0.0.1",()=>console.log(`Banner OpenRouter gateway listening on 127.0.0.1:${PORT}`));
