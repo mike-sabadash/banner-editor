@@ -477,7 +477,12 @@ async function processPlan() {
     formats: [...new Set(placements.map((p) => p.size).filter(Boolean))]
   };
 
-  localStorage.setItem('banner-editor:figma-delivery-plan', JSON.stringify(plan));
+  try {
+    localStorage.setItem('banner-editor:figma-delivery-plan', JSON.stringify(plan));
+  } catch {
+    // Figma plugin UI can run from a data: URL where Web Storage is disabled.
+    // Keep the parsed Delivery Plan in memory for the current plugin session.
+  }
   renderPlan();
 }
 
