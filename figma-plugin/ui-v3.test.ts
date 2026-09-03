@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 
-const ui=readFileSync(new URL("./ui-v4.html",import.meta.url),"utf8");
+const ui=readFileSync(new URL("./ui-v5.html",import.meta.url),"utf8");
 const manifest=JSON.parse(readFileSync(new URL("./manifest.json",import.meta.url),"utf8"));
 
 describe("final Figma campaign UI contract",()=>{
@@ -23,7 +23,7 @@ describe("final Figma campaign UI contract",()=>{
   });
 
   it("includes local XLSX parsing and server AI fallback",()=>{
-    expect(ui).toContain("async function xlsx(file)");
+    expect(ui).toContain("async function parseXlsx(file)");
     expect(ui).toContain("DecompressionStream('deflate-raw')");
     expect(ui).toContain("/api/delivery-plan/extract");
   });
@@ -34,8 +34,8 @@ describe("final Figma campaign UI contract",()=>{
     }
   });
 
-  it("loads the fixed UI and permits only the campaign gateway domain",()=>{
-    expect(manifest.ui).toBe("ui-v4.html");
+  it("loads the syntax-checked UI and permits only the campaign gateway domain",()=>{
+    expect(manifest.ui).toBe("ui-v5.html");
     expect(manifest.networkAccess.allowedDomains).toEqual(["https://banners.rechord.online"]);
   });
 });
