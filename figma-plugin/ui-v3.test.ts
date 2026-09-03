@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 
-const ui=readFileSync(new URL("./ui-v3.html",import.meta.url),"utf8");
+const ui=readFileSync(new URL("./ui-v4.html",import.meta.url),"utf8");
 const manifest=JSON.parse(readFileSync(new URL("./manifest.json",import.meta.url),"utf8"));
 
 describe("final Figma campaign UI contract",()=>{
@@ -28,8 +28,8 @@ describe("final Figma campaign UI contract",()=>{
     }
   });
 
-  it("loads the final UI and permits only the campaign gateway domain",()=>{
-    expect(manifest.ui).toBe("ui-v3.html");
+  it("loads the fixed UI and permits only the campaign gateway domain",()=>{
+    expect(manifest.ui).toBe("ui-v4.html");
     expect(manifest.networkAccess.allowedDomains).toEqual(["https://banners.rechord.online"]);
   });
 });
