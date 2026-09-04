@@ -1,16 +1,26 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
+import vm from "node:vm";
 
 const ui=readFileSync(new URL("./ui-v6.html",import.meta.url),"utf8");
 const controller=readFileSync(new URL("./code-plan-formats.js",import.meta.url),"utf8");
 const manifest=JSON.parse(readFileSync(new URL("./manifest.json",import.meta.url),"utf8"));
 
+function compile(source:string,filename:string){
+  try{
+    new vm.Script(source,{filename});
+  }catch(error){
+    const detail=error instanceof Error?(error.stack||error.message):String(error);
+    throw new Error(`Syntax check failed for ${filename}\n${detail}`);
+  }
+}
+
 describe("final Figma campaign UI contract",()=>{
   it("parses the inline UI script and controller without syntax errors",()=>{
     const script=ui.match(/<script>([\s\S]*?)<\/script>/)?.[1]||"";
     expect(script.length).toBeGreaterThan(100);
-    expect(()=>new Function(script)).not.toThrow();
-    expect(()=>new Function(controller)).not.toThrow();
+    expect(()=>compile(script,"ui-v6-inline.js")).not.toThrow();
+    expect(()=>compile(controller,"code-plan-formats.js")).not.toThrow();
   });
 
   it("separates campaign setup and creative editor",()=>{
