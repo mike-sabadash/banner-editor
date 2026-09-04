@@ -27,5 +27,5 @@ describe("Figma campaign + TT Knowledge contract",()=>{
   it("keeps local XLSX/DOCX parsing and PDF explicit AI path",()=>{for(const x of ["async function parseXlsx(file)","word/document.xml","readAsDataURL(file)","DecompressionStream('deflate-raw')"])expect(ui).toContain(x)});
   it("does not expose OpenRouter key in UI",()=>{expect(ui).not.toContain("OPENROUTER_API_KEY");expect(gateway).toContain("OPENROUTER_API_KEY")});
   it("keeps linked-format controls",()=>{for(const part of ["content","appearance","motionType","timing","easing","geometry","layout"])expect(ui).toContain(`data-part=\"${part}\"`);expect(controller).toContain("syncSlot")});
-  it("loads TT Knowledge UI in manifest",()=>{expect(manifest.ui).toBe("ui-v11.html");expect(manifest.main).toBe("code-v8.js");expect(manifest.documentAccess).toBe("dynamic-page");expect(manifest.networkAccess.allowedDomains).toEqual(["https://banners.rechord.online"])});
+  it("loads TT Knowledge UI in manifest",()=>{expect(manifest.ui).toBe("ui-v11.html");expect(manifest.main).toBe("code-v8.js");expect(manifest.documentAccess).toBe("dynamic-page");expect(manifest.networkAccess.allowedDomains).toEqual(["https://banners.rechord.online","https://ads.rechord.online"])});
 });
