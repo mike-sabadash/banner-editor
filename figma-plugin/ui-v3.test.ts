@@ -57,13 +57,14 @@ describe("final Figma campaign UI contract",()=>{
     expect(controller).toContain("ttConflicts");
   });
 
-  it("loads all pages before registering Figma events in dynamic-page mode",()=>{
+  it("loads all pages before plugin runtime handlers",()=>{
     expect(manifest.documentAccess).toBe("dynamic-page");
-    const loadIndex=controller.indexOf("await figma.loadAllPagesAsync()");
-    const eventIndex=controller.indexOf("figma.on(");
-    expect(loadIndex).toBeGreaterThanOrEqual(0);
-    expect(eventIndex).toBeGreaterThan(loadIndex);
+    expect(controller).toContain("await figma.loadAllPagesAsync()");
     expect(controller).not.toContain('figma.on("documentchange"');
+  });
+
+  it("does not register figma.on listeners in incremental runtime",()=>{
+    expect(controller).not.toMatch(/figma\.on\s*\(/);
   });
 
   it("loads v6 UI/controller and permits only the campaign gateway domain",()=>{
