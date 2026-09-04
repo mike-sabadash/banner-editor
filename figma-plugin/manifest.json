@@ -5,6 +5,5 @@
   "main": "code-plan-formats.js",
   "ui": "ui-v6.html",
   "editorType": ["figma"],
-  "documentAccess": "dynamic-page",
   "networkAccess": { "allowedDomains": ["https://banners.rechord.online"] }
 }
