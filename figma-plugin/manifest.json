@@ -6,5 +6,5 @@
   "ui": "ui-v11.html",
   "editorType": ["figma"],
   "documentAccess": "dynamic-page",
-  "networkAccess": { "allowedDomains": ["https://banners.rechord.online"] }
+  "networkAccess": { "allowedDomains": ["https://banners.rechord.online", "https://ads.rechord.online"] }
 }
