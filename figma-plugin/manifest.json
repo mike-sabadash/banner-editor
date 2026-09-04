@@ -1,9 +1,9 @@
 {
-  "name": "Banner Campaign MVP · Manual + Plan",
+  "name": "Banner Campaign · Final UX",
   "id": "banner-campaign-mvp-local",
   "api": "1.0.0",
-  "main": "code-plan-formats.js",
-  "ui": "ui-v7.html",
+  "main": "code-v8.js",
+  "ui": "ui-v8.html",
   "editorType": ["figma"],
   "documentAccess": "dynamic-page",
   "networkAccess": { "allowedDomains": ["https://banners.rechord.online"] }

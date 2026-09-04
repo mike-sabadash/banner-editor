@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import vm from "node:vm";
 
-const ui=readFileSync(new URL("./ui-v7.html",import.meta.url),"utf8");
-const controller=readFileSync(new URL("./code-plan-formats.js",import.meta.url),"utf8");
+const ui=readFileSync(new URL("./ui-v8.html",import.meta.url),"utf8");
+const controller=readFileSync(new URL("./code-v8.js",import.meta.url),"utf8");
 const manifest=JSON.parse(readFileSync(new URL("./manifest.json",import.meta.url),"utf8"));
 
 function compile(source:string,filename:string){
@@ -12,21 +12,31 @@ function compile(source:string,filename:string){
 }
 
 describe("final Figma campaign UI contract",()=>{
-  it("parses the inline UI script and controller without syntax errors",()=>{
+  it("parses final inline UI and controller without syntax errors",()=>{
     const script=ui.match(/<script>([\s\S]*?)<\/script>/)?.[1]||"";
     expect(script.length).toBeGreaterThan(100);
-    expect(()=>compile(script,"ui-v7-inline.js")).not.toThrow();
-    expect(()=>compile(controller,"code-plan-formats.js")).not.toThrow();
+    expect(()=>compile(script,"ui-v8-inline.js")).not.toThrow();
+    expect(()=>compile(controller,"code-v8.js")).not.toThrow();
   });
 
-  it("separates campaign setup and creative editor",()=>{
+  it("uses a wide plugin window and never loads all Figma pages",()=>{
+    expect(controller).toContain("width:620");
+    expect(controller).toContain("height:760");
+    expect(controller).toContain("figma.currentPage.loadAsync()");
+    expect(controller).not.toContain("loadAllPagesAsync");
+    expect(controller).not.toMatch(/figma\.on\s*\(/);
+  });
+
+  it("separates setup and creative editor and hides creative footer outside creative view",()=>{
     expect(ui).toContain("Campaign Setup");
     expect(ui).toContain("Creative Editor");
+    expect(ui).toContain(".view#creative.on~.footer{display:block}");
   });
 
-  it("supports manual campaign creation with arbitrary formats and TT",()=>{
+  it("supports compact accordion manual placements with arbitrary TT",()=>{
     expect(ui).toContain("Manual setup");
-    expect(ui).toContain("+ Add format / placement");
+    expect(ui).toContain("+ Add placement");
+    expect(ui).toContain("class=\"itemhead\"");
     expect(ui).toContain("Max ZIP, KB");
     expect(ui).toContain("Max duration, sec");
     expect(ui).toContain("clickTag");
@@ -34,48 +44,53 @@ describe("final Figma campaign UI contract",()=>{
     expect(ui).toContain("Impression pixel URL");
     expect(ui).toContain("Click URL");
     expect(ui).toContain("TT URL");
-    expect(ui).toContain("function manualFormats()");
   });
 
-  it("keeps Delivery Plan and explicit canvas creation",()=>{
-    expect(ui).toContain("Media plan / TT");
-    expect(ui).toContain("Process Delivery Plan");
-    expect(ui).toContain("Create formats from plan");
-    expect(ui).toContain("Add ${missing.length} missing formats from plan");
+  it("groups repeated placements into one unique Figma format",()=>{
+    expect(ui).toContain("function buildFormats(placements)");
+    expect(ui).toContain("f.placements.push(p)");
+    expect(controller).toContain("existingKeys");
+    expect(controller).toContain("deliveryPlacements");
   });
 
-  it("detects a header row anywhere in a media plan",()=>{
+  it("detects media-plan headers beyond the first row and understands expected aliases",()=>{
     expect(ui).toContain("function findHeaderRow(rows)");
     expect(ui).toContain("format|size|размер");
     expect(ui).toContain("website|site|network|platform|площад");
+    expect(ui).toContain("placement|размещ");
   });
 
-  it("includes local XLSX parsing and server AI fallback",()=>{
+  it("parses XLSX locally and keeps review before explicit creation",()=>{
     expect(ui).toContain("async function parseXlsx(file)");
     expect(ui).toContain("DecompressionStream('deflate-raw')");
-    expect(ui).toContain("/api/delivery-plan/extract");
+    expect(ui).toContain("Nothing has been created in Figma yet.");
+    expect(ui).toContain("Create formats from plan");
   });
 
-  it("keeps granular Motion inheritance controls",()=>{
-    for(const part of ["motionType","timing","easing","geometry","layout"]){expect(ui).toContain(`data-part=\"${part}\"`);}
+  it("prevents duplicate sizes while allowing missing formats to be added",()=>{
+    expect(controller).toContain("const missing=normalized.filter");
+    expect(controller).toContain("skipped:normalized.length-roots.length");
+    expect(ui).toContain("Add ${missing.length} missing formats");
   });
 
-  it("wires both manual and parsed formats into one Figma controller",()=>{
-    expect(ui).toContain("create-from-plan");
-    expect(controller).toContain("createCampaignFromFormats");
-    expect(controller).toContain("plan-formats-created");
-    expect(controller).toContain("deliveryPlacements");
-    expect(controller).toContain("ttConflicts");
+  it("retains technical metadata and tracking slot per Figma format",()=>{
+    expect(controller).toContain("deliveryPlacements:JSON.stringify");
+    expect(controller).toContain("ttConflicts:JSON.stringify");
+    expect(controller).toContain("addTrackingPixel(r)");
+    expect(controller).toContain("technicalRole");
   });
 
-  it("does not register figma.on listeners in incremental runtime",()=>{
+  it("keeps granular linked-format controls",()=>{
+    for(const part of ["content","appearance","motionType","timing","easing","geometry","layout"]){
+      expect(ui).toContain(`data-part=\"${part}\"`);
+    }
+    expect(controller).toContain("syncSlot");
+  });
+
+  it("loads final files in manifest",()=>{
+    expect(manifest.ui).toBe("ui-v8.html");
+    expect(manifest.main).toBe("code-v8.js");
     expect(manifest.documentAccess).toBe("dynamic-page");
-    expect(controller).not.toMatch(/figma\.on\s*\(/);
-  });
-
-  it("loads v7 UI/controller and permits only the campaign gateway domain",()=>{
-    expect(manifest.ui).toBe("ui-v7.html");
-    expect(manifest.main).toBe("code-plan-formats.js");
     expect(manifest.networkAccess.allowedDomains).toEqual(["https://banners.rechord.online"]);
   });
 });
