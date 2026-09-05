@@ -7,6 +7,7 @@ export type CampaignBuild={id:string;campaignId:string;campaignName:string;creat
 export type CreativeVersion={id:string;campaignId:string;version:number;createdAt:string;touched:string[];formats:Array<any>};
 export type TTResolution={campaignId:string;results?:Array<any>;placementId?:string;status?:"matched"|"ambiguous"|"not_found";matches?:Array<any>;reason?:string};
 export type FigmaPair={code:string;campaignId:string;campaignName:string;expiresAt:string};
+export type WorkspaceInvitation={id:string;email:string;role:AccessRole;expiresAt:string;createdAt?:string;token?:string};
 
 function token(){return localStorage.getItem(TOKEN_KEY)||""}
 export function hasToken(){return Boolean(token())}
@@ -15,6 +16,7 @@ async function request<T>(path:string,init:RequestInit={}):Promise<T>{const head
 export const api={
  async register(input:{email:string,password:string,name:string}){const data=await request<SessionPayload&{token:string}>("/api/auth/register",{method:"POST",body:JSON.stringify(input)});saveToken(data.token);return data},
  async login(input:{email:string,password:string}){const data=await request<SessionPayload&{token:string}>("/api/auth/login",{method:"POST",body:JSON.stringify(input)});saveToken(data.token);return data},
+ async acceptInvitation(input:{token:string,password?:string,name?:string}){const data=await request<SessionPayload&{token:string}>("/api/auth/invitation",{method:"POST",body:JSON.stringify(input)});saveToken(data.token);return data},
  async me(){return request<SessionPayload>("/api/auth/me")},
  async logout(){try{await request("/api/auth/logout",{method:"POST"})}finally{saveToken("")}},
  async campaigns(){return request<{items:Campaign[]}>("/api/campaigns")},
@@ -32,4 +34,6 @@ export const api={
  async build(id:string,buildId:string){return request<CampaignBuild>(`/api/campaigns/${encodeURIComponent(id)}/builds/${encodeURIComponent(buildId)}`)},
  async members(){return request<{items:Array<{id:string;role:AccessRole;user:{id:string,email:string,name:string}|null}>}>("/api/workspace/members")},
  async setRole(id:string,role:AccessRole){return request(`/api/workspace/members/${encodeURIComponent(id)}`,{method:"PATCH",body:JSON.stringify({role})})},
+ async invitations(){return request<{items:WorkspaceInvitation[]}>("/api/workspace/invitations")},
+ async invite(email:string,role:AccessRole){return request<WorkspaceInvitation>("/api/workspace/invitations",{method:"POST",body:JSON.stringify({email,role})})},
 };
