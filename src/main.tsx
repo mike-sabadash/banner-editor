@@ -16,6 +16,7 @@ import "./mvp2/cloud.css";
 import "./mvp2/cloud-v2.css";
 import "./mvp2/marketing.css";
 import "./mvp2/auth.css";
+import "./mvp2/design-enforcement.css";
 
 function Product(){
   const params=new URLSearchParams(location.search);
