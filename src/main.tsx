@@ -13,6 +13,7 @@ import "./campaign/delivery.css";
 import "./mvp2/design-system.css";
 import "./mvp2/cloud.css";
 import "./mvp2/marketing.css";
+import "./mvp2/auth.css";
 
 function Product(){
   const params=new URLSearchParams(location.search);
