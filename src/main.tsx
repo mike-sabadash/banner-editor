@@ -21,6 +21,7 @@ import "./mvp2/design-enforcement.css";
 import "./mvp2/campaign-wall.css";
 import "./mvp2/media-plan.css";
 import "./mvp2/delivery-v2.css";
+import "./mvp2/figma-connect.css";
 
 function Product(){
   const params=new URLSearchParams(location.search);
