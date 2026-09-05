@@ -9,6 +9,7 @@ import type {Locale} from "./mvp2/i18n";
 import "./styles.css";
 import "./campaign/campaign.css";
 import "./campaign/delivery.css";
+import "./mvp2/design-system.css";
 import "./mvp2/cloud.css";
 import "./mvp2/marketing.css";
 
