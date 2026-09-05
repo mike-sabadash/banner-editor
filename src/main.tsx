@@ -2,13 +2,17 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import EditorCoreV2 from "./core/EditorCoreV2";
 import CampaignHub from "./campaign/CampaignHub";
+import CloudApp from "./mvp2/CloudApp";
 import "./styles.css";
 import "./campaign/campaign.css";
 import "./campaign/delivery.css";
+import "./mvp2/cloud.css";
 
 function Product(){
   const params=new URLSearchParams(location.search);
-  return params.get("view")==="editor"?<EditorCoreV2/>:<CampaignHub/>;
+  if(params.get("view")==="editor")return <EditorCoreV2/>;
+  if(params.get("view")==="legacy-campaign")return <CampaignHub/>;
+  return <CloudApp/>;
 }
 
 createRoot(document.getElementById("root")!).render(
