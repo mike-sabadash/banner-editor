@@ -1,3 +1,5 @@
+const htmlDocument=value=>{const raw=String(value||"").trim();if(!raw)return"";return raw.slice(0,4_000_000);};
+
 export function figmaSpecFromCampaign(campaign){
  return{
   schemaVersion:1,
@@ -26,15 +28,21 @@ export function applyCreativePublish(campaign,input={}){
   const update=updates.get(String(format.id));
   if(!update)return format;
   touched.push(format.id);
+  const previewHtml=htmlDocument(update.previewHtml)||format.previewHtml;
+  const previewSvg=update.previewSvg?String(update.previewSvg).slice(0,2_000_000):format.previewSvg;
+  const previewUrl=update.previewUrl?String(update.previewUrl):format.previewUrl;
+  const previewType=previewHtml?"html":update.previewType?String(update.previewType):previewSvg?"figma-svg":format.previewType;
   return{
    ...format,
    creativeState:"published",
    creativeVersion:Number(format.creativeVersion||0)+1,
-   previewUrl:update.previewUrl?String(update.previewUrl):format.previewUrl,
-   previewSvg:update.previewSvg?String(update.previewSvg).slice(0,2_000_000):format.previewSvg,
-   previewType:update.previewType?String(update.previewType):format.previewType,
+   previewUrl,
+   previewHtml,
+   previewSvg,
+   previewType,
    durationSec:Number.isFinite(Number(update.durationSec))?Number(update.durationSec):format.durationSec,
    estimatedZipKb:Number.isFinite(Number(update.estimatedZipKb))?Number(update.estimatedZipKb):format.estimatedZipKb,
+   clickTagPresent:typeof update.clickTagPresent==="boolean"?update.clickTagPresent:format.clickTagPresent,
    publishedAt:new Date().toISOString(),
   };
  });
