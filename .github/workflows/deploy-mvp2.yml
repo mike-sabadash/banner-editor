@@ -25,7 +25,7 @@ jobs:
       - name: Deploy exact MVP2 branch
         run: |
           ssh -i ~/.ssh/bannermatic_server -p 2222 -o IdentitiesOnly=yes root@213.182.208.29 \
-            'cd /var/www/banner-editor && export GIT_SSH_COMMAND="ssh -i /root/.ssh/banner_editor_deploy -p 443 -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new" && git fetch origin codex/mvp2-figma-cloud-runtime:refs/remotes/origin/codex/mvp2-figma-cloud-runtime && git restore -- .github/workflows/deploy-mvp2.yml 2>/dev/null || true; git switch -C codex/mvp2-figma-cloud-runtime origin/codex/mvp2-figma-cloud-runtime --no-track && BANNERMATIC_DEPLOY_BRANCH=codex/mvp2-figma-cloud-runtime bash scripts/deploy-ads.sh'
+            'cd /var/www/banner-editor && export GIT_SSH_COMMAND="ssh -i /root/.ssh/banner_editor_deploy -p 443 -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new" && git fetch origin codex/mvp2-figma-cloud-runtime:refs/remotes/origin/codex/mvp2-figma-cloud-runtime && git reset HEAD -- .github/workflows/deploy-mvp2.yml >/dev/null 2>&1 || true; git checkout -- .github/workflows/deploy-mvp2.yml >/dev/null 2>&1 || true; git switch -C codex/mvp2-figma-cloud-runtime origin/codex/mvp2-figma-cloud-runtime --no-track && BANNERMATIC_DEPLOY_BRANCH=codex/mvp2-figma-cloud-runtime bash scripts/deploy-ads.sh'
       - name: Verify public Bannermatic entry
         run: |
           curl -fsS --max-time 30 https://ads.rechord.online/healthz
