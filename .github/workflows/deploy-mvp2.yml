@@ -1,0 +1,32 @@
+name: Deploy Bannermatic MVP2
+
+on:
+  push:
+    branches:
+      - codex/mvp2-figma-cloud-runtime
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify deploy secret exists
+        run: |
+          if [ -z "${{ secrets.BANNERMATIC_SERVER_SSH_KEY }}" ]; then
+            echo "BANNERMATIC_SERVER_SSH_KEY is not configured" >&2
+            exit 1
+          fi
+      - name: Configure SSH
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.BANNERMATIC_SERVER_SSH_KEY }}" > ~/.ssh/bannermatic_server
+          chmod 600 ~/.ssh/bannermatic_server
+          ssh-keyscan -p 2222 213.182.208.29 >> ~/.ssh/known_hosts
+      - name: Deploy exact MVP2 branch
+        run: |
+          ssh -i ~/.ssh/bannermatic_server -p 2222 -o IdentitiesOnly=yes root@213.182.208.29 \
+            'cd /var/www/banner-editor && BANNERMATIC_DEPLOY_BRANCH=codex/mvp2-figma-cloud-runtime bash scripts/deploy-ads.sh'
+      - name: Verify public Bannermatic entry
+        run: |
+          curl -fsS --max-time 30 https://ads.rechord.online/healthz
+          curl -fsS --max-time 30 https://ads.rechord.online/ | grep -q '<div id="root"></div>'
