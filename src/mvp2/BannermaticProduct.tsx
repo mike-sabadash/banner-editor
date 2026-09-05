@@ -1,6 +1,6 @@
 import {useEffect,useMemo,useState} from 'react';
 import {ArrowRight,ChevronDown,CircleAlert,FileSpreadsheet,Grid2X2,Languages,LayoutDashboard,LogOut,Plus,Settings,ShieldCheck,Users2,WandSparkles} from 'lucide-react';
-import {api,type SessionPayload} from './api';
+import {api,type SessionPayload,type WorkspaceInvitation} from './api';
 import {campaignReadiness,can,type AccessRole,type Campaign} from './domain';
 import {t,type Locale} from './i18n';
 import MediaPlanWorkspace from './MediaPlanWorkspace';
@@ -14,30 +14,22 @@ const EMPTY:Campaign={id:'',name:'Untitled',status:'draft',placements:[],formats
 const CREATIVE_REFRESH_MS=4000;
 
 export default function BannermaticProduct(){
- const [session,setSession]=useState<SessionPayload|null>(null);
- const [locale,setLocale]=useState<Locale>(()=>(localStorage.getItem('bannermatic:locale') as Locale)||'en');
- const [screen,setScreen]=useState<Screen>('campaigns');
- const [campaigns,setCampaigns]=useState<Campaign[]>([]);
- const [campaign,setCampaign]=useState<Campaign>(EMPTY);
- const [newName,setNewName]=useState('');
- const [members,setMembers]=useState<Member[]>([]);
- const [loading,setLoading]=useState(true);
- const [error,setError]=useState('');
- const role=(session?.role||'viewer') as AccessRole;
- const readiness=useMemo(()=>campaignReadiness(campaign),[campaign]);
- const ru=locale==='ru';
+ const [session,setSession]=useState<SessionPayload|null>(null),[locale,setLocale]=useState<Locale>(()=>(localStorage.getItem('bannermatic:locale') as Locale)||'en'),[screen,setScreen]=useState<Screen>('campaigns'),[campaigns,setCampaigns]=useState<Campaign[]>([]),[campaign,setCampaign]=useState<Campaign>(EMPTY),[newName,setNewName]=useState(''),[members,setMembers]=useState<Member[]>([]),[invitations,setInvitations]=useState<WorkspaceInvitation[]>([]),[inviteEmail,setInviteEmail]=useState(''),[inviteRole,setInviteRole]=useState<AccessRole>('designer'),[inviteLink,setInviteLink]=useState(''),[loading,setLoading]=useState(true),[error,setError]=useState('');
+ const role=(session?.role||'viewer') as AccessRole;const readiness=useMemo(()=>campaignReadiness(campaign),[campaign]);const ru=locale==='ru';
  const setLang=(value:Locale)=>{localStorage.setItem('bannermatic:locale',value);setLocale(value)};
  const applyCampaign=(next:Campaign)=>{setCampaign(next);setCampaigns(list=>list.some(c=>c.id===next.id)?list.map(c=>c.id===next.id?next:c):[next,...list])};
  const refreshCampaigns=async()=>{const data=await api.campaigns();setCampaigns(data.items);if(campaign.id){const current=data.items.find(c=>c.id===campaign.id);if(current)setCampaign(current)}else if(data.items[0])setCampaign(data.items[0])};
- const refreshCurrentCampaign=async()=>{if(!campaign.id)return;try{const current=await api.campaign(campaign.id);applyCampaign(current)}catch(e){setError(e instanceof Error?e.message:String(e))}};
+ const refreshCurrentCampaign=async()=>{if(!campaign.id)return;try{applyCampaign(await api.campaign(campaign.id))}catch(e){setError(e instanceof Error?e.message:String(e))}};
+ const refreshAccess=async()=>{try{const m=await api.members();setMembers(m.items);if(can(role,'manage-access')){const i=await api.invitations();setInvitations(i.items)}}catch(e){setError(e instanceof Error?e.message:String(e))}};
  useEffect(()=>{(async()=>{try{const s=await api.me();setSession(s);await refreshCampaigns()}catch{location.href='?auth=login'}finally{setLoading(false)}})()},[]);
- useEffect(()=>{if(screen!=='settings'||!session)return;api.members().then(d=>setMembers(d.items)).catch(e=>setError(e instanceof Error?e.message:String(e)))},[screen,session?.workspace.id]);
+ useEffect(()=>{if(screen==='settings'&&session)void refreshAccess()},[screen,session?.workspace.id,role]);
  useEffect(()=>{if(screen!=='creative'||!campaign.id)return;void refreshCurrentCampaign();const timer=window.setInterval(()=>void refreshCurrentCampaign(),CREATIVE_REFRESH_MS);const onFocus=()=>void refreshCurrentCampaign();window.addEventListener('focus',onFocus);return()=>{window.clearInterval(timer);window.removeEventListener('focus',onFocus)}},[screen,campaign.id]);
  const createCampaign=async()=>{if(!newName.trim()||!can(role,'edit-campaign'))return;setLoading(true);setError('');try{const next=await api.createCampaign(newName.trim(),locale);applyCampaign(next);setNewName('');setScreen('overview')}catch(e){setError(e instanceof Error?e.message:String(e))}finally{setLoading(false)}};
  const chooseCampaign=(next:Campaign)=>{setCampaign(next);setScreen('overview');setError('')};
  const openFigma=()=>{if(!campaign.id||!can(role,'edit-creative'))return;location.href=`?view=editor&campaign=${encodeURIComponent(campaign.id)}`};
  const logout=async()=>{await api.logout();location.href='/'};
- const updateRole=async(id:string,next:AccessRole)=>{setError('');try{await api.setRole(id,next);const data=await api.members();setMembers(data.items)}catch(e){setError(e instanceof Error?e.message:String(e))}};
+ const updateRole=async(id:string,next:AccessRole)=>{setError('');try{await api.setRole(id,next);await refreshAccess()}catch(e){setError(e instanceof Error?e.message:String(e))}};
+ const invite=async()=>{if(!inviteEmail.includes('@')||!can(role,'manage-access'))return;setError('');setInviteLink('');try{const created=await api.invite(inviteEmail,inviteRole);setInviteEmail('');setInviteLink(`${location.origin}/?invite=${encodeURIComponent(created.token||'')}`);await refreshAccess()}catch(e){setError(e instanceof Error?e.message:String(e))}};
  if(loading&&!session)return <main className="bm-auth"><section className="bm-auth-card"><div className="bm-logo large">B</div><span className="bm-eyebrow">BANNERMATIC CLOUD</span><h2>{ru?'Загружаем workspace…':'Loading workspace…'}</h2><div className="bm-skeleton-line"/><div className="bm-skeleton-line short"/></section></main>;
  if(!session)return null;
  return <div className="bm-app bm-app-v2">
@@ -49,7 +41,7 @@ export default function BannermaticProduct(){
   {screen==='media'&&campaign.id&&<MediaPlanWorkspace campaign={campaign} locale={locale} canEdit={can(role,'edit-campaign')} onUpdated={applyCampaign} onError={setError}/>}
   {screen==='creative'&&campaign.id&&<section className="bm-page"><div className="bm-page-head"><div><span className="bm-eyebrow">CAMPAIGN WALL</span><h1>{ru?'Creative кампании':'Campaign Creative'}</h1><p>{ru?'Все уникальные форматы, placements и синхронный playback на одном экране.':'All unique formats, placements and synchronized playback on one screen.'}</p></div></div><FigmaConnectPanel campaign={campaign} locale={locale} enabled={can(role,'edit-creative')} onError={setError}/>{campaign.formats.length?<CampaignWall campaign={campaign} locale={locale} onOpenFigma={openFigma}/>:<div className="bm-empty"><WandSparkles size={30}/><h3>{ru?'Сначала скомпилируйте кампанию':'Compile the campaign first'}</h3><p>{ru?'Required creative set появится после медиаплана.':'The required creative set appears after the media plan.'}</p><button className="bm-primary" onClick={()=>setScreen('media')}>{ru?'Открыть медиаплан':'Open Media Plan'}</button></div>}</section>}
   {screen==='delivery'&&campaign.id&&<DeliveryWorkspace campaign={campaign} locale={locale} canDeliver={can(role,'deliver')} onOpenFigma={openFigma} onError={setError}/>}
-  {screen==='settings'&&<section className="bm-page"><div className="bm-page-head"><div><span className="bm-eyebrow">WORKSPACE</span><h1>{ru?'Настройки':'Settings'}</h1><p>{session.workspace.name} · {session.user.email}</p></div></div><div className="bm-settings-grid"><article className="bm-surface bm-settings-card"><span className="bm-eyebrow">ACCOUNT</span><h3>{session.user.name}</h3><p>{session.user.email}</p><div className="bm-role-row"><span>{ru?'Ваша роль':'Your role'}</span><b>{role}</b></div></article><article className="bm-surface bm-settings-card members"><span className="bm-eyebrow">MEMBERS</span><h3>{ru?'Доступ к workspace':'Workspace access'}</h3>{members.map(m=><div className="bm-member-row" key={m.id}><span><b>{m.user?.name||'Member'}</b><small>{m.user?.email||''}</small></span>{can(role,'manage-access')?<select className="bm-select" value={m.role} onChange={e=>void updateRole(m.id,e.target.value as AccessRole)}>{['owner','admin','designer','producer','viewer'].map(r=><option key={r} value={r}>{r}</option>)}</select>:<em>{m.role}</em>}</div>)}</article></div></section>}
+  {screen==='settings'&&<section className="bm-page"><div className="bm-page-head"><div><span className="bm-eyebrow">WORKSPACE</span><h1>{ru?'Настройки':'Settings'}</h1><p>{session.workspace.name} · {session.user.email}</p></div></div><div className="bm-settings-grid"><article className="bm-surface bm-settings-card"><span className="bm-eyebrow">ACCOUNT</span><h3>{session.user.name}</h3><p>{session.user.email}</p><div className="bm-role-row"><span>{ru?'Ваша роль':'Your role'}</span><b>{role}</b></div></article><article className="bm-surface bm-settings-card members"><span className="bm-eyebrow">MEMBERS</span><h3>{ru?'Доступ к workspace':'Workspace access'}</h3>{can(role,'manage-access')&&<div className="bm-invite-row"><input className="bm-input" type="email" value={inviteEmail} onChange={e=>setInviteEmail(e.target.value)} placeholder="designer@company.com"/><select className="bm-select" value={inviteRole} onChange={e=>setInviteRole(e.target.value as AccessRole)}>{['admin','designer','producer','viewer'].map(r=><option key={r} value={r}>{r}</option>)}</select><button className="bm-primary" disabled={!inviteEmail.includes('@')} onClick={()=>void invite()}>{ru?'Пригласить':'Invite'}</button></div>}{inviteLink&&<div className="bm-notice"><span>{ru?'Ссылка приглашения:':'Invitation link:'}</span><input className="bm-input" readOnly value={inviteLink} onFocus={e=>e.currentTarget.select()}/></div>}{invitations.map(i=><div className="bm-member-row pending" key={i.id}><span><b>{i.email}</b><small>{ru?'Ожидает принятия':'Pending invitation'}</small></span><em>{i.role}</em></div>)}{members.map(m=><div className="bm-member-row" key={m.id}><span><b>{m.user?.name||'Member'}</b><small>{m.user?.email||''}</small></span>{can(role,'manage-access')?<select className="bm-select" value={m.role} onChange={e=>void updateRole(m.id,e.target.value as AccessRole)}>{['owner','admin','designer','producer','viewer'].map(r=><option key={r} value={r}>{r}</option>)}</select>:<em>{m.role}</em>}</div>)}</article></div></section>}
   </main>
  </div>;
 }
