@@ -11,6 +11,7 @@ import FigmaConnectPanel from './FigmaConnectPanel';
 type Screen='campaigns'|'overview'|'media'|'creative'|'delivery'|'settings';
 type Member={id:string;role:AccessRole;user:{id:string;email:string;name:string}|null};
 const EMPTY:Campaign={id:'',name:'Untitled',status:'draft',placements:[],formats:[],locale:'en'};
+const CREATIVE_REFRESH_MS=4000;
 
 export default function BannermaticProduct(){
  const [session,setSession]=useState<SessionPayload|null>(null);
@@ -28,8 +29,10 @@ export default function BannermaticProduct(){
  const setLang=(value:Locale)=>{localStorage.setItem('bannermatic:locale',value);setLocale(value)};
  const applyCampaign=(next:Campaign)=>{setCampaign(next);setCampaigns(list=>list.some(c=>c.id===next.id)?list.map(c=>c.id===next.id?next:c):[next,...list])};
  const refreshCampaigns=async()=>{const data=await api.campaigns();setCampaigns(data.items);if(campaign.id){const current=data.items.find(c=>c.id===campaign.id);if(current)setCampaign(current)}else if(data.items[0])setCampaign(data.items[0])};
+ const refreshCurrentCampaign=async()=>{if(!campaign.id)return;try{const current=await api.campaign(campaign.id);applyCampaign(current)}catch(e){setError(e instanceof Error?e.message:String(e))}};
  useEffect(()=>{(async()=>{try{const s=await api.me();setSession(s);await refreshCampaigns()}catch{location.href='?auth=login'}finally{setLoading(false)}})()},[]);
  useEffect(()=>{if(screen!=='settings'||!session)return;api.members().then(d=>setMembers(d.items)).catch(e=>setError(e instanceof Error?e.message:String(e)))},[screen,session?.workspace.id]);
+ useEffect(()=>{if(screen!=='creative'||!campaign.id)return;void refreshCurrentCampaign();const timer=window.setInterval(()=>void refreshCurrentCampaign(),CREATIVE_REFRESH_MS);const onFocus=()=>void refreshCurrentCampaign();window.addEventListener('focus',onFocus);return()=>{window.clearInterval(timer);window.removeEventListener('focus',onFocus)}},[screen,campaign.id]);
  const createCampaign=async()=>{if(!newName.trim()||!can(role,'edit-campaign'))return;setLoading(true);setError('');try{const next=await api.createCampaign(newName.trim(),locale);applyCampaign(next);setNewName('');setScreen('overview')}catch(e){setError(e instanceof Error?e.message:String(e))}finally{setLoading(false)}};
  const chooseCampaign=(next:Campaign)=>{setCampaign(next);setScreen('overview');setError('')};
  const openFigma=()=>{if(!campaign.id||!can(role,'edit-creative'))return;location.href=`?view=editor&campaign=${encodeURIComponent(campaign.id)}`};
