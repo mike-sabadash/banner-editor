@@ -9,7 +9,7 @@ import MarketingHome from "./mvp2/MarketingHome";
 import AuthPage from "./mvp2/AuthPage";
 import {hasToken} from "./mvp2/api";
 import type {Locale} from "./mvp2/i18n";
-import "./styles.css";import "./campaign/campaign.css";import "./campaign/delivery.css";import "./mvp2/design-system.css";import "./mvp2/cloud.css";import "./mvp2/cloud-v2.css";import "./mvp2/marketing.css";import "./mvp2/auth.css";import "./mvp2/design-enforcement.css";import "./mvp2/campaign-wall.css";import "./mvp2/media-plan.css";import "./mvp2/delivery-v2.css";import "./mvp2/figma-connect.css";import "./mvp2/next-elite-shell.css";import "./mvp2/next-elite-public.css";
+import "./styles.css";import "./campaign/campaign.css";import "./campaign/delivery.css";import "./mvp2/design-system.css";import "./mvp2/cloud.css";import "./mvp2/cloud-v2.css";import "./mvp2/marketing.css";import "./mvp2/auth.css";import "./mvp2/design-enforcement.css";import "./mvp2/campaign-wall.css";import "./mvp2/media-plan.css";import "./mvp2/delivery-v2.css";import "./mvp2/figma-connect.css";import "./mvp2/next-elite-shell.css";import "./mvp2/next-elite-public.css";import "./mvp2/next-elite-workspaces.css";
 
 function Product(){
   const params=new URLSearchParams(location.search);
