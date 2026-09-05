@@ -18,7 +18,7 @@ export type Placement={id:string;platform:string;placement:string;width:number;h
 
 export type VisualFormat={
  id:string;width:number;height:number;size:string;placementIds:string[];creativeState:CreativeState;creativeVersion:number;
- previewUrl?:string;previewSvg?:string;previewType?:string;durationSec?:number;estimatedZipKb?:number;clickTagPresent?:boolean;publishedAt?:string;
+ previewUrl?:string;previewHtml?:string;previewSvg?:string;previewType?:string;durationSec?:number;estimatedZipKb?:number;clickTagPresent?:boolean;publishedAt?:string;
 };
 
 export type Campaign={
@@ -32,7 +32,7 @@ export const formatId=(w:number,h:number)=>`fmt-${sizeKey(w,h)}`;
 export function compileVisualFormats(placements:Placement[],existing:VisualFormat[]=[]):VisualFormat[]{
  const existingByKey=new Map(existing.map(f=>[sizeKey(f.width,f.height),f]));const grouped=new Map<string,Placement[]>();
  for(const p of placements){const key=sizeKey(p.width,p.height);grouped.set(key,[...(grouped.get(key)||[]),p])}
- return [...grouped.entries()].map(([key,ps])=>{const first=ps[0],old=existingByKey.get(key);return {id:old?.id||formatId(first.width,first.height),width:first.width,height:first.height,size:`${first.width}×${first.height}`,placementIds:ps.map(p=>p.id),creativeState:old?.creativeState||"missing",creativeVersion:old?.creativeVersion||0,previewUrl:old?.previewUrl,previewSvg:old?.previewSvg,previewType:old?.previewType,durationSec:old?.durationSec,estimatedZipKb:old?.estimatedZipKb,clickTagPresent:old?.clickTagPresent,publishedAt:old?.publishedAt};}).sort((a,b)=>b.width*b.height-a.width*a.height);
+ return [...grouped.entries()].map(([key,ps])=>{const first=ps[0],old=existingByKey.get(key);return {id:old?.id||formatId(first.width,first.height),width:first.width,height:first.height,size:`${first.width}×${first.height}`,placementIds:ps.map(p=>p.id),creativeState:old?.creativeState||"missing",creativeVersion:old?.creativeVersion||0,previewUrl:old?.previewUrl,previewHtml:old?.previewHtml,previewSvg:old?.previewSvg,previewType:old?.previewType,durationSec:old?.durationSec,estimatedZipKb:old?.estimatedZipKb,clickTagPresent:old?.clickTagPresent,publishedAt:old?.publishedAt};}).sort((a,b)=>b.width*b.height-a.width*a.height);
 }
 
 export function placementReadiness(p:Placement,format?:VisualFormat):Readiness{
