@@ -1,6 +1,6 @@
 # Bannermatic MVP2 — Development Rules
 
-This file is the persistent operating contract for MVP2 development. It supplements `AGENTS.md` and `docs/MVP2_CHECKLIST.md` and must be read before any substantial MVP2 change.
+This file is the persistent operating contract for MVP2 development. It supplements `AGENTS.md`, `docs/MVP2_CHECKLIST.md`, and `docs/MVP2_STATUS.md` and must be read before any substantial MVP2 change or after any session/context interruption.
 
 ## 0. Non-negotiable definition of the product
 
@@ -113,7 +113,7 @@ Before each substantial change:
 1. read this file and `docs/MVP2_CHECKLIST.md`;
 2. identify the exact unchecked checklist item(s);
 3. verify they support Campaign Compiler and the full customer journey;
-4. implement on `codex/bannermatic-mvp2` or a child branch;
+4. implement on `codex/bannermatic-mvp2` or the active child branch recorded in the handoff below;
 5. add/update feature tests;
 6. run tests, production build and server checks;
 7. deploy customer-visible Cloud work to the agreed test domain;
@@ -188,131 +188,51 @@ Required foundations:
 - focus ring/accessibility tokens;
 - density rules for data-heavy campaign UI.
 
-Required reusable components include at least:
-- Button variants/sizes/states;
-- Input/Textarea/Select;
-- Checkbox/Radio/Switch where semantically appropriate;
-- Tabs/Segmented control;
-- Badge/Status;
-- Tooltip;
-- Dropdown/Menu;
-- Modal/Drawer;
-- Card/Surface;
-- Table/Data row;
-- Empty state;
-- Skeleton/loading state;
-- Toast/inline feedback;
-- App navigation/sidebar/header;
-- campaign/format/placement preview cards.
+Required reusable components include at least Button variants/sizes/states; Input/Textarea/Select; Checkbox/Radio/Switch; Tabs/Segmented control; Badge/Status; Tooltip; Dropdown/Menu; Modal/Drawer; Card/Surface; Table/Data row; Empty state; Skeleton/loading state; Toast/inline feedback; App navigation/sidebar/header; campaign/format/placement preview cards.
 
 Every screen must consume the same tokens/components. One-off CSS that creates visually inconsistent controls is a defect.
 
 ## 10. Mandatory UX/UI audit gate
 
-Every customer-visible slice requires a UX/UI audit before `DONE`:
-- hierarchy and primary action are obvious;
-- no duplicate editors for the same domain data;
-- progressive disclosure is used for technical detail;
-- copy is understandable to a first-time user;
-- hover/focus/active/disabled/loading/error/success states exist where needed;
-- keyboard/focus behavior is sane;
-- desktop/tablet/mobile layouts are checked;
-- spacing/type/radii/icons match the design system;
-- no clipping/overflow/layout jumps at supported breakpoints;
-- empty and error states remain premium and useful;
-- Campaign Compiler remains visually and narratively dominant.
+Every customer-visible slice requires a UX/UI audit before `DONE`: hierarchy and primary action; no duplicate editors; progressive disclosure; first-time-user copy; hover/focus/active/disabled/loading/error/success states; keyboard/focus behavior; desktop/tablet/mobile; design-system consistency; no clipping/overflow/layout jumps; useful empty/error states; Campaign Compiler remains dominant.
 
 A screen that merely functions but looks like an internal prototype is **not complete**.
 
 ## 11. Campaign Wall requirements
 
-Campaign Wall is a flagship MVP2 screen and must support:
-- all unique campaign creatives visible together;
-- explicit format labels;
-- placement labels/statuses;
-- Creative View and Delivery View;
-- one visual creative with multiple placement statuses;
-- live HTML previews where available;
-- Play All / Pause All / Replay All;
-- shared campaign playhead;
-- Open in Figma for creative changes;
-- readiness summary N/N.
+Campaign Wall is a flagship MVP2 screen and must support all unique campaign creatives together, explicit format labels, placement labels/statuses, Creative/Delivery views, multiple placement statuses on one creative, live HTML previews, Play/Pause/Replay All, shared campaign playhead, Open in Figma, and readiness N/N.
 
-Static mock previews are not equivalent to live HTML previews and may only be labelled as temporary development placeholders.
+Static/SVG snapshots are useful review fallbacks but are **not** equivalent to live HTML animation previews and must never be presented as such.
 
 ## 12. Authentication and access rules
 
-Target roles:
-- Owner
-- Admin
-- Designer
-- Producer
-- Viewer
+Target roles: Owner, Admin, Designer, Producer, Viewer.
 
-Server must be the authority for authentication, sessions, workspace membership and role enforcement. Client-side role hiding alone is insufficient.
-
-The customer journey must include visible sign-up/sign-in/sign-out/account/workspace entry points. Do not claim production authentication while the UI uses localStorage-only preview sessions.
-
-Do not store raw passwords. Do not expose tokens/secrets in UI, logs, Notion, GitHub or documentation.
+Server must be the authority for authentication, sessions, workspace membership and role enforcement. Client-side role hiding alone is insufficient. The customer journey must include visible sign-up/sign-in/sign-out/account/workspace entry points. Do not claim production authentication while the UI uses local-only preview sessions. Do not store raw passwords or expose tokens/secrets.
 
 ## 13. Persistence and versioning
 
 Cloud state must be server-persistent. LocalStorage may be used only for non-authoritative UI preferences such as locale.
 
-Required version model:
-- Creative version
-- Media Plan version
-- TT snapshot version
-- Campaign Build pins all three
-
-Published creative versions and delivery builds must become immutable/reproducible once that layer is implemented.
+Required version model: Creative version, Media Plan version, TT snapshot version, and Campaign Build pins all three. Published creative versions and delivery builds must become immutable/reproducible.
 
 ## 14. TT rules
 
-- Client campaign TT overrides public/platform TT.
-- Deterministic platform + placement + size matching is preferred before AI.
-- AI is used for ambiguous, incomplete or document-extraction cases.
-- Unknown remains Unknown; never invent requirements.
-- Every effective rule must support provenance and checked-at metadata.
-- TT updates require explicit diff/confirmation before affecting campaign readiness.
-- Normal TT editing/management belongs in Cloud in MVP2; Figma receives context/status needed by the designer rather than becoming a second TT admin surface.
+Client campaign TT overrides public/platform TT. Deterministic platform + placement + size matching is preferred before AI. AI is used for ambiguous/incomplete/document extraction cases. Unknown remains Unknown. Every effective rule needs provenance and checked-at metadata. TT updates require explicit diff/confirmation. Normal TT management belongs in Cloud; Figma gets designer-relevant context/status, not a second TT admin surface.
 
 ## 15. AI rules
 
-AI is a real decision-support layer, not fake placeholder logic.
-
-For creative adaptation use the existing Anchor + Delta principle:
-- deterministic safe anchor first;
-- AI returns relative corrections;
-- geometry/safe constraints are reapplied after AI;
-- output remains human-editable.
-
-Paid AI calls must not happen automatically unless the user action explicitly invokes them or the product flow has an approved paid step.
+AI is a real decision-support layer, not fake placeholder logic. Creative adaptation follows Anchor + Delta: deterministic safe anchor first; AI relative corrections; constraints reapplied; output remains human-editable. Paid AI calls must not happen automatically unless the user action explicitly invokes them or the product flow has an approved paid step.
 
 ## 16. Technical safety
 
-- Preserve existing working plugin/editor functionality while MVP2 is developed.
-- Prefer additive/new-version files for risky large UI rewrites until verified.
-- Never use destructive git/filesystem operations for convenience.
-- No `rm -rf`, destructive resets or force pushes without explicit approval.
-- Preserve unrelated local changes/untracked files.
-- Never commit `.env`, API keys, passwords, SSH private keys or raw tokens.
-- Production deployment is a separate state from `PUSHED`.
-
-Known project infrastructure exists already (GitHub repository, production VPS, domains, OpenRouter gateway). Access details and secrets stay outside this file.
+Preserve working plugin/editor functionality. Prefer additive/new-version files for risky rewrites until verified. Never use destructive git/filesystem operations for convenience. No `rm -rf`, destructive resets or force pushes without explicit approval. Preserve unrelated local changes. Never commit secrets. Production deployment is a separate state from `PUSHED`.
 
 ## 17. Testing rules
 
-At minimum before claiming a code slice `TESTED`:
-- `npm test`;
-- `npm run build`;
-- server syntax checks used by CI;
-- relevant feature tests added/updated;
-- no failing CI on the current exact HEAD.
+At minimum before claiming a code slice `TESTED`: `npm test`; `npm run build`; server syntax checks used by CI; relevant feature tests; no failing CI on the current exact HEAD.
 
-For customer-visible work, `TESTED` is followed by `DEPLOYED` and `CLOUD RUNTIME VERIFIED`; tests do not replace those states.
-
-For the final MVP2 acceptance, perform a fresh end-to-end run as a new user, not only regression tests against pre-seeded state.
+For customer-visible work, `TESTED` is followed by `DEPLOYED` and `CLOUD RUNTIME VERIFIED`; tests do not replace those states. Final acceptance requires a fresh-user end-to-end run, not only seeded/regression state.
 
 ## 18. Reporting format
 
@@ -327,6 +247,89 @@ Use only real evidence:
 `FIGMA RUNTIME VERIFIED: yes/no — exact scenario or n/a`
 `DONE: yes/no`
 
-Then name the next unchecked checklist item.
-
 **Never report absence of visible product output as a successful product result. Never hide an unresolved dependency behind the words ready, done, implemented, working, production, or complete.**
+
+---
+
+# 19. SESSION CONTINUATION PROTOCOL — mandatory
+
+This section exists specifically so development survives a new chat/session/context reset without changing direction.
+
+When the user says **`ПРОДОЛЖИ`**, **`продолжай`**, **`делай`**, or an equivalent instruction to resume Bannermatic development:
+
+1. **Do not ask the user to reconstruct context.**
+2. Read, in this order: `MVP2_RULES.md` → `docs/MVP2_CHECKLIST.md` → `docs/MVP2_STATUS.md` → active PR/branch exact HEAD → latest CI for that HEAD.
+3. Treat the **Current handoff** section below as the starting checkpoint, then reconcile it against GitHub because GitHub evidence wins if newer.
+4. Resume from the first unfinished dependency in the existing end-to-end plan. Do not invent a new roadmap and do not restart already implemented slices.
+5. Preserve the architecture: Figma owns Creative; Cloud owns Campaign; Campaign Compiler is the product core.
+6. Preserve the design direction and premium SaaS quality bar.
+7. Continue autonomously through the checklist. **Do not stop after a commit, a green CI run, a small slice, a status report, or a non-critical implementation decision.**
+8. After each slice: inspect failures, fix them, run the next applicable checks, deploy when deployment is available, verify runtime, then continue to the next unchecked item.
+9. Ask the user only when an action genuinely requires user-only approval/input, including destructive operations, paid actions not already approved, unavailable secret/credential provisioning, or a product decision that cannot safely be inferred from this contract/checklist.
+10. A blocked deployment does **not** mean development stops. Record the blocker truthfully, continue every independent checklist item that can be completed safely, and return to deployment as soon as access exists.
+11. A failing CI does **not** mean development stops. Inspect the failure, repair it, rerun, and continue.
+12. A tool/session interruption does **not** justify changing plan. On recovery, repeat steps 1–4 and continue.
+13. Do not produce an interim “result” merely because one internal layer was implemented. The goal is the complete MVP2 acceptance flow.
+14. Stop only when one of these is true:
+    - the complete MVP2 checklist and end-to-end runtime acceptance are finished; or
+    - a genuine external blocker prevents all useful remaining work; or
+    - the user explicitly says to stop/pause/change direction.
+
+**Default behavior after `ПРОДОЛЖИ`: work continuously down the existing checklist toward complete MVP2.**
+
+# 20. CURRENT HANDOFF — 2026-09-05
+
+## Active development line
+- Repository: `mike-sabadash/banner-editor`
+- Active branch: `codex/mvp2-figma-cloud-runtime`
+- Active PR: `#44` — Connect Figma runtime to Bannermatic Cloud contract.
+- Do not merge PR #44 without explicit user approval.
+- Last fully verified CI checkpoint before the latest versioning changes: **Plugin final checks #167 — success**.
+- The branch advanced after that checkpoint with creative-version work; therefore **the exact current HEAD must be fetched and its CI checked before calling the latest changes TESTED**.
+
+## Customer-visible runtime truth
+- Required test URL: `https://ads.rechord.online/`.
+- As last directly observed by the user, `/` displays `{"error":"Not found"}`.
+- This means the domain currently routes the root request to backend/API instead of serving the Bannermatic frontend build.
+- Therefore current truth is: `DEPLOYED: no`, `CLOUD RUNTIME VERIFIED: no`, `DONE: no` for the customer SaaS.
+- Do not tell the user to test the website until a frontend build is actually deployed and the root route has been opened/verified.
+- Automated deploy workflow exists, but deployment was blocked because repository secret `BANNERMATIC_SERVER_SSH_KEY` was not available to the workflow. Re-check this on continuation; do not assume the blocker still exists.
+
+## Implemented/code-progress that must be preserved
+- Premium marketing/auth/SaaS design-system direction and customer-path components exist in the branch.
+- Primary modular SaaS shell is being assembled from the newer MVP2 workspaces rather than deleting legacy shells.
+- Server-backed auth/persistent campaign foundation exists.
+- Campaign Compiler domain model and equal-size dedupe exist.
+- Media Plan import/re-import diff/review-before-compile exists in code.
+- Manual setup was added as a second entry into the same placement model; do not create a parallel manual-only domain model.
+- TT/compliance/delivery workspace foundations exist; they are not all runtime-complete.
+- Campaign Wall exists with format/placement cards and shared playback UI.
+- Live HTML animation preview is **not yet complete**. SVG/Figma snapshots are fallback review representations, not live animation.
+- Cloud↔Figma secure pairing was added: one-time short pairing code → scoped plugin token for one campaign; do not replace it with copying raw user auth tokens.
+- Additive MVP2 Figma manifest/runtime was created to avoid breaking legacy `ui-v14/code-v8` before verification.
+- Figma sync is designed to create only missing sizes and preserve existing creative.
+- Publish Creative uses a scoped Cloud endpoint and creative-version model.
+- Creative snapshot/version persistence work has begun; reconcile latest files/tests before continuing.
+
+## Immediate continuation order
+When development resumes, do these without waiting for another planning discussion:
+1. Fetch exact branch HEAD and CI. Fix any failure introduced after CI #167.
+2. Finish immutable Creative publish/version persistence and make Cloud campaign state refresh immediately after Publish Creative.
+3. Finish real Figma → Cloud preview publication. Preserve SVG snapshot as fallback, but implement real HTML/animation preview for the Campaign Wall.
+4. Finish/verify shared Campaign Wall playback against actual live previews.
+5. Runtime-test Figma pairing: connect campaign, create missing formats only, second sync creates no duplicates, existing creative remains unchanged, publish increments Cloud creative version.
+6. Finish effective TT Intelligence/provenance/update-diff Cloud flow.
+7. Finish real Live Compliance: dimensions, ZIP, duration, clickTag/click URL, tracking, safe-zone/required elements where rules exist, N/N readiness.
+8. Finish immutable Media Plan versions and TT snapshots; Campaign Build must pin Creative + Media Plan + TT snapshot.
+9. Finish placement-specific Delivery Builds and final Build & Download Campaign flow.
+10. Complete remaining auth/access/workspace/settings/invite/role and RU/EN gaps from the checklist.
+11. Complete design-system, responsive, accessibility and UX/UI audit across marketing → auth → app → campaign → delivery.
+12. Restore/verify deployment, deploy exact tested build to `ads.rechord.online`, then run fresh-user browser E2E from marketing page through final campaign delivery.
+13. Run real Figma runtime E2E against that deployed Cloud environment.
+14. Update `docs/MVP2_STATUS.md` and only check `docs/MVP2_CHECKLIST.md` items backed by runtime evidence.
+
+## Remaining product acceptance
+The remaining work is defined exhaustively by every unchecked item in `docs/MVP2_CHECKLIST.md`. The list above is execution order, **not a replacement or reduction of the checklist**. If an unchecked checklist item is omitted from the execution-order summary, it still must be completed before MVP2 is DONE.
+
+## Continuity rule
+Do not reinterpret the next session as a new project. Do not revert to MVP1 architecture, a standalone banner editor, or an AI-resize-only product. Continue the same Bannermatic full-SaaS line until the acceptance contract is complete.
