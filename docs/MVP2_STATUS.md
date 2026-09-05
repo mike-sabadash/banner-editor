@@ -1,152 +1,125 @@
 # Bannermatic MVP2 — implementation status
 
-This file maps actual implementation evidence to `docs/MVP2_CHECKLIST.md`. It does **not** replace the checklist. Checklist boxes remain unchecked until runtime acceptance is verified.
+This file maps actual implementation evidence to `docs/MVP2_CHECKLIST.md`. It does **not** replace the checklist. Checklist boxes remain unchecked until the applicable runtime acceptance is verified.
 
 Last updated: 2026-09-05
 
 ## Current branch / PR
-- Branch: `codex/bannermatic-mvp2`
-- PR: `#43`
-- Production deployment: **NOT VERIFIED for MVP2**
-- Production runtime acceptance: **NOT VERIFIED**
+- Branch: `codex/mvp2-figma-cloud-runtime`
+- PR: `#44`
+- Latest exact tested head at this update: `c9153691c0350f1eb8826bfe35be68c548efba82`
+- CI: `#153` success on that exact head.
+- Deployment to `ads.rechord.online`: **NOT VERIFIED for this head**.
+- Cloud runtime acceptance: **NOT VERIFIED for this head**.
+- Figma runtime acceptance: **NOT VERIFIED**.
 
-## P0 — product shell and foundations
+## P0 — public entry / SaaS product shell
 
-### Premium SaaS shell
-- DESIGNED: yes
-- CODED: yes — `src/mvp2/CloudAppV2.tsx`, `src/mvp2/cloud.css`
-- TESTED: yes — production build is covered by PR CI
-- RUNTIME VERIFIED: no
+### Marketing → auth → authenticated SaaS
+- DESIGNED: yes.
+- CODED: yes — `MarketingHome.tsx`, `AuthPage.tsx`, `BannermaticProduct.tsx`, `main.tsx`.
+- TESTED: yes — customer/auth/product shell tests + production build in CI.
+- DEPLOYED: no verified current build.
+- CLOUD RUNTIME VERIFIED: no.
 
-### Design system foundation
-- DESIGNED: yes
-- CODED: partial — shared CSS tokens/components exist in `src/mvp2/cloud.css`
-- TESTED: build only
-- RUNTIME VERIFIED: no
-- Remaining: formal token contract + systematic responsive/interaction audit across every screen.
+### Premium design system
+- DESIGNED: yes.
+- CODED: substantial — `design-system.css`, `design-enforcement.css`, marketing/auth/cloud/workspace styles and modular screen styles.
+- TESTED: static design-system contracts + production build.
+- UX/UI RUNTIME AUDIT: not yet complete.
+- Remaining: browser-level desktop/tablet/mobile audit and cleanup after exact build is deployed.
 
-### RU / EN architecture
-- DESIGNED: yes
-- CODED: yes — `src/mvp2/i18n.ts` and locale switching
-- TESTED: build
-- RUNTIME VERIFIED: no
-- Remaining: full copy coverage; several MVP2 strings are still English literals.
+### RU / EN
+- Architecture and locale persistence: coded.
+- Marketing/auth/core shell have RU/EN coverage.
+- Some campaign technical vocabulary intentionally remains English; full copy audit remains.
+- Runtime language journey: not verified.
 
-### Real authentication / persistent sessions
-- DESIGNED: yes
-- CODED: yes — `server/mvp2Store.mjs`, `server/mvp2Api.mjs`, `src/mvp2/api.ts`, `CloudAppV2`
-- TESTED: yes — store tests + CI build/server checks
-- RUNTIME VERIFIED: no
-- Notes: server is authoritative; password hashes use scrypt; session tokens persist in the server store. Production-domain auth is not yet proven.
-
-### Roles / access
-- DESIGNED: yes — Owner/Admin/Designer/Producer/Viewer capability matrix exists.
-- CODED: partial — client capability matrix and server membership roles exist. API now restricts generic campaign mutation to Owner/Admin/Producer and creative publication to Owner/Admin/Designer.
-- TESTED: partial — store permission tests + contract tests/build.
-- RUNTIME VERIFIED: no
-- Remaining: member-management UI/invitation flow and full runtime role matrix.
-
-### Campaign list / create campaign
-- DESIGNED: yes
-- CODED: yes — server persistence + CloudAppV2 UI
-- TESTED: yes — store tests + build
-- RUNTIME VERIFIED: no
+### Authentication / workspace / roles
+- Server-backed register/login/me/logout and persistent scrypt-hashed accounts: coded/tested.
+- Workspace membership roles Owner/Admin/Designer/Producer/Viewer: coded/tested foundation.
+- Settings/member role UI: coded.
+- Invitation flow for a new external member: not implemented.
+- Production-domain auth/session runtime: not verified.
 
 ## P0 — Campaign Compiler
 
-### Canonical domain model
-- DESIGNED: yes
-- CODED: yes — `src/mvp2/domain.ts`
-- TESTED: yes — `src/mvp2/domain.test.ts`
-- RUNTIME VERIFIED: no
+### Canonical model / dedupe
+- Campaign → placements → unique visual formats → TT is coded.
+- Equal-size dedupe while preserving placement relationships is coded/tested.
 
-### Equal-size deduplication / placement preservation
-- DESIGNED: yes
-- CODED: yes — `compileVisualFormats`
-- TESTED: yes
-- RUNTIME VERIFIED: no
-
-### Media Plan import
-- DESIGNED: yes
-- CODED: partial — existing parser handles XLSX/CSV/TSV/TXT/DOCX and sends unsupported docs toward AI extraction; CloudAppV2 persists normalized placements/formats.
-- TESTED: yes for parser/model/build
-- RUNTIME VERIFIED: no with a real production upload
-- Remaining: PDF/AI production path, richer platform/placement extraction and review-before-apply.
-
-### Re-import diff
-- DESIGNED: yes
-- CODED: foundation — `src/mvp2/planDiff.ts`
-- TESTED: yes — `src/mvp2/planDiff.test.ts`; CI #77 success
-- RUNTIME VERIFIED: no
-- Remaining: integrate diff review/confirmation into Cloud import UI before applying campaign update.
+### Media Plan workspace
+- Real import is coded through existing delivery-plan parser.
+- `MediaPlanWorkspace.tsx` performs review-before-apply.
+- Re-import diff exposes added/removed/changed placements and required-format changes.
+- Existing creative is preserved for sizes that remain required.
+- Media Plan version increments only after confirmed apply.
+- Tests/build: passing.
+- Real browser upload against deployed current build: not verified.
 
 ### Manual campaign setup
-- DESIGNED: yes
-- CODED: not yet in Cloud MVP2
-- TESTED: no
-- RUNTIME VERIFIED: no
-
-### Review screen: TT coverage/conflicts/Unknown
-- DESIGNED: yes
-- CODED: partial — overview/delivery views show readiness and Unknown, but no complete pre-compile conflict review yet.
-- TESTED: build
-- RUNTIME VERIFIED: no
+- Still incomplete in Cloud MVP2. Existing Figma/MVP1 manual setup does not satisfy the Cloud MVP2 acceptance item.
 
 ## P0 — Figma ↔ Cloud
 
-### Stable campaign specification API
-- DESIGNED: yes
-- CODED: yes — `GET /api/campaigns/:id/figma-spec` via `server/mvp2Contract.mjs` and `server/mvp2Api.mjs`.
-- TESTED: yes — `server/mvp2Contract.test.ts`; CI #81 success.
-- RUNTIME VERIFIED: no.
+### Cloud specification / publish contract
+- `figmaSpecFromCampaign` and Creative Publish contract: coded/tested.
+- Creative versions are stored by the server after publish.
+- Campaign/media-plan/TT ownership is preserved on Cloud side.
 
-### Creative publish contract
-- DESIGNED: yes
-- CODED: server foundation — `POST /api/campaigns/:id/creative-publish` publishes only matching visual formats and preserves placement geometry/relationships.
-- TESTED: yes — contract tests + CI #81.
-- RUNTIME VERIFIED: no.
-- Remaining: plugin must send real preview/build metadata; Cloud must display that published preview.
+### Secure customer pairing — current slice
+- Cloud can issue a six-digit, ten-minute, one-use Figma pairing code scoped to a specific campaign.
+- The plugin claims the code and receives a scoped plugin session rather than the user's Cloud session token/password.
+- Plugin sessions are scoped to campaign/workspace/user/role and stored server-side.
+- Cloud Creative screen exposes `Connect Figma` through `FigmaConnectPanel.tsx`.
+- Additive development plugin files:
+  - `figma-plugin/mvp2-sync-code.js`
+  - `figma-plugin/mvp2-sync-ui.html`
+  - `figma-plugin/manifest-mvp2.json`
+- Plugin stores only the scoped token in `figma.clientStorage`.
+- Plugin fetches `/api/figma/campaign` and creates only missing required sizes for the paired campaign.
+- Existing matching campaign formats are preserved and receive updated Cloud metadata.
+- Plugin publishes through `/api/figma/creative-publish`.
+- Contract/static tests: passing in CI #153.
+- FIGMA RUNTIME VERIFIED: **no**. The additive manifest exists specifically to allow safe runtime verification without replacing `ui-v14/code-v8` prematurely.
 
-### Plugin integration
-- Stable campaign ID exists in Cloud, but plugin connection is not yet completed.
-- Required-format fetch from Cloud is not yet wired into the plugin.
-- Existing plugin has local create-missing-format behavior, but it is not yet driven by `figma-spec`.
-- Cloud media-plan/TT changes do not yet notify the plugin about missing formats.
-- Open-in-Figma handoff is not runtime verified.
+### Still missing in Figma ↔ Cloud acceptance
+- Real Figma runtime pairing test.
+- Runtime proof that re-sync never overwrites an edited existing creative.
+- Production preview representation from Figma to Campaign Wall.
+- Final integration of verified sync behavior into the main Bannermatic plugin UX.
 
 ## P0 — Campaign Wall
-- Creative/Delivery modes: CODED
-- Multiple placements per one creative card: CODED
-- Play/Pause/Replay controls: CODED as UI preview behavior
-- Real HTML live previews: NOT IMPLEMENTED
-- Shared synchronized playhead: NOT IMPLEMENTED
-- Responsive runtime audit: NOT VERIFIED
+- Modular `CampaignWall.tsx` is now part of the primary product shell.
+- Creative / Delivery views: coded.
+- Multiple placements per visual creative: coded.
+- Play All / Pause All / Replay All + shared playhead UI/controller: coded.
+- Published `previewUrl` iframe support: coded.
+- Placeholder is explicitly labelled when no real published preview exists.
+- Real Figma-produced HTML previews: still missing; therefore live-playback acceptance is NOT complete.
+- Responsive runtime audit: not verified.
 
-## P1 — TT Intelligence
-Existing TT Knowledge server APIs exist from MVP1. Cloud integration is partial; current library screen still contains seed placeholders. Do not call TT Library complete until it reads/writes real knowledge records and supports campaign-effective TT with provenance.
+## P1 — TT Intelligence / Compliance / Delivery
+- TT matching/resolution API and provenance foundation: coded.
+- `DeliveryWorkspace.tsx` reads TT resolution + placement compliance.
+- Placement compliance includes current dimensions/duration/ZIP/click/tracking foundation checks where data exists.
+- Campaign readiness N/N UI: coded.
+- Creative version history and version pins: coded foundation.
+- Campaign Build persistence/history and manifest download: coded foundation.
+- Full placement-specific binary/HTML delivery packages: not implemented.
+- Safe-zone/required-element production validation: incomplete.
+- Runtime verification: not done.
 
-## P1 — Live Compliance
-Only readiness foundation exists. Real ZIP/duration/clickTag/tracking/safe-zone validation against published creative builds is not implemented yet.
-
-## P1 — versions
-Campaign records already contain `creativeVersion`, `mediaPlanVersion`, and `ttSnapshotVersion` foundation fields. Creative publish increments format and campaign creative version counters, but immutable Creative snapshots are not implemented yet. Media-plan snapshots, TT snapshots and reproducible Campaign Builds are not implemented yet.
-
-## P1 — delivery
-Not implemented end-to-end. Existing legacy export capability is not equivalent to a placement-specific Campaign Build.
-
-## Latest verified CI evidence
-- CI #75: success after switching main Cloud entry point to server-backed `CloudAppV2`.
-- CI #77: success after adding media-plan diff and creative-preservation tests.
-- CI #81: success after adding Figma spec + creative publish server contract and role-specific API guards.
+## Deployment blocker
+A GitHub Actions deployment workflow exists for `ads.rechord.online`, but current automated deploy attempts stop at the explicit `BANNERMATIC_SERVER_SSH_KEY` secret check because that repository secret is not configured. No current tool session contains the server private key. Therefore **DEPLOYED remains no**; CI or repository changes must not be reported as visible website updates until this is resolved and the exact head is checked on the public domain.
 
 ## Next implementation order
-1. Integrate media-plan diff review/apply into Cloud.
-2. Complete manual setup using the exact same campaign domain model.
-3. Wire Figma plugin to `figma-spec` and create only missing formats.
-4. Publish real creative preview/version from Figma to Cloud.
-5. Replace Campaign Wall mock cards with live preview builds + shared playhead.
-6. Connect real TT Knowledge into Cloud and effective TT resolution.
-7. Build Live Compliance.
-8. Add immutable version snapshots and Campaign Build.
-9. Complete placement-specific delivery/export.
-10. Deploy and run the full production acceptance scenario.
+1. Finish scoped Figma pairing/runtime tests and integrate real creative preview payload.
+2. Verify pairing in actual Figma via the additive MVP2 manifest; preserve existing plugin fallback.
+3. Implement Cloud manual campaign setup using the same placement model.
+4. Finish live Campaign Wall preview playback from published creative.
+5. Finish missing Live Compliance rules and real placement-specific Delivery Build output.
+6. Complete workspace invitation/access customer journey.
+7. Resolve deployment credential path, deploy exact tested head to `ads.rechord.online`, then perform browser UX/UI + responsive + RU/EN audit.
+8. Integrate verified Figma sync into the primary plugin and perform final Figma runtime acceptance.
+9. Run fresh-user end-to-end acceptance from public homepage through final Campaign Build.
