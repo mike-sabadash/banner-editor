@@ -7,9 +7,15 @@ describe('Campaign Wall published previews',()=>{
   expect(wall).toContain('srcDoc={svgDoc(format.previewSvg)}');
   expect(wall).toContain('Figma snapshot');
  });
- it('does not pretend snapshots are live playback',()=>{
+ it('treats only HTML/URL representations as live playback',()=>{
+  expect(wall).toContain('const isLive=(format:VisualFormat)=>Boolean(format.previewHtml||format.previewUrl)');
   expect(wall).toContain('const liveCount');
   expect(wall).toContain('disabled={!liveCount}');
-  expect(wall).toContain("format.previewUrl?'Live HTML':format.previewSvg?'Figma snapshot':'Not published'");
+  expect(wall).toContain("const previewLabel=isLive(format)?'Live HTML':format.previewSvg?'Figma snapshot':'Not published'");
+ });
+ it('renders self-contained published HTML in a script-enabled sandbox',()=>{
+  expect(wall).toContain('srcDoc={format.previewHtml}');
+  expect(wall).toContain('sandbox="allow-scripts"');
+  expect(wall).toContain("frame.current?.contentWindow?.postMessage(command,'*')");
  });
 });
