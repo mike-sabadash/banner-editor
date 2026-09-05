@@ -6,6 +6,8 @@ This checklist is the acceptance contract for MVP2. A checkbox may be marked com
 
 Never report a product capability as done based only on design, code presence, a commit, a PR, or green CI.
 
+Mandatory onboarding contract: `docs/ONBOARDING_RULES.md`. **Every customer-facing feature includes its onboarding states as part of the feature definition; onboarding is not follow-up polish.**
+
 ## Product north star
 **Media Plan → TT Intelligence → Creative Adaptation → Live Compliance → Delivery**
 
@@ -36,6 +38,25 @@ Customer-facing test domain: **https://ads.rechord.online/**. Every user-testabl
 - [ ] Accessibility/focus/keyboard audit for interactive controls.
 - [ ] Responsive product UI on desktop/tablet/mobile.
 - [ ] Multi-language architecture with complete RU and EN customer copy.
+
+## P0 — continuous onboarding and guided journeys
+- [ ] Onboarding is continuous from marketing entry through final Campaign Build; it is not a single welcome tour.
+- [ ] Every primary screen explains where the user is, what the current step means and what the next action is.
+- [ ] Every empty state teaches the next action instead of only reporting absence of data.
+- [ ] Every disabled/blocked state explains why it is blocked and how to unblock it.
+- [ ] Every validation/error state gives a recovery path where one exists.
+- [ ] Multi-step flows expose progress, safe back-navigation and preserve user context.
+- [ ] Manual Setup and Media Plan import each have first-use guidance and converge into the same Campaign Compiler explanation.
+- [ ] TT onboarding explains verified/client/Unknown/conflict states and why a user decision is required.
+- [ ] Figma connection onboarding explains pairing, missing-format creation, repeat sync behavior and Publish Creative.
+- [ ] Campaign Wall onboarding explains creative vs delivery views, playback and placement/readiness context.
+- [ ] Compliance onboarding explains Ready / Warning / Blocked and distinguishes “fix in Cloud” from “fix in Figma”.
+- [ ] Delivery onboarding explains pinned versions, placement-specific outputs and why a build can be blocked.
+- [ ] Role-specific onboarding handles Owner/Admin/Designer/Producer/Viewer permissions without exposing internal implementation details.
+- [ ] Guidance uses progressive disclosure/coach marks/contextual help rather than one giant forced tutorial.
+- [ ] Experienced users can dismiss local guidance and reopen relevant help later.
+- [ ] Onboarding copy is complete in RU and EN and responsive on supported form factors.
+- [ ] Fresh-user onboarding E2E reaches final Campaign Build without external documentation or developer explanation.
 
 ## P0 — authentication and access
 - [ ] Customer-visible Sign up flow.
@@ -136,11 +157,13 @@ Customer-facing test domain: **https://ads.rechord.online/**. Every user-testabl
 
 ## P1 — final product audit
 - [ ] Fresh-user end-to-end run starts from the public homepage, not a seeded authenticated state.
+- [ ] Fresh-user onboarding E2E completes the whole journey without external explanation.
 - [ ] Full RU journey audited.
 - [ ] Full EN journey audited.
 - [ ] Desktop journey audited.
 - [ ] Tablet/mobile key journeys audited.
 - [ ] Design consistency audit across marketing/auth/app/campaign/delivery.
+- [ ] Onboarding consistency audit across marketing/auth/app/campaign/Figma handoff/compliance/delivery.
 - [ ] No dead links, placeholder routes, debug-only controls or unexplained technical errors.
 - [ ] Browser runtime verified on `ads.rechord.online`.
 - [ ] Real Figma runtime verified against the deployed Cloud environment.
@@ -155,21 +178,21 @@ Customer-facing test domain: **https://ads.rechord.online/**. Every user-testabl
 
 ## Runtime acceptance scenario
 A release is not MVP2-complete until this real flow works end-to-end:
-1. New anonymous user opens the Bannermatic marketing homepage on `ads.rechord.online`.
-2. User switches language if desired and chooses Get started / Sign in.
-3. User signs up/signs in and enters/creates a workspace.
-4. User creates a campaign.
-5. User uploads a real media plan and optional client TT, or uses Manual setup.
-6. Campaign Compiler produces placements and deduplicated visual formats.
-7. User reviews TT coverage/conflicts/Unknown and confirms the campaign plan.
-8. Campaign connects/opens in Figma and only missing formats are created from the master.
-9. Designer edits/adapts/animates and publishes creative.
-10. Cloud Campaign Wall displays all campaign creatives with labels and playable previews.
+1. New anonymous user opens the Bannermatic marketing homepage on `ads.rechord.online` and understands the product/next action without external explanation.
+2. User switches language if desired and chooses Get started / Sign in with contextual guidance.
+3. User signs up/signs in and enters/creates a workspace; first-use state explains what a workspace/campaign is.
+4. User creates a campaign and is guided to the next required step.
+5. User uploads a real media plan and optional client TT, or uses Manual setup; both paths explain what data is needed and how they converge.
+6. Campaign Compiler produces placements and deduplicated visual formats and explains the result.
+7. User reviews TT coverage/conflicts/Unknown, understands every unresolved state and confirms the campaign plan.
+8. Campaign connects/opens in Figma; pairing guidance explains the boundary between Cloud and Figma and only missing formats are created.
+9. Designer edits/adapts/animates and publishes creative with clear Publish/Sync guidance.
+10. Cloud Campaign Wall displays all campaign creatives with labels and playable previews and explains Creative/Delivery review modes.
 11. Play All / Pause / Replay and shared timing work.
-12. Cloud validates every placement and reports N/N readiness.
+12. Cloud validates every placement and reports N/N readiness; every Warning/Blocked result explains how and where to fix it.
 13. A creative change in Figma publishes a new version and updates Cloud without losing media-plan/TT state.
 14. A media-plan change creates a diff and required missing formats without damaging existing creative.
-15. TT changes are versioned/diffed and do not silently rewrite creative.
-16. A final Campaign Build generates placement-specific deliverables.
+15. TT changes are versioned/diffed, user-confirmed and do not silently rewrite creative.
+16. A final Campaign Build generates placement-specific deliverables; onboarding explains pinned versions and output structure.
 17. User can inspect delivery state, account/workspace settings and sign out.
-18. The whole flow is verified as a customer-visible product on `ads.rechord.online` plus real Figma runtime.
+18. The whole flow, including onboarding branches, is verified as a customer-visible product on `ads.rechord.online` plus real Figma runtime.
