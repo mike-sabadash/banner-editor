@@ -1,0 +1,9 @@
+// Pure helpers for post-create TT management. Kept independent from Figma runtime so it can be unit-tested.
+const emptyRequirements=()=>({maxZipKb:null,maxDurationSec:null,clickTag:null,tracking:null,impressionUrl:'',clickUrl:'',ttUrl:''});
+const hasValue=v=>v!==null&&v!==undefined&&v!=='';
+const normalizeRequirements=r=>({...emptyRequirements(),...(r||{})});
+export function ttComplete(placement){const r=normalizeRequirements(placement?.requirements);return Object.values(r).some(hasValue)}
+export function normalizePlacement(p={}){return{source:p.source||'Manual',platform:String(p.platform||'').trim(),placement:String(p.placement||'').trim(),requirements:normalizeRequirements(p.requirements),ttSourceId:p.ttSourceId||'',ttSourceTitle:p.ttSourceTitle||'',ttCheckedAt:p.ttCheckedAt||'',ttStatus:p.ttStatus||'incomplete'}}
+export function mergePlacements(existing=[],incoming=[]){const out=(existing||[]).map(normalizePlacement);for(const raw of incoming||[]){const p=normalizePlacement(raw);const key=[p.platform.toLowerCase(),p.placement.toLowerCase(),p.ttSourceId].join('|');const i=out.findIndex(x=>[x.platform.toLowerCase(),x.placement.toLowerCase(),x.ttSourceId].join('|')===key);if(i>=0)out[i]={...out[i],...p,requirements:{...out[i].requirements,...p.requirements}};else out.push(p)}return out}
+export function applyTT(placements=[],selector,tt){return placements.map((raw,index)=>{const p=normalizePlacement(raw);if(!selector(p,index))return p;const requirements=normalizeRequirements(tt.requirements);return{...p,requirements,ttSourceId:tt.sourceId||'',ttSourceTitle:tt.sourceTitle||'',ttCheckedAt:tt.checkedAt||'',ttStatus:ttComplete({requirements})?'ready':'incomplete'}})}
+export function summarizeTT(placements=[]){const normalized=placements.map(normalizePlacement),ready=normalized.filter(ttComplete).length;return{total:normalized.length,ready,incomplete:normalized.length-ready}}
