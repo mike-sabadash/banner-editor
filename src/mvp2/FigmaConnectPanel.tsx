@@ -1,0 +1,12 @@
+import {useState} from 'react';
+import {Check,Copy,Link2,RefreshCcw} from 'lucide-react';
+import {api,type FigmaPair} from './api';
+import type {Campaign} from './domain';
+import type {Locale} from './i18n';
+
+export default function FigmaConnectPanel({campaign,locale,enabled,onError}:{campaign:Campaign;locale:Locale;enabled:boolean;onError:(s:string)=>void}){
+ const [pair,setPair]=useState<FigmaPair|null>(null),[busy,setBusy]=useState(false),[copied,setCopied]=useState(false);const ru=locale==='ru';
+ const create=async()=>{if(!enabled)return;setBusy(true);setCopied(false);onError('');try{setPair(await api.figmaPair(campaign.id))}catch(e){onError(e instanceof Error?e.message:String(e))}finally{setBusy(false)}};
+ const copy=async()=>{if(!pair)return;await navigator.clipboard.writeText(pair.code);setCopied(true);setTimeout(()=>setCopied(false),1500)};
+ return <section className="bm-surface bm-figma-connect"><div className="bm-figma-connect-copy"><span className="bm-eyebrow">FIGMA CONNECTION</span><h2>{ru?'Подключить creative workspace':'Connect creative workspace'}</h2><p>{ru?'Одноразовый код связывает плагин только с этой кампанией. Пароль и Cloud session token в Figma не передаются.':'A one-time code connects the plugin only to this campaign. Your password and Cloud session token are never shared with Figma.'}</p></div>{pair?<div className="bm-pair-code"><span>{ru?'Код подключения':'Pairing code'}</span><strong>{pair.code}</strong><small>{ru?'Действует 10 минут · одно использование':'Valid for 10 minutes · one use'}</small><div><button className="bm-secondary" onClick={()=>void copy()}>{copied?<Check size={14}/>:<Copy size={14}/>} {copied?(ru?'Скопировано':'Copied'):(ru?'Скопировать':'Copy')}</button><button className="bm-ghost" onClick={()=>void create()} disabled={busy}><RefreshCcw size={14}/>{ru?'Новый код':'New code'}</button></div></div>:<button className="bm-primary" onClick={()=>void create()} disabled={!enabled||busy}><Link2 size={15}/>{busy?(ru?'Создаём…':'Creating…'):(ru?'Подключить Figma':'Connect Figma')}</button>}<div className="bm-pair-steps"><span>1</span><p>{ru?'Откройте Bannermatic plugin в Figma.':'Open the Bannermatic plugin in Figma.'}</p><span>2</span><p>{ru?'Введите шестизначный код.':'Enter the six-digit pairing code.'}</p><span>3</span><p>{ru?'Плагин получит required formats и создаст только отсутствующие.':'The plugin receives required formats and creates only the missing ones.'}</p></div></section>;
+}
