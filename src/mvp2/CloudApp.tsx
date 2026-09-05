@@ -1,5 +1,5 @@
-import {useMemo,useRef,useState} from "react";
-import {AlertTriangle,ArrowRight,CheckCircle2,ChevronDown,FileSpreadsheet,Globe2,Grid2X2,Languages,LayoutDashboard,Link2,LogOut,Pause,Play,Plus,RefreshCcw,Settings,ShieldCheck,Upload,Users2} from "lucide-react";
+import {useRef,useState} from "react";
+import {ArrowRight,CheckCircle2,ChevronDown,FileSpreadsheet,Globe2,Grid2X2,Languages,LayoutDashboard,Link2,LogOut,Pause,Play,Plus,RefreshCcw,Settings,ShieldCheck,Upload,Users2} from "lucide-react";
 import CreativeEditor from "../core/EditorCoreV2";
 import {processDeliveryInput} from "../campaign/deliveryPlan";
 import {campaignReadiness,can,compileVisualFormats,type AccessRole,type Campaign,type Placement,type VisualFormat} from "./domain";
@@ -17,7 +17,7 @@ const initialPlacements:Placement[]=[
  {id:"pl-yandex-728",platform:"Yandex",placement:"Top",width:728,height:90,requirements:{maxZipKb:150,maxDurationSec:15,clickTag:true,tracking:true,sourceLabel:"Verified TT Knowledge",checkedAt:"2026-09-05"}},
  {id:"pl-mobile-320",platform:"Yandex",placement:"Mobile",width:320,height:100,requirements:{maxZipKb:150,maxDurationSec:15,clickTag:true,tracking:true,sourceLabel:"Verified TT Knowledge",checkedAt:"2026-09-05"}},
 ];
-const seededFormats=compileVisualFormats(initialPlacements).map((f,i)=>({...f,creativeState:i===4?"draft":"published" as const,creativeVersion:i===4?0:3}));
+const seededFormats:VisualFormat[]=compileVisualFormats(initialPlacements).map((f,i)=>({...f,creativeState:(i===4?"draft":"published") as VisualFormat["creativeState"],creativeVersion:i===4?0:3}));
 const initialCampaign:Campaign={id:"cmp-demo",name:"Summer Product Launch",status:"creative",placements:initialPlacements,formats:seededFormats,locale:"en"};
 
 function useLocalSession(){
