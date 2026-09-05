@@ -6,9 +6,18 @@ BRANCH="codex/tt-knowledge-base"
 NGINX_SRC="$APP_DIR/deploy/nginx/ads.rechord.online.conf"
 NGINX_DST="/etc/nginx/sites-available/ads.rechord.online"
 NGINX_LINK="/etc/nginx/sites-enabled/ads.rechord.online"
+DEPLOY_KEY="/root/.ssh/banner_editor_deploy"
+GIT_SSH_COMMAND="ssh -i $DEPLOY_KEY -p 443 -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
+export GIT_SSH_COMMAND
 
 printf '\n== Banner Campaign ads deploy ==\n'
 cd "$APP_DIR"
+
+if [ ! -f "$DEPLOY_KEY" ]; then
+  echo "ERROR: deploy key not found at $DEPLOY_KEY" >&2
+  exit 1
+fi
+chmod 600 "$DEPLOY_KEY"
 
 git fetch origin "$BRANCH"
 git switch "$BRANCH" 2>/dev/null || git switch -c "$BRANCH" --track "origin/$BRANCH"
@@ -64,7 +73,6 @@ pos=s.find(needle)
 if pos < 0:
     raise SystemExit('No server block found in '+p)
 insert='''\n    # Banner Campaign TT Knowledge + AI\n    location /api/tt/ {\n        proxy_pass http://127.0.0.1:8791;\n        proxy_http_version 1.1;\n        proxy_set_header Host $host;\n        proxy_set_header X-Real-IP $remote_addr;\n        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n        proxy_set_header X-Forwarded-Proto $scheme;\n        proxy_read_timeout 120s;\n        client_max_body_size 30m;\n    }\n'''
-# insert immediately after the opening server brace
 idx=pos+len(needle)
 s=s[:idx]+insert+s[idx:]
 open(p,'w',encoding='utf-8').write(s)
@@ -73,7 +81,7 @@ PY
   systemctl reload nginx
 fi
 
-# Obtain/renew SSL for the new public hostname if certbot is installed.
+# Install/renew SSL for the public hostname when certbot is available.
 if command -v certbot >/dev/null 2>&1; then
   certbot --nginx -d ads.rechord.online --non-interactive --agree-tos --register-unsafely-without-email --redirect || true
 fi
