@@ -21,7 +21,7 @@ describe("MVP2 Figma/Cloud contract",()=>{
  });
 
  it("publishes only matching formats without changing their placement geometry",()=>{
-  const result=applyCreativePublish(campaign,{formats:[{formatId:"fmt-300x250",previewUrl:"/preview/v4",durationSec:6,estimatedZipKb:128}]});
+  const result=applyCreativePublish(campaign,{formats:[{formatId:"fmt-300x250",previewUrl:"/preview/v4",previewSvg:'<svg viewBox="0 0 300 250"></svg>',durationSec:6,estimatedZipKb:128}]});
   const updated=result.patch.formats[0];
   expect(result.touched).toEqual(["fmt-300x250"]);
   expect(updated.width).toBe(300);
@@ -30,6 +30,7 @@ describe("MVP2 Figma/Cloud contract",()=>{
   expect(updated.creativeState).toBe("published");
   expect(updated.creativeVersion).toBe(4);
   expect(updated.previewUrl).toBe("/preview/v4");
+  expect(updated.previewSvg).toContain('<svg');
   expect(result.patch.creativeVersion).toBe(8);
   expect(result.patch.status).toBe("compliance");
  });
