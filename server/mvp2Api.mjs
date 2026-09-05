@@ -1,6 +1,7 @@
 import path from "node:path";
 import {BannermaticStore} from "./mvp2Store.mjs";
 import {applyCreativePublish,figmaSpecFromCampaign} from "./mvp2Contract.mjs";
+import {campaignCompliance} from "./mvp2Compliance.mjs";
 
 const STORE_PATH=process.env.BANNERMATIC_DATA_FILE||path.resolve(process.cwd(),"runtime/bannermatic.json");
 export const bannermaticStore=new BannermaticStore(STORE_PATH);
@@ -30,6 +31,12 @@ export async function handleMvp2Api(req,res,{json,readBody}){
    return json(req,res,200,figmaSpecFromCampaign(campaign));
   }
 
+  const complianceMatch=matchCampaignAction(url,"compliance");
+  if(complianceMatch&&req.method==="GET"){
+   const campaign=bannermaticStore.getCampaign(auth,decodeURIComponent(complianceMatch[1]));
+   return json(req,res,200,campaignCompliance(campaign));
+  }
+
   const publishMatch=matchCampaignAction(url,"creative-publish");
   if(publishMatch&&req.method==="POST"){
    bannermaticStore.requireRole(auth,["owner","admin","designer"]);
@@ -38,7 +45,7 @@ export async function handleMvp2Api(req,res,{json,readBody}){
    const body=await readBody(req);
    const publication=applyCreativePublish(campaign,body);
    const updated=await bannermaticStore.updateCampaign({...auth,role:"owner"},campaignId,publication.patch);
-   return json(req,res,200,{campaign:updated,touched:publication.touched});
+   return json(req,res,200,{campaign:updated,touched:publication.touched,compliance:campaignCompliance(updated)});
   }
 
   const campaignMatch=matchCampaignPath(url);
