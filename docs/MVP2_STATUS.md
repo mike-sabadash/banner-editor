@@ -7,10 +7,10 @@ Last updated: 2026-09-05
 ## Current branch / PR
 - Branch: `codex/mvp2-figma-cloud-runtime`
 - PR: `#44`
-- Latest exact tested head at this update: `c9153691c0350f1eb8826bfe35be68c548efba82`
-- CI: `#153` success on that exact head.
-- Deployment to `ads.rechord.online`: **NOT VERIFIED for this head**.
-- Cloud runtime acceptance: **NOT VERIFIED for this head**.
+- Latest exact green head recorded before the current manual-setup commits: `c9153691c0350f1eb8826bfe35be68c548efba82`, CI `#153` success.
+- Current manual-setup head is newer and remains TESTED only after its exact CI completes successfully.
+- Deployment to `ads.rechord.online`: **NOT VERIFIED for the current head**.
+- Cloud runtime acceptance: **NOT VERIFIED for the current head**.
 - Figma runtime acceptance: **NOT VERIFIED**.
 
 ## P0 — public entry / SaaS product shell
@@ -18,14 +18,14 @@ Last updated: 2026-09-05
 ### Marketing → auth → authenticated SaaS
 - DESIGNED: yes.
 - CODED: yes — `MarketingHome.tsx`, `AuthPage.tsx`, `BannermaticProduct.tsx`, `main.tsx`.
-- TESTED: yes — customer/auth/product shell tests + production build in CI.
+- TESTED: yes for the last green head; current head awaits exact CI.
 - DEPLOYED: no verified current build.
 - CLOUD RUNTIME VERIFIED: no.
 
 ### Premium design system
 - DESIGNED: yes.
 - CODED: substantial — `design-system.css`, `design-enforcement.css`, marketing/auth/cloud/workspace styles and modular screen styles.
-- TESTED: static design-system contracts + production build.
+- TESTED: static design-system contracts + production build on prior green heads.
 - UX/UI RUNTIME AUDIT: not yet complete.
 - Remaining: browser-level desktop/tablet/mobile audit and cleanup after exact build is deployed.
 
@@ -54,11 +54,18 @@ Last updated: 2026-09-05
 - Re-import diff exposes added/removed/changed placements and required-format changes.
 - Existing creative is preserved for sizes that remain required.
 - Media Plan version increments only after confirmed apply.
-- Tests/build: passing.
+- Tests/build: passing on prior green head; current exact head awaits CI.
 - Real browser upload against deployed current build: not verified.
 
 ### Manual campaign setup
-- Still incomplete in Cloud MVP2. Existing Figma/MVP1 manual setup does not satisfy the Cloud MVP2 acceptance item.
+- DESIGNED: yes.
+- CODED: yes — `ManualCampaignSetup.tsx` is a first-class `Manual setup` mode inside the same `MediaPlanWorkspace`.
+- Uses the exact same `Placement[]`, `compileVisualFormats`, `preserveVisualsForPlan`, `diffMediaPlan`, and `api.updateCampaign` flow as imported media plans.
+- Supports arbitrary platform, placement, width and height rows plus add/remove placement.
+- Equal dimensions deduplicate into one visual format while retaining independent placements.
+- Review-before-compile is required before applying changes.
+- TESTED: static feature test added; exact current-head CI pending at this status update.
+- CLOUD RUNTIME VERIFIED: no.
 
 ## P0 — Figma ↔ Cloud
 
@@ -80,7 +87,7 @@ Last updated: 2026-09-05
 - Plugin fetches `/api/figma/campaign` and creates only missing required sizes for the paired campaign.
 - Existing matching campaign formats are preserved and receive updated Cloud metadata.
 - Plugin publishes through `/api/figma/creative-publish`.
-- Contract/static tests: passing in CI #153.
+- Contract/static tests: passing through CI #153 before the current manual-setup commits.
 - FIGMA RUNTIME VERIFIED: **no**. The additive manifest exists specifically to allow safe runtime verification without replacing `ui-v14/code-v8` prematurely.
 
 ### Still missing in Figma ↔ Cloud acceptance
@@ -90,7 +97,7 @@ Last updated: 2026-09-05
 - Final integration of verified sync behavior into the main Bannermatic plugin UX.
 
 ## P0 — Campaign Wall
-- Modular `CampaignWall.tsx` is now part of the primary product shell.
+- Modular `CampaignWall.tsx` is part of the primary product shell.
 - Creative / Delivery views: coded.
 - Multiple placements per visual creative: coded.
 - Play All / Pause All / Replay All + shared playhead UI/controller: coded.
@@ -114,12 +121,11 @@ Last updated: 2026-09-05
 A GitHub Actions deployment workflow exists for `ads.rechord.online`, but current automated deploy attempts stop at the explicit `BANNERMATIC_SERVER_SSH_KEY` secret check because that repository secret is not configured. No current tool session contains the server private key. Therefore **DEPLOYED remains no**; CI or repository changes must not be reported as visible website updates until this is resolved and the exact head is checked on the public domain.
 
 ## Next implementation order
-1. Finish scoped Figma pairing/runtime tests and integrate real creative preview payload.
-2. Verify pairing in actual Figma via the additive MVP2 manifest; preserve existing plugin fallback.
-3. Implement Cloud manual campaign setup using the same placement model.
-4. Finish live Campaign Wall preview playback from published creative.
-5. Finish missing Live Compliance rules and real placement-specific Delivery Build output.
-6. Complete workspace invitation/access customer journey.
-7. Resolve deployment credential path, deploy exact tested head to `ads.rechord.online`, then perform browser UX/UI + responsive + RU/EN audit.
-8. Integrate verified Figma sync into the primary plugin and perform final Figma runtime acceptance.
-9. Run fresh-user end-to-end acceptance from public homepage through final Campaign Build.
+1. Wait only for exact-head CI gates while continuing development; fix failures immediately.
+2. Integrate a real creative preview payload from Figma into Cloud Campaign Wall.
+3. Verify secure pairing in actual Figma via the additive MVP2 manifest; preserve existing plugin fallback.
+4. Finish missing Live Compliance rules and real placement-specific Delivery Build output.
+5. Complete workspace invitation/access customer journey.
+6. Resolve deployment credential path, deploy exact tested head to `ads.rechord.online`, then perform browser UX/UI + responsive + RU/EN audit.
+7. Integrate verified Figma sync into the primary plugin and perform final Figma runtime acceptance.
+8. Run fresh-user end-to-end acceptance from public homepage through final Campaign Build.
