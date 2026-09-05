@@ -16,8 +16,9 @@ describe('Bannermatic customer cloud',()=>{
   expect(product).toContain('api.members');
   expect(product).toContain('api.setRole');
  });
- it('keeps snapshots distinct from real live HTML previews',()=>{
+ it('keeps snapshots distinct from live HTML and exposes an explicit unpublished placeholder',()=>{
   expect(wall).toContain("isLive(format)?'Live HTML':format.previewSvg?'Figma snapshot':'Not published'");
-  expect(wall).toContain('Development placeholder');
+  expect(wall).toContain('Publish from Figma to replace this placeholder.');
+  expect(wall).toContain('ne-wall-placeholder');
  });
 });
