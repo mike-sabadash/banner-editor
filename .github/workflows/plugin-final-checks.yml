@@ -6,6 +6,8 @@ on:
       - "figma-plugin/**"
       - "server/**"
       - "src/campaign/**"
+      - "src/mvp2/**"
+      - "src/main.tsx"
       - "scripts/**"
       - "deploy/**"
       - "package*.json"
