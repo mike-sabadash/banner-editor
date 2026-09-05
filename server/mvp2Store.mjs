@@ -3,6 +3,7 @@ import path from "node:path";
 import crypto from "node:crypto";
 
 const DAY=24*60*60*1000;
+const TEN_MINUTES=10*60*1000;
 const cleanEmail=value=>String(value||"").trim().toLowerCase();
 const id=prefix=>`${prefix}_${crypto.randomUUID()}`;
 const now=()=>new Date().toISOString();
@@ -12,13 +13,13 @@ function hashPassword(password,salt=crypto.randomBytes(16).toString("hex")){
  return{salt,hash};
 }
 function verifyPassword(password,user){const next=hashPassword(password,user.passwordSalt).hash;return crypto.timingSafeEqual(Buffer.from(next,"hex"),Buffer.from(user.passwordHash,"hex"));}
-function emptyDb(){return{version:1,users:[],workspaces:[],memberships:[],sessions:[],campaigns:[]};}
+function emptyDb(){return{version:2,users:[],workspaces:[],memberships:[],sessions:[],campaigns:[],figmaPairs:[],pluginSessions:[]};}
 
 export class BannermaticStore{
  constructor(filePath){this.filePath=filePath;this.db=emptyDb();this.loaded=false;this.writeQueue=Promise.resolve();}
- async load(){if(this.loaded)return this;try{this.db=JSON.parse(await fs.readFile(this.filePath,"utf8"));}catch(error){if(error?.code!=="ENOENT")throw error;await fs.mkdir(path.dirname(this.filePath),{recursive:true});await this.persist();}this.loaded=true;this.pruneSessions();return this;}
+ async load(){if(this.loaded)return this;try{this.db=JSON.parse(await fs.readFile(this.filePath,"utf8"));}catch(error){if(error?.code!=="ENOENT")throw error;await fs.mkdir(path.dirname(this.filePath),{recursive:true});await this.persist();}this.db.figmaPairs ||= [];this.db.pluginSessions ||= [];this.loaded=true;this.pruneSessions();return this;}
  async persist(){await fs.mkdir(path.dirname(this.filePath),{recursive:true});const payload=JSON.stringify(this.db,null,2),temp=`${this.filePath}.tmp`;this.writeQueue=this.writeQueue.then(async()=>{await fs.writeFile(temp,payload,{mode:0o600});await fs.rename(temp,this.filePath);});return this.writeQueue;}
- pruneSessions(){const cutoff=Date.now();this.db.sessions=this.db.sessions.filter(s=>new Date(s.expiresAt).getTime()>cutoff);}
+ pruneSessions(){const cutoff=Date.now();this.db.sessions=this.db.sessions.filter(s=>new Date(s.expiresAt).getTime()>cutoff);this.db.figmaPairs=(this.db.figmaPairs||[]).filter(s=>!s.claimedAt&&new Date(s.expiresAt).getTime()>cutoff);this.db.pluginSessions=(this.db.pluginSessions||[]).filter(s=>new Date(s.expiresAt).getTime()>cutoff);}
  publicUser(user){return{id:user.id,email:user.email,name:user.name,createdAt:user.createdAt};}
  membershipFor(userId,workspaceId){return this.db.memberships.find(m=>m.userId===userId&&m.workspaceId===workspaceId);}
  async register({email,password,name}){await this.load();email=cleanEmail(email);if(!email||!email.includes("@"))throw Object.assign(new Error("Valid email required"),{status:400});if(String(password||"").length<8)throw Object.assign(new Error("Password must be at least 8 characters"),{status:400});if(this.db.users.some(u=>u.email===email))throw Object.assign(new Error("Account already exists"),{status:409});const passwordData=hashPassword(password),user={id:id("usr"),email,name:String(name||email.split("@")[0]).slice(0,80),passwordSalt:passwordData.salt,passwordHash:passwordData.hash,createdAt:now()},workspace={id:id("ws"),name:`${user.name}'s workspace`,createdAt:now(),createdBy:user.id};this.db.users.push(user);this.db.workspaces.push(workspace);this.db.memberships.push({id:id("mem"),userId:user.id,workspaceId:workspace.id,role:"owner",createdAt:now()});const session=this.createSession(user.id,workspace.id);await this.persist();return{user:this.publicUser(user),workspace,role:"owner",token:session.token,expiresAt:session.expiresAt};}
@@ -33,6 +34,9 @@ export class BannermaticStore{
  async updateCampaign(auth,campaignId,input){this.requireRole(auth,["owner","admin","designer","producer"]);const i=this.db.campaigns.findIndex(c=>c.id===campaignId&&c.workspaceId===auth.workspace.id);if(i<0)throw Object.assign(new Error("Campaign not found"),{status:404});const current=this.db.campaigns[i];const next={...current,...input,id:current.id,workspaceId:current.workspaceId,createdAt:current.createdAt,createdBy:current.createdBy,updatedAt:now()};this.db.campaigns[i]=next;await this.persist();return{...next};}
  listMembers(auth){return this.db.memberships.filter(m=>m.workspaceId===auth.workspace.id).map(m=>{const user=this.db.users.find(u=>u.id===m.userId);return{id:m.id,role:m.role,user:user?this.publicUser(user):null}});}
  async updateMemberRole(auth,membershipId,role){this.requireRole(auth,["owner","admin"]);if(!["owner","admin","designer","producer","viewer"].includes(role))throw Object.assign(new Error("Invalid role"),{status:400});const m=this.db.memberships.find(x=>x.id===membershipId&&x.workspaceId===auth.workspace.id);if(!m)throw Object.assign(new Error("Member not found"),{status:404});if(m.role==="owner"&&auth.role!=="owner")throw Object.assign(new Error("Only owner can change owner role"),{status:403});m.role=role;await this.persist();return m;}
+ async createFigmaPair(auth,campaignId){this.requireRole(auth,["owner","admin","designer"]);const campaign=this.getCampaign(auth,campaignId);this.pruneSessions();const code=String(crypto.randomInt(100000,1000000));const pair={id:id("pair"),code,campaignId:campaign.id,workspaceId:auth.workspace.id,userId:auth.user.id,role:auth.role,createdAt:now(),expiresAt:new Date(Date.now()+TEN_MINUTES).toISOString(),claimedAt:null};this.db.figmaPairs.push(pair);await this.persist();return{code:pair.code,campaignId:campaign.id,campaignName:campaign.name,expiresAt:pair.expiresAt};}
+ async claimFigmaPair(code){await this.load();this.pruneSessions();const pair=this.db.figmaPairs.find(p=>p.code===String(code||"").trim()&&!p.claimedAt);if(!pair)throw Object.assign(new Error("Pairing code is invalid or expired"),{status:404});pair.claimedAt=now();const plugin={id:id("plug"),token:crypto.randomBytes(32).toString("base64url"),campaignId:pair.campaignId,workspaceId:pair.workspaceId,userId:pair.userId,role:pair.role,createdAt:now(),expiresAt:new Date(Date.now()+30*DAY).toISOString()};this.db.pluginSessions.push(plugin);await this.persist();const campaign=this.db.campaigns.find(c=>c.id===plugin.campaignId&&c.workspaceId===plugin.workspaceId);return{token:plugin.token,campaignId:plugin.campaignId,campaignName:campaign?.name||"Campaign",role:plugin.role,expiresAt:plugin.expiresAt};}
+ async authenticatePlugin(token){await this.load();this.pruneSessions();const session=this.db.pluginSessions.find(s=>s.token===String(token||""));if(!session)return null;const campaign=this.db.campaigns.find(c=>c.id===session.campaignId&&c.workspaceId===session.workspaceId);if(!campaign)return null;return{session,campaign:{...campaign},role:session.role,workspaceId:session.workspaceId,userId:session.userId};}
 }
 
 export const passwordInternals={hashPassword,verifyPassword};
