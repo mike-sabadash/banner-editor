@@ -16,11 +16,14 @@ describe('Bannermatic Figma MVP2 sync',()=>{
   expect(code).toContain('for(const root of existing)');
   expect(ui).toContain('does not delete or overwrite your creative');
  });
- it('publishes creative through the scoped Figma endpoint with an actual visual snapshot',()=>{
+ it('publishes creative through the scoped Figma endpoint with snapshot and live HTML representation',()=>{
   expect(code).toContain('/api/figma/creative-publish');
   expect(code).toContain('creativePayload');
   expect(code).toContain('format:"SVG_STRING"');
   expect(code).toContain('previewSvg');
+  expect(code).toContain('previewHtml');
+  expect(code).toContain('bannermatic:play');
+  expect(code).toContain('bannermatic:pause');
   expect(ui).toContain('Publish Creative');
  });
  it('uses existing banner_campaign metadata namespace for compatibility',()=>{expect(code).toContain('const NS="banner_campaign"')});
