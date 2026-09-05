@@ -31,6 +31,7 @@ export function applyCreativePublish(campaign,input={}){
    creativeState:"published",
    creativeVersion:Number(format.creativeVersion||0)+1,
    previewUrl:update.previewUrl?String(update.previewUrl):format.previewUrl,
+   previewSvg:update.previewSvg?String(update.previewSvg).slice(0,2_000_000):format.previewSvg,
    previewType:update.previewType?String(update.previewType):format.previewType,
    durationSec:Number.isFinite(Number(update.durationSec))?Number(update.durationSec):format.durationSec,
    estimatedZipKb:Number.isFinite(Number(update.estimatedZipKb))?Number(update.estimatedZipKb):format.estimatedZipKb,
