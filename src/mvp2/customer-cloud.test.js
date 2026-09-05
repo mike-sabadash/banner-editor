@@ -5,7 +5,7 @@ const main=readFileSync(new URL('../main.tsx',import.meta.url),'utf8');
 describe('Bannermatic customer cloud',()=>{
  it('is the primary authenticated product shell',()=>{
   expect(main).toContain('return <BannermaticCloud/>');
-  expect(main).toContain('view===\"mvp2-legacy\"');
+  expect(main).toContain('params.get("view")==="mvp2-legacy"');
  });
  it('covers campaigns, media plan, creative wall, delivery and settings',()=>{
   for(const screen of ["'campaigns'","'overview'","'media'","'creative'","'delivery'","'settings'"])expect(cloud).toContain(screen);
