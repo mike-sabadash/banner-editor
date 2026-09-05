@@ -11,7 +11,7 @@ export function creativeSnapshot(campaign,{touched=[]}={}){
   id:id(),campaignId:campaign.id,version:Number(campaign.creativeVersion||0),createdAt:now(),touched:[...touched],
   formats:(campaign.formats||[]).filter(f=>f.creativeState==='published').map(f=>({
    formatId:f.id,width:f.width,height:f.height,size:f.size,creativeVersion:Number(f.creativeVersion||0),
-   previewUrl:f.previewUrl||'',previewSvg:f.previewSvg||'',previewType:f.previewType||'',
+   previewUrl:f.previewUrl||'',previewHtml:f.previewHtml||'',previewSvg:f.previewSvg||'',previewType:f.previewType||'',
    durationSec:Number.isFinite(Number(f.durationSec))?Number(f.durationSec):null,
    estimatedZipKb:Number.isFinite(Number(f.estimatedZipKb))?Number(f.estimatedZipKb):null,
    clickTagPresent:typeof f.clickTagPresent==='boolean'?f.clickTagPresent:null,publishedAt:f.publishedAt||null,
