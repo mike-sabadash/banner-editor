@@ -35,6 +35,15 @@ describe("MVP2 Figma/Cloud contract",()=>{
   expect(result.patch.status).toBe("compliance");
  });
 
+ it("prefers a self-contained HTML publication as the live preview representation",()=>{
+  const html='<!doctype html><html><body><div id="ad">Live</div><script>addEventListener("message",()=>{})</script></body></html>';
+  const result=applyCreativePublish(campaign,{formats:[{formatId:"fmt-300x250",previewHtml:html,previewSvg:'<svg></svg>',previewType:'figma-svg',durationSec:6}]});
+  const updated=result.patch.formats[0];
+  expect(updated.previewHtml).toContain('<!doctype html>');
+  expect(updated.previewType).toBe('html');
+  expect(updated.previewSvg).toBe('<svg></svg>');
+ });
+
  it("rejects publish requests that do not match campaign formats",()=>{
   expect(()=>applyCreativePublish(campaign,{formats:[{formatId:"missing"}]})).toThrow("No matching campaign formats to publish");
  });
