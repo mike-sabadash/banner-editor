@@ -33,6 +33,11 @@ export type VisualFormat={
  creativeState:CreativeState;
  creativeVersion:number;
  previewUrl?:string;
+ previewType?:string;
+ durationSec?:number;
+ estimatedZipKb?:number;
+ clickTagPresent?:boolean;
+ publishedAt?:string;
 };
 
 export type Campaign={
@@ -42,6 +47,11 @@ export type Campaign={
  placements:Placement[];
  formats:VisualFormat[];
  locale:"en"|"ru";
+ creativeVersion?:number;
+ mediaPlanVersion?:number;
+ ttSnapshotVersion?:number;
+ createdAt?:string;
+ updatedAt?:string;
 };
 
 const sizeKey=(w:number,h:number)=>`${w}x${h}`;
@@ -53,14 +63,14 @@ export function compileVisualFormats(placements:Placement[],existing:VisualForma
  for(const p of placements){const key=sizeKey(p.width,p.height);grouped.set(key,[...(grouped.get(key)||[]),p])}
  return [...grouped.entries()].map(([key,ps])=>{
   const first=ps[0],old=existingByKey.get(key);
-  return {id:old?.id||formatId(first.width,first.height),width:first.width,height:first.height,size:`${first.width}×${first.height}`,placementIds:ps.map(p=>p.id),creativeState:old?.creativeState||"missing",creativeVersion:old?.creativeVersion||0,previewUrl:old?.previewUrl};
+  return {id:old?.id||formatId(first.width,first.height),width:first.width,height:first.height,size:`${first.width}×${first.height}`,placementIds:ps.map(p=>p.id),creativeState:old?.creativeState||"missing",creativeVersion:old?.creativeVersion||0,previewUrl:old?.previewUrl,previewType:old?.previewType,durationSec:old?.durationSec,estimatedZipKb:old?.estimatedZipKb,clickTagPresent:old?.clickTagPresent,publishedAt:old?.publishedAt};
  }).sort((a,b)=>b.width*b.height-a.width*a.height);
 }
 
 export function placementReadiness(p:Placement,format?:VisualFormat):Readiness{
  if(!format||format.creativeState==="missing")return"blocked";
  const r=p.requirements;
- const known=Boolean(r.maxZipKb||r.maxDurationSec||r.clickTag!==undefined&&r.clickTag!==null||r.tracking!==undefined&&r.tracking!==null||r.sourceUrl);
+ const known=Boolean(r.maxZipKb||r.maxDurationSec||r.clickTag!==undefined&&r.clickTag!==null||r.tracking!==undefined&&r.tracking!==null||r.sourceUrl||r.sourceLabel);
  return known?"ready":"unknown";
 }
 
