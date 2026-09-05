@@ -22,19 +22,42 @@ function matchMemberPath(url){return String(url||"").match(/^\/api\/workspace\/m
 
 export async function handleMvp2Api(req,res,{json,readBody}){
  const url=String(req.url||"").split("?")[0];
- if(!url.startsWith("/api/auth/")&&!url.startsWith("/api/campaigns")&&!url.startsWith("/api/workspace/"))return false;
+ if(!url.startsWith("/api/auth/")&&!url.startsWith("/api/campaigns")&&!url.startsWith("/api/workspace/")&&!url.startsWith("/api/figma/"))return false;
  await bannermaticStore.load();
  await bannermaticBuildStore.load();
  await bannermaticCreativeStore.load();
  try{
   if(req.method==="POST"&&url==="/api/auth/register"){const body=await readBody(req);return json(req,res,201,await bannermaticStore.register(body));}
   if(req.method==="POST"&&url==="/api/auth/login"){const body=await readBody(req);return json(req,res,200,await bannermaticStore.login(body));}
+
+  if(req.method==="POST"&&url==="/api/figma/pair/claim"){
+   const body=await readBody(req);
+   return json(req,res,200,await bannermaticStore.claimFigmaPair(body.code));
+  }
+  if(url.startsWith("/api/figma/")){
+   const pluginAuth=await bannermaticStore.authenticatePlugin(bearer(req));
+   if(!pluginAuth)return json(req,res,401,{error:"Plugin session is invalid or expired"});
+   if(req.method==="GET"&&url==="/api/figma/campaign")return json(req,res,200,figmaSpecFromCampaign(pluginAuth.campaign));
+   if(req.method==="POST"&&url==="/api/figma/creative-publish"){
+    if(!["owner","admin","designer"].includes(pluginAuth.role))return json(req,res,403,{error:"Creative publish is not allowed for this role"});
+    const body=await readBody(req),publication=applyCreativePublish(pluginAuth.campaign,body);
+    const auth={workspace:{id:pluginAuth.workspaceId},user:{id:pluginAuth.userId},role:"owner"};
+    const updated=await bannermaticStore.updateCampaign(auth,pluginAuth.campaign.id,publication.patch);
+    const version=await bannermaticCreativeStore.add(updated,{touched:publication.touched});
+    return json(req,res,200,{campaign:updated,touched:publication.touched,version,compliance:campaignCompliance(updated)});
+   }
+   return json(req,res,404,{error:"Figma endpoint not found"});
+  }
+
   const token=bearer(req),auth=await bannermaticStore.authenticate(token);
   if(req.method==="POST"&&url==="/api/auth/logout"){if(token)await bannermaticStore.logout(token);return json(req,res,200,{ok:true});}
   if(req.method==="GET"&&url==="/api/auth/me"){if(!auth)return json(req,res,401,{error:"Unauthorized"});return json(req,res,200,{user:auth.user,workspace:auth.workspace,role:auth.role,expiresAt:auth.session.expiresAt});}
   if(!auth)return json(req,res,401,{error:"Unauthorized"});
   if(req.method==="GET"&&url==="/api/campaigns")return json(req,res,200,{items:bannermaticStore.listCampaigns(auth)});
   if(req.method==="POST"&&url==="/api/campaigns"){bannermaticStore.requireRole(auth,["owner","admin","producer"]);const body=await readBody(req);return json(req,res,201,await bannermaticStore.createCampaign(auth,body));}
+
+  const pairMatch=matchCampaignAction(url,"figma-pair");
+  if(pairMatch&&req.method==="POST")return json(req,res,201,await bannermaticStore.createFigmaPair(auth,decodeURIComponent(pairMatch[1])));
 
   const specMatch=matchCampaignAction(url,"figma-spec");
   if(specMatch&&req.method==="GET"){
