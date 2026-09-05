@@ -3,16 +3,20 @@ import {BannermaticStore} from "./mvp2Store.mjs";
 import {applyCreativePublish,figmaSpecFromCampaign} from "./mvp2Contract.mjs";
 import {campaignCompliance} from "./mvp2Compliance.mjs";
 import {BuildStore} from "./mvp2Builds.mjs";
+import {CreativeVersionStore} from "./mvp2CreativeVersions.mjs";
 
 const STORE_PATH=process.env.BANNERMATIC_DATA_FILE||path.resolve(process.cwd(),"runtime/bannermatic.json");
 const BUILD_STORE_PATH=process.env.BANNERMATIC_BUILD_FILE||path.resolve(process.cwd(),"runtime/bannermatic-builds.json");
+const CREATIVE_STORE_PATH=process.env.BANNERMATIC_CREATIVE_FILE||path.resolve(process.cwd(),"runtime/bannermatic-creative-versions.json");
 export const bannermaticStore=new BannermaticStore(STORE_PATH);
 export const bannermaticBuildStore=new BuildStore(BUILD_STORE_PATH);
+export const bannermaticCreativeStore=new CreativeVersionStore(CREATIVE_STORE_PATH);
 
 function bearer(req){const raw=String(req.headers.authorization||"");return raw.toLowerCase().startsWith("bearer ")?raw.slice(7).trim():"";}
 function matchCampaignPath(url){return String(url||"").match(/^\/api\/campaigns\/([^/?#]+)$/);}
 function matchCampaignAction(url,action){return String(url||"").match(new RegExp(`^/api/campaigns/([^/?#]+)/${action}$`));}
 function matchBuildPath(url){return String(url||"").match(/^\/api\/campaigns\/([^/?#]+)\/builds\/([^/?#]+)$/);}
+function matchCreativeVersionPath(url){return String(url||"").match(/^\/api\/campaigns\/([^/?#]+)\/creative-versions\/([^/?#]+)$/);}
 function matchMemberPath(url){return String(url||"").match(/^\/api\/workspace\/members\/([^/?#]+)$/);}
 
 export async function handleMvp2Api(req,res,{json,readBody}){
@@ -20,6 +24,7 @@ export async function handleMvp2Api(req,res,{json,readBody}){
  if(!url.startsWith("/api/auth/")&&!url.startsWith("/api/campaigns")&&!url.startsWith("/api/workspace/"))return false;
  await bannermaticStore.load();
  await bannermaticBuildStore.load();
+ await bannermaticCreativeStore.load();
  try{
   if(req.method==="POST"&&url==="/api/auth/register"){const body=await readBody(req);return json(req,res,201,await bannermaticStore.register(body));}
   if(req.method==="POST"&&url==="/api/auth/login"){const body=await readBody(req);return json(req,res,200,await bannermaticStore.login(body));}
@@ -40,6 +45,20 @@ export async function handleMvp2Api(req,res,{json,readBody}){
   if(complianceMatch&&req.method==="GET"){
    const campaign=bannermaticStore.getCampaign(auth,decodeURIComponent(complianceMatch[1]));
    return json(req,res,200,campaignCompliance(campaign));
+  }
+
+  const versionsMatch=matchCampaignAction(url,"creative-versions");
+  if(versionsMatch&&req.method==="GET"){
+   const campaignId=decodeURIComponent(versionsMatch[1]);
+   bannermaticStore.getCampaign(auth,campaignId);
+   return json(req,res,200,{items:bannermaticCreativeStore.list(campaignId)});
+  }
+  const versionMatch=matchCreativeVersionPath(url);
+  if(versionMatch&&req.method==="GET"){
+   const campaignId=decodeURIComponent(versionMatch[1]),version=Number(decodeURIComponent(versionMatch[2]));
+   bannermaticStore.getCampaign(auth,campaignId);
+   const item=bannermaticCreativeStore.get(campaignId,version);
+   return item?json(req,res,200,item):json(req,res,404,{error:"Creative version not found"});
   }
 
   const buildsMatch=matchCampaignAction(url,"builds");
@@ -71,7 +90,8 @@ export async function handleMvp2Api(req,res,{json,readBody}){
    const body=await readBody(req);
    const publication=applyCreativePublish(campaign,body);
    const updated=await bannermaticStore.updateCampaign({...auth,role:"owner"},campaignId,publication.patch);
-   return json(req,res,200,{campaign:updated,touched:publication.touched,compliance:campaignCompliance(updated)});
+   const version=await bannermaticCreativeStore.add(updated,{touched:publication.touched});
+   return json(req,res,200,{campaign:updated,touched:publication.touched,version,compliance:campaignCompliance(updated)});
   }
 
   const campaignMatch=matchCampaignPath(url);
