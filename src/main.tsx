@@ -2,7 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import EditorCoreV2 from "./core/EditorCoreV2";
 import CampaignHub from "./campaign/CampaignHub";
-import CloudApp from "./mvp2/CloudApp";
+import CloudAppV2 from "./mvp2/CloudAppV2";
 import "./styles.css";
 import "./campaign/campaign.css";
 import "./campaign/delivery.css";
@@ -12,7 +12,7 @@ function Product(){
   const params=new URLSearchParams(location.search);
   if(params.get("view")==="editor")return <EditorCoreV2/>;
   if(params.get("view")==="legacy-campaign")return <CampaignHub/>;
-  return <CloudApp/>;
+  return <CloudAppV2/>;
 }
 
 createRoot(document.getElementById("root")!).render(
