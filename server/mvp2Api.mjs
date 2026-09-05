@@ -4,6 +4,7 @@ import {applyCreativePublish,figmaSpecFromCampaign} from "./mvp2Contract.mjs";
 import {campaignCompliance} from "./mvp2Compliance.mjs";
 import {BuildStore} from "./mvp2Builds.mjs";
 import {CreativeVersionStore} from "./mvp2CreativeVersions.mjs";
+import {matchTT,resolveCampaignTT} from "./mvp2TT.mjs";
 
 const STORE_PATH=process.env.BANNERMATIC_DATA_FILE||path.resolve(process.cwd(),"runtime/bannermatic.json");
 const BUILD_STORE_PATH=process.env.BANNERMATIC_BUILD_FILE||path.resolve(process.cwd(),"runtime/bannermatic-builds.json");
@@ -39,6 +40,17 @@ export async function handleMvp2Api(req,res,{json,readBody}){
   if(specMatch&&req.method==="GET"){
    const campaign=bannermaticStore.getCampaign(auth,decodeURIComponent(specMatch[1]));
    return json(req,res,200,figmaSpecFromCampaign(campaign));
+  }
+
+  const ttResolveMatch=matchCampaignAction(url,"tt-resolve");
+  if(ttResolveMatch&&req.method==="GET"){
+   const campaign=bannermaticStore.getCampaign(auth,decodeURIComponent(ttResolveMatch[1]));
+   return json(req,res,200,resolveCampaignTT(campaign));
+  }
+  if(ttResolveMatch&&req.method==="POST"){
+   const campaign=bannermaticStore.getCampaign(auth,decodeURIComponent(ttResolveMatch[1]));
+   const body=await readBody(req);
+   return json(req,res,200,body.placementId?(()=>{const placement=(campaign.placements||[]).find(p=>p.id===body.placementId);if(!placement)throw Object.assign(new Error("Placement not found"),{status:404});return{campaignId:campaign.id,placementId:placement.id,...matchTT({...placement,...body})};})():resolveCampaignTT(campaign));
   }
 
   const complianceMatch=matchCampaignAction(url,"compliance");
