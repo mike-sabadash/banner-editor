@@ -41,10 +41,10 @@ Last updated: 2026-09-05
 
 ### Roles / access
 - DESIGNED: yes — Owner/Admin/Designer/Producer/Viewer capability matrix exists.
-- CODED: partial — client capability matrix and server membership roles exist.
-- TESTED: partial — store permission tests exist.
+- CODED: partial — client capability matrix and server membership roles exist. API now restricts generic campaign mutation to Owner/Admin/Producer and creative publication to Owner/Admin/Designer.
+- TESTED: partial — store permission tests + contract tests/build.
 - RUNTIME VERIFIED: no
-- Remaining: complete server/client permission parity and member-management UI/invitation flow.
+- Remaining: member-management UI/invitation flow and full runtime role matrix.
 
 ### Campaign list / create campaign
 - DESIGNED: yes
@@ -76,7 +76,7 @@ Last updated: 2026-09-05
 ### Re-import diff
 - DESIGNED: yes
 - CODED: foundation — `src/mvp2/planDiff.ts`
-- TESTED: yes — `src/mvp2/planDiff.test.ts`
+- TESTED: yes — `src/mvp2/planDiff.test.ts`; CI #77 success
 - RUNTIME VERIFIED: no
 - Remaining: integrate diff review/confirmation into Cloud import UI before applying campaign update.
 
@@ -93,12 +93,26 @@ Last updated: 2026-09-05
 - RUNTIME VERIFIED: no
 
 ## P0 — Figma ↔ Cloud
-- Stable campaign ID: cloud campaign IDs exist; plugin connection not yet completed.
-- Required format contract: domain model exists; plugin fetch/connection not yet completed.
-- Create only missing formats: existing plugin logic supports missing-format creation locally, but cloud contract runtime is not connected.
-- Publish Creative → cloud version: **not implemented end-to-end**. Current Cloud metadata publish is explicitly a placeholder and must not be called production sync.
-- Cloud preview update from Figma: not implemented.
-- Deep-link/open workflow: cloud routes to creative editor with campaign ID, but real Figma plugin handoff/runtime is not verified.
+
+### Stable campaign specification API
+- DESIGNED: yes
+- CODED: yes — `GET /api/campaigns/:id/figma-spec` via `server/mvp2Contract.mjs` and `server/mvp2Api.mjs`.
+- TESTED: yes — `server/mvp2Contract.test.ts`; CI #81 success.
+- RUNTIME VERIFIED: no.
+
+### Creative publish contract
+- DESIGNED: yes
+- CODED: server foundation — `POST /api/campaigns/:id/creative-publish` publishes only matching visual formats and preserves placement geometry/relationships.
+- TESTED: yes — contract tests + CI #81.
+- RUNTIME VERIFIED: no.
+- Remaining: plugin must send real preview/build metadata; Cloud must display that published preview.
+
+### Plugin integration
+- Stable campaign ID exists in Cloud, but plugin connection is not yet completed.
+- Required-format fetch from Cloud is not yet wired into the plugin.
+- Existing plugin has local create-missing-format behavior, but it is not yet driven by `figma-spec`.
+- Cloud media-plan/TT changes do not yet notify the plugin about missing formats.
+- Open-in-Figma handoff is not runtime verified.
 
 ## P0 — Campaign Wall
 - Creative/Delivery modes: CODED
@@ -115,7 +129,7 @@ Existing TT Knowledge server APIs exist from MVP1. Cloud integration is partial;
 Only readiness foundation exists. Real ZIP/duration/clickTag/tracking/safe-zone validation against published creative builds is not implemented yet.
 
 ## P1 — versions
-Campaign records already contain `creativeVersion`, `mediaPlanVersion`, and `ttSnapshotVersion` foundation fields. Immutable published Creative versions, media-plan snapshots, TT snapshots and reproducible Campaign Builds are not implemented yet.
+Campaign records already contain `creativeVersion`, `mediaPlanVersion`, and `ttSnapshotVersion` foundation fields. Creative publish increments format and campaign creative version counters, but immutable Creative snapshots are not implemented yet. Media-plan snapshots, TT snapshots and reproducible Campaign Builds are not implemented yet.
 
 ## P1 — delivery
 Not implemented end-to-end. Existing legacy export capability is not equivalent to a placement-specific Campaign Build.
@@ -123,11 +137,12 @@ Not implemented end-to-end. Existing legacy export capability is not equivalent 
 ## Latest verified CI evidence
 - CI #75: success after switching main Cloud entry point to server-backed `CloudAppV2`.
 - CI #77: success after adding media-plan diff and creative-preservation tests.
+- CI #81: success after adding Figma spec + creative publish server contract and role-specific API guards.
 
 ## Next implementation order
 1. Integrate media-plan diff review/apply into Cloud.
 2. Complete manual setup using the exact same campaign domain model.
-3. Build Figma ↔ Cloud campaign connection and required-format contract.
+3. Wire Figma plugin to `figma-spec` and create only missing formats.
 4. Publish real creative preview/version from Figma to Cloud.
 5. Replace Campaign Wall mock cards with live preview builds + shared playhead.
 6. Connect real TT Knowledge into Cloud and effective TT resolution.
