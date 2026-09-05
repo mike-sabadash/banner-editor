@@ -16,6 +16,8 @@ export const api={
  async campaigns(){return request<{items:Campaign[]}>("/api/campaigns")},
  async createCampaign(name:string,locale:"en"|"ru"){return request<Campaign>("/api/campaigns",{method:"POST",body:JSON.stringify({name,locale})})},
  async updateCampaign(id:string,patch:Partial<Campaign>){return request<Campaign>(`/api/campaigns/${encodeURIComponent(id)}`,{method:"PATCH",body:JSON.stringify(patch)})},
+ async compliance(id:string){return request<{campaignId:string;creativeVersion:number;mediaPlanVersion:number;ttSnapshotVersion:number;summary:{ready:number;warning:number;blocked:number;total:number};placements:Array<any>}>(`/api/campaigns/${encodeURIComponent(id)}/compliance`)},
+ async figmaSpec(id:string){return request<any>(`/api/campaigns/${encodeURIComponent(id)}/figma-spec`)},
  async members(){return request<{items:Array<{id:string;role:AccessRole;user:{id:string,email:string,name:string}|null}>}>("/api/workspace/members")},
  async setRole(id:string,role:AccessRole){return request(`/api/workspace/members/${encodeURIComponent(id)}`,{method:"PATCH",body:JSON.stringify({role})})},
 };
