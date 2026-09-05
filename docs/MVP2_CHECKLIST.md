@@ -1,6 +1,10 @@
 # Bannermatic MVP2 — delivery checklist
 
-This checklist is the acceptance contract for MVP2. A checkbox may be marked complete only after the applicable chain is true: **DESIGNED → CODED → TESTED → PUSHED → RUNTIME VERIFIED**. Never report a product capability as done based only on design or code presence.
+This checklist is the acceptance contract for MVP2. A checkbox may be marked complete only after the applicable chain is true:
+
+**DESIGNED → CODED → TESTED → PUSHED → DEPLOYED → CLOUD RUNTIME VERIFIED → FIGMA RUNTIME VERIFIED (where applicable) → DONE**
+
+Never report a product capability as done based only on design, code presence, a commit, a PR, or green CI.
 
 ## Product north star
 **Media Plan → TT Intelligence → Creative Adaptation → Live Compliance → Delivery**
@@ -10,15 +14,46 @@ Ownership rule:
 - **Cloud owns Campaign Specification**: placements, media plan, TT, tracking, compliance, versions, delivery.
 - Cloud may request a creative change, but must not silently rewrite Figma creative.
 
-## P0 — product shell and system foundations
-- [ ] Premium SaaS entry point and consistent application shell.
-- [ ] Real design system: tokens, typography, spacing, controls, states, responsive breakpoints.
-- [ ] UX/UI audit against the design system for every new screen.
-- [ ] Multi-language architecture with RU and EN product copy.
-- [ ] Real authentication and persistent sessions.
+Customer-facing test domain: **https://ads.rechord.online/**. Every user-testable Cloud slice must be deployed and verified there before its checkbox can close.
+
+## P0 — public website and customer entry
+- [ ] Premium Bannermatic marketing homepage on the customer-facing domain.
+- [ ] Campaign Compiler is the dominant value proposition and primary CTA.
+- [ ] Product explanation/demo section communicates Media Plan → Campaign outcome.
+- [ ] Clear Sign in and Get started / Sign up entry points.
+- [ ] RU/EN language switch available from the public experience.
+- [ ] Responsive marketing experience on desktop/tablet/mobile.
+- [ ] No placeholder/fake customer claims, metrics, logos, testimonials or dead CTAs.
+
+## P0 — design system and SaaS shell
+- [ ] Real coded design tokens: typography, spacing, color, radii, surfaces, borders, elevation, motion, breakpoints, focus.
+- [ ] Reusable component library for buttons, fields, selects, tabs, badges, menus, modals/drawers, cards, tables, feedback, skeletons and empty states.
+- [ ] Auth, marketing and application UI consume the same design language.
+- [ ] Premium authenticated SaaS shell with workspace/campaign navigation.
+- [ ] Account/workspace/settings/sign-out entry points.
+- [ ] Empty/loading/error/success states for customer-facing flows.
+- [ ] UX/UI audit against the design system for every screen.
+- [ ] Accessibility/focus/keyboard audit for interactive controls.
+- [ ] Responsive product UI on desktop/tablet/mobile.
+- [ ] Multi-language architecture with complete RU and EN customer copy.
+
+## P0 — authentication and access
+- [ ] Customer-visible Sign up flow.
+- [ ] Customer-visible Sign in flow.
+- [ ] Persistent authenticated session backed by server authority.
+- [ ] Sign out and session expiry behavior.
+- [ ] Workspace creation/entry flow.
 - [ ] Workspace membership and access levels: Owner, Admin, Designer, Producer, Viewer.
 - [ ] Route/access guards for cloud screens and campaign actions.
-- [ ] Campaign list and create-campaign flow.
+- [ ] Unauthorized/forbidden states are handled in the UI.
+
+## P0 — Campaigns
+- [ ] Campaign list.
+- [ ] Premium empty state for a new workspace.
+- [ ] Create Campaign flow.
+- [ ] Campaign Overview route.
+- [ ] Campaign navigation: Overview / Media Plan / Creative / TT & Delivery.
+- [ ] Campaign status/readiness visible without opening developer tooling.
 
 ## P0 — Campaign Compiler
 - [ ] One domain model: Campaign → Placements → unique Visual Formats → TT.
@@ -28,26 +63,36 @@ Ownership rule:
 - [ ] Equal sizes deduplicate to one visual format while preserving every placement.
 - [ ] Review screen shows placements, unique creatives, TT coverage, conflicts and Unknown.
 - [ ] Re-import produces a diff and never duplicates existing visual formats.
+- [ ] Media-plan update can be reviewed before application.
 - [ ] Campaign compile produces the required creative set for Figma.
+- [ ] Compiler result clearly summarizes placements → unique creatives → TT readiness.
 
 ## P0 — Figma ↔ Cloud contract
 - [ ] Plugin connects to a cloud campaign through a stable campaign ID.
+- [ ] Connection UX is usable by a normal designer without copying hidden developer data.
 - [ ] Plugin receives required unique visual formats from Cloud.
 - [ ] Plugin creates only missing formats; existing creative is preserved.
 - [ ] Master/linked-format workflow remains the creative source of truth.
+- [ ] Designer can adapt/edit/animate generated formats normally.
 - [ ] Publish Creative creates a versioned cloud creative build.
 - [ ] Cloud preview updates when a new creative version is published.
 - [ ] Cloud changes to media plan/TT never overwrite Figma layout or animation.
-- [ ] Open in Figma deep-link/workflow from each cloud creative.
+- [ ] Media-plan update can request/create only newly missing formats.
+- [ ] Open in Figma workflow from each cloud creative.
+- [ ] Plugin shows relevant campaign/TT/compliance status read-only without becoming a duplicate TT admin UI.
 
 ## P0 — Campaign Wall
-- [ ] Campaign Overview shows every unique creative with format and placement labels.
+- [ ] Campaign Overview shows every unique creative with explicit format labels.
+- [ ] Placement labels/statuses are visible for every creative.
 - [ ] Previews are live/playable rather than static thumbnails where HTML preview exists.
 - [ ] Play All / Pause All / Replay All.
 - [ ] Shared campaign playhead for synchronized review.
 - [ ] Creative View and Delivery View.
 - [ ] One visual format can expose several placement statuses without duplicate creative cards.
-- [ ] Responsive premium layout on desktop/tablet/mobile.
+- [ ] Open in Figma from creative context.
+- [ ] Readiness summary N/N visible at campaign level.
+- [ ] Responsive premium wall on desktop/tablet/mobile.
+- [ ] Campaign Wall passes design-system/UX audit and does not look like an internal debug grid.
 
 ## P1 — TT Intelligence
 - [ ] TT Knowledge lives in Cloud, not as a primary editing workspace in Figma.
@@ -57,6 +102,8 @@ Ownership rule:
 - [ ] Unknown stays Unknown; no invented requirements.
 - [ ] TT updates produce an explicit diff and require confirmation.
 - [ ] Ambiguous matching requests a product/placement decision.
+- [ ] Effective TT can be inspected and edited through a premium Cloud workflow.
+- [ ] TT source/update state is understandable without exposing internal parser/debug terminology.
 
 ## P1 — Live Compliance
 - [ ] Placement-level readiness is recalculated for every published creative version.
@@ -68,6 +115,7 @@ Ownership rule:
 - [ ] Safe-zone and required-element checks where rules exist.
 - [ ] Campaign readiness summary N/N.
 - [ ] Safe auto-fix actions are explicit and reversible.
+- [ ] Failed compliance links back to the exact creative/placement and offers Open in Figma when a creative change is required.
 
 ## P1 — versions and change management
 - [ ] Creative version is immutable once published.
@@ -75,6 +123,7 @@ Ownership rule:
 - [ ] TT snapshot versions.
 - [ ] Campaign Build pins Creative + Media Plan + TT snapshot.
 - [ ] Existing build remains reproducible after future updates.
+- [ ] Cloud shows which creative/media-plan/TT versions are currently active.
 
 ## P1 — delivery
 - [ ] Placement-specific packages can reuse one visual creative with different tracking/URLs.
@@ -83,6 +132,18 @@ Ownership rule:
 - [ ] Platform preflight before delivery.
 - [ ] Delivery dashboard: Ready / Warning / Blocked.
 - [ ] Build & Download Campaign.
+- [ ] Final build summary identifies included placements and pinned versions.
+
+## P1 — final product audit
+- [ ] Fresh-user end-to-end run starts from the public homepage, not a seeded authenticated state.
+- [ ] Full RU journey audited.
+- [ ] Full EN journey audited.
+- [ ] Desktop journey audited.
+- [ ] Tablet/mobile key journeys audited.
+- [ ] Design consistency audit across marketing/auth/app/campaign/delivery.
+- [ ] No dead links, placeholder routes, debug-only controls or unexplained technical errors.
+- [ ] Browser runtime verified on `ads.rechord.online`.
+- [ ] Real Figma runtime verified against the deployed Cloud environment.
 
 ## P2 — later, not MVP2 acceptance
 - DCO and feeds.
@@ -94,15 +155,21 @@ Ownership rule:
 
 ## Runtime acceptance scenario
 A release is not MVP2-complete until this real flow works end-to-end:
-1. New user signs up/signs in and creates a workspace/campaign.
-2. Upload a real media plan.
-3. Campaign Compiler produces placements and deduplicated visual formats.
-4. User reviews TT coverage/conflicts.
-5. Campaign opens in Figma and missing formats are created from the master.
-6. Designer edits/adapts/animates and publishes creative.
-7. Cloud Campaign Wall displays all campaign creatives and plays them.
-8. Cloud validates every placement and reports N/N readiness.
-9. A creative change in Figma publishes a new version and updates Cloud without losing media-plan/TT state.
-10. A media-plan change creates a diff and required missing formats without damaging existing creative.
-11. A final Campaign Build generates placement-specific deliverables.
-12. The whole flow is verified on the production domain.
+1. New anonymous user opens the Bannermatic marketing homepage on `ads.rechord.online`.
+2. User switches language if desired and chooses Get started / Sign in.
+3. User signs up/signs in and enters/creates a workspace.
+4. User creates a campaign.
+5. User uploads a real media plan and optional client TT, or uses Manual setup.
+6. Campaign Compiler produces placements and deduplicated visual formats.
+7. User reviews TT coverage/conflicts/Unknown and confirms the campaign plan.
+8. Campaign connects/opens in Figma and only missing formats are created from the master.
+9. Designer edits/adapts/animates and publishes creative.
+10. Cloud Campaign Wall displays all campaign creatives with labels and playable previews.
+11. Play All / Pause / Replay and shared timing work.
+12. Cloud validates every placement and reports N/N readiness.
+13. A creative change in Figma publishes a new version and updates Cloud without losing media-plan/TT state.
+14. A media-plan change creates a diff and required missing formats without damaging existing creative.
+15. TT changes are versioned/diffed and do not silently rewrite creative.
+16. A final Campaign Build generates placement-specific deliverables.
+17. User can inspect delivery state, account/workspace settings and sign out.
+18. The whole flow is verified as a customer-visible product on `ads.rechord.online` plus real Figma runtime.
