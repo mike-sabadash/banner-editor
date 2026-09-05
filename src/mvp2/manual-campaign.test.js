@@ -11,8 +11,9 @@ describe('Bannermatic Cloud manual setup',()=>{
  });
  it('reviews changes before applying them',()=>{
   expect(manual).toContain('diffMediaPlan');
-  expect(manual).toContain('REVIEW BEFORE COMPILE');
+  expect(manual).toContain('Review before compile');
   expect(manual).toContain('Apply & compile');
+  expect(manual).toContain('ne-review');
  });
  it('is a first-class mode of the same campaign workspace',()=>{
   expect(media).toContain("type EntryMode='plan'|'manual'");
