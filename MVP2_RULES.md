@@ -2,11 +2,25 @@
 
 This file is the persistent operating contract for MVP2 development. It supplements `AGENTS.md` and `docs/MVP2_CHECKLIST.md` and must be read before any substantial MVP2 change.
 
+## 0. Non-negotiable definition of the product
+
+**MVP2 means a complete customer-facing SaaS product, not a collection of backend foundations, isolated screens, mocks, tests, plugin utilities, or internal admin tooling.**
+
+The pilot product name is **Bannermatic**.
+
+A user must be able to enter Bannermatic from the public website and complete the whole journey without developer intervention:
+
+`Marketing site → Sign up / Sign in → Workspace → Create Campaign → Media Plan / TT → Campaign Compiler → Figma Creative Workspace → Publish Creative → Campaign Wall → Live Compliance → Delivery Build`
+
+The cloud product must have all normal customer entry points, authentication/access states, empty/loading/error/success states, account/workspace navigation, and a coherent route structure. A backend endpoint or CI-green component is never a substitute for a visible user-facing step.
+
 ## 1. Product north star
 
 **Media Plan → TT Intelligence → Creative Adaptation → Live Compliance → Delivery**
 
 Bannermatic is not positioned as an AI resizer. The differentiator is the **Campaign Compiler**: the system determines what a campaign requires, creates the creative set, validates each placement, keeps creative and delivery state connected, and prepares the campaign for delivery.
+
+Campaign Compiler must remain the dominant product narrative and primary action. Resize, animation, AI and export are supporting capabilities.
 
 ## 2. Product ownership boundary
 
@@ -40,71 +54,179 @@ Manual input and Media Plan import are two entry points into the same model:
 
 A size is not a placement. Multiple placements may share one visual format while retaining independent TT, tracking and delivery metadata.
 
-## 4. Mandatory implementation states
+## 4. Mandatory implementation states and truthfulness
 
 Never collapse these states:
 - `DESIGNED`
 - `CODED`
 - `TESTED`
 - `PUSHED`
-- `LOCAL`
-- `RUNTIME VERIFIED`
+- `DEPLOYED`
+- `CLOUD RUNTIME VERIFIED`
+- `FIGMA RUNTIME VERIFIED` where applicable
+- `DONE`
 
-A feature is not `DONE` until the complete user scenario passes runtime verification on the applicable environment. CI success is required but is not runtime proof.
+A feature is not `DONE` until its complete customer scenario passes runtime verification in the applicable production/test environment.
 
-Never invent commit SHAs, CI results, deployment status, local state or Figma/browser runtime results.
+**CI success is only evidence that code passed CI. It is not evidence that the user can see or use the feature.**
 
-## 5. MVP2 acceptance contract
+Never describe any of the following as a product result by itself:
+- a commit;
+- a PR;
+- a green CI run;
+- a TypeScript interface/domain model;
+- an API endpoint not exercised through the product;
+- a mock UI;
+- a screen not deployed to the customer-facing domain;
+- a plugin function not verified in Figma.
 
-The source of truth for implementation scope is `docs/MVP2_CHECKLIST.md`.
+Never invent commit SHAs, CI results, deployment status, local state, browser state, server state or Figma runtime results.
+
+If the user cannot see the claimed cloud change at the agreed test URL, report it as **not deployed / not runtime verified**, not as completed work.
+
+## 5. Mandatory visible deployment loop
+
+The agreed customer-visible MVP2 test surface is:
+
+**https://ads.rechord.online/**
+
+During MVP2 development, every user-testable cloud slice must follow this loop:
+
+1. implement;
+2. test and build;
+3. push exact HEAD;
+4. deploy that exact build to `ads.rechord.online`;
+5. open/check the deployed route and critical actions;
+6. only then report what changed and give the exact route for user inspection.
+
+The user must not have to infer progress from GitHub or CI. **Visible product progress on the test domain is the default development output.**
+
+For Figma-dependent slices, deploy the Cloud side first when relevant, then verify the plugin against that deployed Cloud environment. Do not mark the Figma slice complete until the real plugin runtime passes.
+
+Do not silently replace the agreed domain with localhost, a mock URL, a storybook, or a developer-only route.
+
+## 6. MVP2 acceptance contract and checklist discipline
+
+The source of truth for implementation scope is `docs/MVP2_CHECKLIST.md`. `docs/MVP2_STATUS.md` records evidence/state only; it may not redefine scope.
 
 Before each substantial change:
-1. identify the checklist item(s) being addressed;
-2. verify they support the new Campaign Compiler concept;
-3. implement on `codex/bannermatic-mvp2` or a child branch;
-4. run tests and production build;
-5. run server syntax/checks;
-6. only then update status/evidence;
-7. do not mark a checklist checkbox complete until runtime verification is performed.
+1. read this file and `docs/MVP2_CHECKLIST.md`;
+2. identify the exact unchecked checklist item(s);
+3. verify they support Campaign Compiler and the full customer journey;
+4. implement on `codex/bannermatic-mvp2` or a child branch;
+5. add/update feature tests;
+6. run tests, production build and server checks;
+7. deploy customer-visible Cloud work to the agreed test domain;
+8. perform browser/runtime verification;
+9. perform Figma runtime verification where applicable;
+10. update `docs/MVP2_STATUS.md` with evidence;
+11. only then mark an acceptance checkbox complete.
 
-## 6. Required end-to-end MVP2 result
+Do not jump to lower-level infrastructure work while a missing customer-facing entry point makes the current journey impossible, unless that infrastructure is the direct blocker for that entry point.
+
+## 7. Required end-to-end MVP2 result
 
 MVP2 is not complete until this real flow works:
-1. user signs up/signs in;
-2. creates/enters a workspace and creates a campaign;
-3. uploads a real media plan / client TT;
-4. Campaign Compiler builds placements and deduplicated unique visual formats;
-5. user reviews TT coverage, conflicts and Unknown states;
-6. campaign opens in Figma and only missing formats are created from the master;
-7. designer edits/adapts/animates in Figma;
-8. Publish Creative creates a new cloud creative version;
-9. Campaign Wall shows the whole campaign with format/placement labels and playable previews;
-10. Live Compliance calculates placement readiness;
-11. creative updates from Figma update Cloud without losing media-plan/TT state;
-12. media-plan updates show a diff and request missing formats without damaging existing creative;
-13. final Campaign Build creates placement-specific deliverables;
-14. the full flow is verified on the production domain.
+1. anonymous visitor opens a polished Bannermatic marketing homepage;
+2. visitor understands Campaign Compiler and has clear primary CTA;
+3. user signs up/signs in;
+4. creates/enters a workspace and creates a campaign;
+5. uploads a real media plan / client TT or uses the manual campaign path;
+6. Campaign Compiler builds placements and deduplicated unique visual formats;
+7. user reviews TT coverage, provenance, conflicts and Unknown states;
+8. campaign opens/connects in Figma and only missing formats are created from the master;
+9. designer edits/adapts/animates in Figma;
+10. Publish Creative creates a new cloud creative version;
+11. Campaign Wall shows the whole campaign with format/placement labels and playable previews;
+12. Play All / Pause / Replay and shared campaign timing work for live previews;
+13. Live Compliance calculates placement readiness;
+14. creative updates from Figma update Cloud without losing media-plan/TT state;
+15. media-plan updates show a diff and request missing formats without damaging existing creative;
+16. final Campaign Build creates placement-specific deliverables;
+17. user can reach account/workspace/settings and sign out normally;
+18. the complete flow is verified on the deployed customer-facing domain plus real Figma runtime.
 
-## 7. Cloud UX requirements
+## 8. Marketing website and SaaS product quality
 
-Bannermatic must look and behave like a premium SaaS product, not an internal admin panel.
+Bannermatic must be credible as a premium commercial SaaS from the first anonymous page through final campaign delivery.
 
-Mandatory principles:
-- one consistent design system across authentication, campaigns, campaign wall, media plan, TT, delivery and settings;
-- design tokens for typography, spacing, radii, color, elevation, states and breakpoints;
-- consistent interactive states: default / hover / active / focus / disabled / loading / error / success;
-- responsive desktop/tablet/mobile behavior;
-- RU and EN architecture from the start;
-- information hierarchy should follow campaign workflow, not internal code structure;
-- avoid duplicate editors for the same data;
-- use progressive disclosure for technical detail;
-- Campaign Compiler remains the primary CTA and primary narrative.
+Reference quality bar: leading modern AI SaaS products such as OpenRouter and Higgsfield — use their strengths as quality references, **not as visual copies**.
 
-Every new screen requires UX/UI audit against the design system before it can be called complete.
+The public/customer experience must include, at minimum:
+- premium marketing homepage;
+- clear Bannermatic value proposition and Campaign Compiler demonstration;
+- product/feature explanation sufficient for a first-time user;
+- primary Sign up / Get started CTA and Sign in entry point;
+- authentication screens;
+- authenticated SaaS shell;
+- workspace/campaign navigation;
+- empty states and onboarding;
+- campaign creation/import flow;
+- Campaign Wall;
+- TT/compliance/delivery views;
+- account/workspace/settings/sign-out entry points;
+- responsive behavior;
+- RU/EN language switching and persistent locale preference.
 
-## 8. Campaign Wall requirements
+No internal-looking dashboard, raw table dump, debug controls, placeholder copy, dead navigation, fake metrics, fake testimonials, fake customer logos or fake production data may be presented as finished SaaS UI.
 
-Campaign Wall is a flagship MVP2 screen and must eventually support:
+## 9. Real design system is mandatory
+
+Use one explicit design system across marketing, auth and product UI. The design system must be implemented in code and documented, not merely described.
+
+Required foundations:
+- typography scale and font roles;
+- spacing scale;
+- layout/grid/container rules;
+- color tokens and semantic colors;
+- radii;
+- elevation/surfaces;
+- borders;
+- icon sizing;
+- motion/duration/easing tokens;
+- responsive breakpoints;
+- focus ring/accessibility tokens;
+- density rules for data-heavy campaign UI.
+
+Required reusable components include at least:
+- Button variants/sizes/states;
+- Input/Textarea/Select;
+- Checkbox/Radio/Switch where semantically appropriate;
+- Tabs/Segmented control;
+- Badge/Status;
+- Tooltip;
+- Dropdown/Menu;
+- Modal/Drawer;
+- Card/Surface;
+- Table/Data row;
+- Empty state;
+- Skeleton/loading state;
+- Toast/inline feedback;
+- App navigation/sidebar/header;
+- campaign/format/placement preview cards.
+
+Every screen must consume the same tokens/components. One-off CSS that creates visually inconsistent controls is a defect.
+
+## 10. Mandatory UX/UI audit gate
+
+Every customer-visible slice requires a UX/UI audit before `DONE`:
+- hierarchy and primary action are obvious;
+- no duplicate editors for the same domain data;
+- progressive disclosure is used for technical detail;
+- copy is understandable to a first-time user;
+- hover/focus/active/disabled/loading/error/success states exist where needed;
+- keyboard/focus behavior is sane;
+- desktop/tablet/mobile layouts are checked;
+- spacing/type/radii/icons match the design system;
+- no clipping/overflow/layout jumps at supported breakpoints;
+- empty and error states remain premium and useful;
+- Campaign Compiler remains visually and narratively dominant.
+
+A screen that merely functions but looks like an internal prototype is **not complete**.
+
+## 11. Campaign Wall requirements
+
+Campaign Wall is a flagship MVP2 screen and must support:
 - all unique campaign creatives visible together;
 - explicit format labels;
 - placement labels/statuses;
@@ -116,9 +238,9 @@ Campaign Wall is a flagship MVP2 screen and must eventually support:
 - Open in Figma for creative changes;
 - readiness summary N/N.
 
-Static mock previews are not equivalent to live HTML previews.
+Static mock previews are not equivalent to live HTML previews and may only be labelled as temporary development placeholders.
 
-## 9. Authentication and access rules
+## 12. Authentication and access rules
 
 Target roles:
 - Owner
@@ -129,11 +251,11 @@ Target roles:
 
 Server must be the authority for authentication, sessions, workspace membership and role enforcement. Client-side role hiding alone is insufficient.
 
-Do not claim production authentication while the UI uses localStorage-only preview sessions.
+The customer journey must include visible sign-up/sign-in/sign-out/account/workspace entry points. Do not claim production authentication while the UI uses localStorage-only preview sessions.
 
 Do not store raw passwords. Do not expose tokens/secrets in UI, logs, Notion, GitHub or documentation.
 
-## 10. Persistence and versioning
+## 13. Persistence and versioning
 
 Cloud state must be server-persistent. LocalStorage may be used only for non-authoritative UI preferences such as locale.
 
@@ -145,7 +267,7 @@ Required version model:
 
 Published creative versions and delivery builds must become immutable/reproducible once that layer is implemented.
 
-## 11. TT rules
+## 14. TT rules
 
 - Client campaign TT overrides public/platform TT.
 - Deterministic platform + placement + size matching is preferred before AI.
@@ -153,8 +275,9 @@ Published creative versions and delivery builds must become immutable/reproducib
 - Unknown remains Unknown; never invent requirements.
 - Every effective rule must support provenance and checked-at metadata.
 - TT updates require explicit diff/confirmation before affecting campaign readiness.
+- Normal TT editing/management belongs in Cloud in MVP2; Figma receives context/status needed by the designer rather than becoming a second TT admin surface.
 
-## 12. AI rules
+## 15. AI rules
 
 AI is a real decision-support layer, not fake placeholder logic.
 
@@ -166,7 +289,7 @@ For creative adaptation use the existing Anchor + Delta principle:
 
 Paid AI calls must not happen automatically unless the user action explicitly invokes them or the product flow has an approved paid step.
 
-## 13. Technical safety
+## 16. Technical safety
 
 - Preserve existing working plugin/editor functionality while MVP2 is developed.
 - Prefer additive/new-version files for risky large UI rewrites until verified.
@@ -174,30 +297,36 @@ Paid AI calls must not happen automatically unless the user action explicitly in
 - No `rm -rf`, destructive resets or force pushes without explicit approval.
 - Preserve unrelated local changes/untracked files.
 - Never commit `.env`, API keys, passwords, SSH private keys or raw tokens.
-- Production deployment is a separate state from `PUSHED`; do not redeploy silently.
+- Production deployment is a separate state from `PUSHED`.
 
 Known project infrastructure exists already (GitHub repository, production VPS, domains, OpenRouter gateway). Access details and secrets stay outside this file.
 
-## 14. Testing rules
+## 17. Testing rules
 
 At minimum before claiming a code slice `TESTED`:
-- `npm test`
-- `npm run build`
-- server syntax checks used by CI
-- relevant feature tests added/updated
-- no failing CI on the current exact HEAD
+- `npm test`;
+- `npm run build`;
+- server syntax checks used by CI;
+- relevant feature tests added/updated;
+- no failing CI on the current exact HEAD.
 
-Runtime verification is still separate.
+For customer-visible work, `TESTED` is followed by `DEPLOYED` and `CLOUD RUNTIME VERIFIED`; tests do not replace those states.
 
-## 15. Reporting format
+For the final MVP2 acceptance, perform a fresh end-to-end run as a new user, not only regression tests against pre-seeded state.
+
+## 18. Reporting format
 
 Use only real evidence:
 
 `DESIGNED: yes/no`
 `CODED: yes/no`
-`TESTED: yes/no — actual command/run/result`
+`TESTED: yes/no — exact run/result`
 `PUSHED: yes/no — exact SHA`
-`LOCAL: yes/no`
-`RUNTIME VERIFIED: yes/no`
+`DEPLOYED: yes/no — exact environment/build`
+`CLOUD RUNTIME VERIFIED: yes/no — exact route/scenario`
+`FIGMA RUNTIME VERIFIED: yes/no — exact scenario or n/a`
+`DONE: yes/no`
 
-Then name the next unchecked checklist item. Never hide an unresolved dependency behind the word `ready`.
+Then name the next unchecked checklist item.
+
+**Never report absence of visible product output as a successful product result. Never hide an unresolved dependency behind the words ready, done, implemented, working, production, or complete.**
