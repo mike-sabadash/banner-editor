@@ -3,6 +3,7 @@ import type {AccessRole,Campaign} from "./domain";
 const BASE=(import.meta as any).env?.VITE_BANNERMATIC_API||"";
 const TOKEN_KEY="bannermatic:token";
 export type SessionPayload={user:{id:string,email:string,name:string};workspace:{id:string,name:string};role:AccessRole;expiresAt:string;token?:string};
+export type CampaignBuild={id:string;campaignId:string;campaignName:string;createdAt:string;state:"ready"|"blocked";pins:{creativeVersion:number;mediaPlanVersion:number;ttSnapshotVersion:number};compliance:{ready:number;warning:number;blocked:number;total:number};placements:Array<any>};
 
 function token(){return localStorage.getItem(TOKEN_KEY)||""}
 export function hasToken(){return Boolean(token())}
@@ -18,6 +19,9 @@ export const api={
  async updateCampaign(id:string,patch:Partial<Campaign>){return request<Campaign>(`/api/campaigns/${encodeURIComponent(id)}`,{method:"PATCH",body:JSON.stringify(patch)})},
  async compliance(id:string){return request<{campaignId:string;creativeVersion:number;mediaPlanVersion:number;ttSnapshotVersion:number;summary:{ready:number;warning:number;blocked:number;total:number};placements:Array<any>}>(`/api/campaigns/${encodeURIComponent(id)}/compliance`)},
  async figmaSpec(id:string){return request<any>(`/api/campaigns/${encodeURIComponent(id)}/figma-spec`)},
+ async builds(id:string){return request<{items:CampaignBuild[]}>(`/api/campaigns/${encodeURIComponent(id)}/builds`)},
+ async createBuild(id:string){return request<{build:CampaignBuild;compliance:any}>(`/api/campaigns/${encodeURIComponent(id)}/builds`,{method:"POST"})},
+ async build(id:string,buildId:string){return request<CampaignBuild>(`/api/campaigns/${encodeURIComponent(id)}/builds/${encodeURIComponent(buildId)}`)},
  async members(){return request<{items:Array<{id:string;role:AccessRole;user:{id:string,email:string,name:string}|null}>}>("/api/workspace/members")},
  async setRole(id:string,role:AccessRole){return request(`/api/workspace/members/${encodeURIComponent(id)}`,{method:"PATCH",body:JSON.stringify({role})})},
 };
