@@ -2,19 +2,24 @@ import path from "node:path";
 import {BannermaticStore} from "./mvp2Store.mjs";
 import {applyCreativePublish,figmaSpecFromCampaign} from "./mvp2Contract.mjs";
 import {campaignCompliance} from "./mvp2Compliance.mjs";
+import {BuildStore} from "./mvp2Builds.mjs";
 
 const STORE_PATH=process.env.BANNERMATIC_DATA_FILE||path.resolve(process.cwd(),"runtime/bannermatic.json");
+const BUILD_STORE_PATH=process.env.BANNERMATIC_BUILD_FILE||path.resolve(process.cwd(),"runtime/bannermatic-builds.json");
 export const bannermaticStore=new BannermaticStore(STORE_PATH);
+export const bannermaticBuildStore=new BuildStore(BUILD_STORE_PATH);
 
 function bearer(req){const raw=String(req.headers.authorization||"");return raw.toLowerCase().startsWith("bearer ")?raw.slice(7).trim():"";}
 function matchCampaignPath(url){return String(url||"").match(/^\/api\/campaigns\/([^/?#]+)$/);}
 function matchCampaignAction(url,action){return String(url||"").match(new RegExp(`^/api/campaigns/([^/?#]+)/${action}$`));}
+function matchBuildPath(url){return String(url||"").match(/^\/api\/campaigns\/([^/?#]+)\/builds\/([^/?#]+)$/);}
 function matchMemberPath(url){return String(url||"").match(/^\/api\/workspace\/members\/([^/?#]+)$/);}
 
 export async function handleMvp2Api(req,res,{json,readBody}){
  const url=String(req.url||"").split("?")[0];
  if(!url.startsWith("/api/auth/")&&!url.startsWith("/api/campaigns")&&!url.startsWith("/api/workspace/"))return false;
  await bannermaticStore.load();
+ await bannermaticBuildStore.load();
  try{
   if(req.method==="POST"&&url==="/api/auth/register"){const body=await readBody(req);return json(req,res,201,await bannermaticStore.register(body));}
   if(req.method==="POST"&&url==="/api/auth/login"){const body=await readBody(req);return json(req,res,200,await bannermaticStore.login(body));}
@@ -35,6 +40,27 @@ export async function handleMvp2Api(req,res,{json,readBody}){
   if(complianceMatch&&req.method==="GET"){
    const campaign=bannermaticStore.getCampaign(auth,decodeURIComponent(complianceMatch[1]));
    return json(req,res,200,campaignCompliance(campaign));
+  }
+
+  const buildsMatch=matchCampaignAction(url,"builds");
+  if(buildsMatch&&req.method==="GET"){
+   const campaignId=decodeURIComponent(buildsMatch[1]);
+   bannermaticStore.getCampaign(auth,campaignId);
+   return json(req,res,200,{items:bannermaticBuildStore.list(campaignId)});
+  }
+  if(buildsMatch&&req.method==="POST"){
+   bannermaticStore.requireRole(auth,["owner","admin","producer"]);
+   const campaignId=decodeURIComponent(buildsMatch[1]);
+   const campaign=bannermaticStore.getCampaign(auth,campaignId);
+   const build=await bannermaticBuildStore.create(campaign);
+   return json(req,res,build.state==="ready"?201:409,{build,compliance:campaignCompliance(campaign)});
+  }
+  const buildMatch=matchBuildPath(url);
+  if(buildMatch&&req.method==="GET"){
+   const campaignId=decodeURIComponent(buildMatch[1]),id=decodeURIComponent(buildMatch[2]);
+   bannermaticStore.getCampaign(auth,campaignId);
+   const item=bannermaticBuildStore.get(campaignId,id);
+   return item?json(req,res,200,item):json(req,res,404,{error:"Build not found"});
   }
 
   const publishMatch=matchCampaignAction(url,"creative-publish");
