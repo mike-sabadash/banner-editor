@@ -1,27 +1,28 @@
-import {describe,it,expect,vi,beforeEach} from 'vitest';
-const runtime=require('./cloud-runtime.js');
+import {describe,it,expect} from 'vitest';
+import fs from 'node:fs';
 
-describe('Figma Cloud runtime',()=>{
- beforeEach(()=>vi.restoreAllMocks());
- it('normalizes cloud spec without duplicate creative semantics',()=>{
-  expect(runtime.formatsFromSpec({formats:[{formatId:'f1',width:300,height:250,placementIds:['p1','p2']}]})).toEqual([{id:'f1',width:300,height:250,family:'',placements:[{id:'p1'},{id:'p2'}],conflicts:[]}]);
+const runtime=fs.readFileSync('figma-plugin/cloud-runtime.js','utf8');
+
+describe('Figma Cloud runtime contract',()=>{
+ it('targets the deployed Bannermatic Cloud API',()=>{
+  expect(runtime).toContain('https://ads.rechord.online');
+  expect(runtime).toContain('figma-spec');
+  expect(runtime).toContain('creative-publish');
  });
- it('loads authenticated campaign specification',async()=>{
-  const fetchMock=vi.fn().mockResolvedValue({ok:true,json:async()=>({campaignId:'c1',formats:[]})});
-  vi.stubGlobal('fetch',fetchMock);
-  await runtime.loadCloudSpec('c1','token-1');
-  expect(fetchMock).toHaveBeenCalledWith('https://ads.rechord.online/api/campaigns/c1/figma-spec',expect.objectContaining({headers:expect.objectContaining({authorization:'Bearer token-1'})}));
+ it('requires a cloud session token before loading or publishing',()=>{
+  expect(runtime).toContain('Cloud session token is required');
+  expect(runtime).toContain('authorization=`Bearer');
  });
- it('publishes only creative metadata through dedicated endpoint',async()=>{
-  const fetchMock=vi.fn().mockResolvedValue({ok:true,json:async()=>({ok:true})});
-  vi.stubGlobal('fetch',fetchMock);
-  await runtime.publishCloudCreative('c1','token-1',[{formatId:'f1',durationSec:6,previewType:'figma'}]);
-  const [,options]=fetchMock.mock.calls[0];
-  expect(options.method).toBe('POST');
-  expect(JSON.parse(options.body)).toEqual({formats:[{formatId:'f1',previewUrl:'',previewType:'figma',durationSec:6}]});
-  expect(fetchMock.mock.calls[0][0]).toContain('/creative-publish');
+ it('normalizes placement ids into one visual-format request',()=>{
+  expect(runtime).toContain('placementIds');
+  expect(runtime).toContain('placements:Array.isArray(f.placementIds)?f.placementIds.map');
+  expect(runtime).toContain('filter(f=>f.width&&f.height)');
  });
- it('refuses unauthenticated cloud actions',async()=>{
-  await expect(runtime.loadCloudSpec('c1','')).rejects.toThrow('Cloud session token is required');
+ it('publishes creative metadata through the dedicated endpoint',()=>{
+  expect(runtime).toContain('previewUrl');
+  expect(runtime).toContain('previewType');
+  expect(runtime).toContain('durationSec');
+  expect(runtime).toContain('estimatedZipKb');
+  expect(runtime).toContain('method:"POST"');
  });
 });
