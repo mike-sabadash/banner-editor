@@ -4,6 +4,8 @@ const BASE=(import.meta as any).env?.VITE_BANNERMATIC_API||"";
 const TOKEN_KEY="bannermatic:token";
 export type SessionPayload={user:{id:string,email:string,name:string};workspace:{id:string,name:string};role:AccessRole;expiresAt:string;token?:string};
 export type CampaignBuild={id:string;campaignId:string;campaignName:string;createdAt:string;state:"ready"|"blocked";pins:{creativeVersion:number;mediaPlanVersion:number;ttSnapshotVersion:number};compliance:{ready:number;warning:number;blocked:number;total:number};placements:Array<any>};
+export type CreativeVersion={id:string;campaignId:string;version:number;createdAt:string;touched:string[];formats:Array<any>};
+export type TTResolution={campaignId:string;results?:Array<any>;placementId?:string;status?:"matched"|"ambiguous"|"not_found";matches?:Array<any>;reason?:string};
 
 function token(){return localStorage.getItem(TOKEN_KEY)||""}
 export function hasToken(){return Boolean(token())}
@@ -19,6 +21,9 @@ export const api={
  async updateCampaign(id:string,patch:Partial<Campaign>){return request<Campaign>(`/api/campaigns/${encodeURIComponent(id)}`,{method:"PATCH",body:JSON.stringify(patch)})},
  async compliance(id:string){return request<{campaignId:string;creativeVersion:number;mediaPlanVersion:number;ttSnapshotVersion:number;summary:{ready:number;warning:number;blocked:number;total:number};placements:Array<any>}>(`/api/campaigns/${encodeURIComponent(id)}/compliance`)},
  async figmaSpec(id:string){return request<any>(`/api/campaigns/${encodeURIComponent(id)}/figma-spec`)},
+ async ttResolve(id:string,placementId?:string){return placementId?request<TTResolution>(`/api/campaigns/${encodeURIComponent(id)}/tt-resolve`,{method:"POST",body:JSON.stringify({placementId})}):request<TTResolution>(`/api/campaigns/${encodeURIComponent(id)}/tt-resolve`)},
+ async creativeVersions(id:string){return request<{items:CreativeVersion[]}>(`/api/campaigns/${encodeURIComponent(id)}/creative-versions`)},
+ async creativeVersion(id:string,version:number){return request<CreativeVersion>(`/api/campaigns/${encodeURIComponent(id)}/creative-versions/${version}`)},
  async builds(id:string){return request<{items:CampaignBuild[]}>(`/api/campaigns/${encodeURIComponent(id)}/builds`)},
  async createBuild(id:string){return request<{build:CampaignBuild;compliance:any}>(`/api/campaigns/${encodeURIComponent(id)}/builds`,{method:"POST"})},
  async build(id:string,buildId:string){return request<CampaignBuild>(`/api/campaigns/${encodeURIComponent(id)}/builds/${encodeURIComponent(buildId)}`)},
