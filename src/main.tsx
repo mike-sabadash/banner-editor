@@ -20,7 +20,7 @@ import "./mvp2/auth.css";
 import "./mvp2/design-enforcement.css";
 import "./mvp2/campaign-wall.css";
 import "./mvp2/media-plan.css";
-import "./mvp2/delivery-workspace.css";
+import "./mvp2/delivery-v2.css";
 
 function Product(){
   const params=new URLSearchParams(location.search);
