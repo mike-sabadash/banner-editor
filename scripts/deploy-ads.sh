@@ -4,8 +4,8 @@ set -euo pipefail
 APP_DIR="/var/www/banner-editor"
 BRANCH="${BANNERMATIC_DEPLOY_BRANCH:-codex/mvp2-figma-cloud-runtime}"
 NGINX_SRC="$APP_DIR/deploy/nginx/ads.rechord.online.conf"
-NGINX_DST="/etc/nginx/sites-available/ads.rechord.online"
-NGINX_LINK="/etc/nginx/sites-enabled/ads.rechord.online"
+NGINX_DST="/etc/nginx/conf.d/ads.rechord.online.conf"
+LEGACY_NGINX_LINK="/etc/nginx/sites-enabled/ads.rechord.online"
 DEPLOY_KEY="/root/.ssh/banner_editor_deploy"
 GIT_SSH_COMMAND="ssh -i $DEPLOY_KEY -p 443 -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
 export GIT_SSH_COMMAND
@@ -27,9 +27,13 @@ node --check server/ttKnowledgeService.mjs
 
 if [ ! -f .env ]; then echo "ERROR: $APP_DIR/.env is missing" >&2; exit 1; fi
 if ! grep -q '^OPENROUTER_API_KEY=' .env; then echo "ERROR: OPENROUTER_API_KEY is not configured" >&2; exit 1; fi
+if [ ! -f /etc/letsencrypt/live/ads.rechord.online/fullchain.pem ]; then echo "ERROR: ads.rechord.online TLS certificate is missing" >&2; exit 1; fi
 
+# Keep exactly one nginx server definition for ads.rechord.online. Certbot had
+# previously created conf.d/ads.rechord.online.conf while an older sites-enabled
+# entry remained active, so nginx ignored the frontend server block.
+rm -f "$LEGACY_NGINX_LINK"
 cp "$NGINX_SRC" "$NGINX_DST"
-ln -sfn "$NGINX_DST" "$NGINX_LINK"
 nginx -t
 systemctl reload nginx
 
@@ -41,10 +45,6 @@ else
   pm2 start server/openrouterGateway.mjs --name banner-openrouter-gateway
 fi
 pm2 save >/dev/null 2>&1 || true
-
-if command -v certbot >/dev/null 2>&1; then
-  certbot --nginx -d ads.rechord.online --non-interactive --agree-tos --register-unsafely-without-email --redirect || true
-fi
 
 printf '\n== Runtime checks ==\n'
 curl -fsS http://127.0.0.1:8791/healthz
