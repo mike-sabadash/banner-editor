@@ -18,7 +18,7 @@ export type RequirementSet={
 export type Placement={id:string;platform:string;placement:string;width:number;height:number;requirements:RequirementSet;creativeType?:string;contentVariantIds?:string[];reviewIssues?:string[];language?:string;};
 
 export type VisualFormat={
- sourceType?:string;templateId?:string;familyId?:string;roleOverrides?:Record<string,Record<string,number|string>>;sourceFingerprint?:string;variantRenders?:Record<string,any>;
+ sourceType?:string;templateId?:string;familyId?:string;roleOverrides?:Record<string,Record<string,number|string>>;sourceFingerprint?:string;contentFingerprint?:string;variantRenders?:Record<string,any>;
  id:string;width:number;height:number;size:string;placementIds:string[];creativeState:CreativeState;creativeVersion:number;
  previewUrl?:string;previewHtml?:string;previewSvg?:string;previewType?:string;durationSec?:number;estimatedZipKb?:number;clickTagPresent?:boolean;publishedAt?:string;
 };

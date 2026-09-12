@@ -9,7 +9,7 @@ import ManualCampaignSetup from './ManualCampaignSetup';
 
 type Pending={placements:Placement[];diff:MediaPlanDiff;sourceNames:string[];needsAi:number;errors:string[]};
 type EntryMode='plan'|'manual';
-function toPlacements(plan:any):Placement[]{return (plan.placements||[]).map((p:any)=>({id:p.id,platform:p.platform||'Unknown platform',placement:p.placement||p.source||'Placement',width:Number(p.width),height:Number(p.height),creativeType:p.creativeType,language:p.language,reviewIssues:p.reviewIssues,requirements:{...p.requirements,sourceUrl:p.ttUrl,sourceLabel:p.ttUrl?'Imported TT link':'Imported media plan'}}));}
+function toPlacements(plan:any):Placement[]{return (plan.placements||[]).map((p:any)=>({id:p.id,platform:p.platform||'Unknown platform',placement:p.placement||p.source||'Placement',width:Number(p.width),height:Number(p.height),creativeType:p.creativeType,language:p.language,reviewIssues:p.reviewIssues,requirements:{...p.requirements,sourceUrl:p.ttUrl,sourceLabel:p.source||'Imported media plan'}}));}
 
 export default function MediaPlanWorkspace({campaign,locale,canEdit,onUpdated,onError}:{campaign:Campaign;locale:Locale;canEdit:boolean;onUpdated:(c:Campaign)=>void;onError:(s:string)=>void}){
  const input=useRef<HTMLInputElement>(null);const [mode,setMode]=useState<EntryMode>('plan'),[pending,setPending]=useState<Pending|null>(null),[busy,setBusy]=useState(false),[done,setDone]=useState('');const ru=locale==='ru';

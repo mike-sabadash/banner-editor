@@ -90,4 +90,15 @@ Create a fresh local account/campaign. Upload an XLSX with 300×250, 300×600 an
 - 43 test files / 181 tests pass, including a live HTTP integration test that registers a fresh workspace, creates a campaign, preserves two equal-size placement contexts, publishes two content variants from a template, verifies 4/4 preflight readiness, downloads and opens the campaign ZIP plus four nested placement packages, rejects an outdated build, restarts the API store and verifies campaign/build persistence.
 - TypeScript and Vite production build pass.
 - Cloud Browser could not load the local app because the browser client blocks local workspace addresses before page load. Therefore visual browser runtime is NOT VERIFIED.
-- Figma runtime is NOT VERIFIED. Production deployment is NOT performed and still requires explicit approval.
+- Figma runtime is NOT VERIFIED.
+- Publishing the verified commit triggered the branch's pre-existing push workflow. GitHub Actions deployed exact remote head `0057494b043210bf591599dffc82e47cc467ba82` successfully to `ads.rechord.online` without a separate manual workflow dispatch. The public homepage, Sign in route and RU switch were then browser-verified; authenticated production and Figma journeys remain NOT VERIFIED.
+- The product owner confirmed that the current server is a working draft environment, so branch auto-deploy remains enabled for this phase. A separate approval gate is still required before this environment has real users or valuable production data.
+
+## Representative campaign and Figma content checkpoint — 12 Sep 2026
+
+- A generated standards-compliant XLSX acceptance workbook now exercises 10 independent placements, 5 unique size classes, two TT profiles, distinct tracking rules and four content variants through parsing, campaign compilation, deterministic Template publication, compliance and 10 nested HTML5 ZIP packages.
+- XLSX parsing no longer depends on browser-only `DOMParser`; its actual ZIP/XML path is covered in the Node test environment. Media-plan source and worksheet provenance now survives into Campaign and build metadata.
+- The Figma Cloud specification now includes campaign Content Variants. The MVP2 plugin creates stable semantic roles for Headline, Copy, CTA and Legal, renders each Cloud variant from a temporary Figma clone, and publishes immutable per-variant HTML/SVG payloads.
+- Figma publications now carry a content fingerprint. Content edits block delivery until Figma republishes; older metadata-only Figma publications cannot silently pass variant export.
+- Automated evidence: 45 test files / 183 tests passed; TypeScript and Vite production build passed; `node --check figma-plugin/mvp2-sync-code.js` passed.
+- Real Figma runtime is still **NOT VERIFIED**. The plugin behavior above is CODED and automated TESTED only until exercised inside the Figma desktop runtime.

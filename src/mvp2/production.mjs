@@ -2,6 +2,7 @@
 export const TEMPLATE_ID = 'type-retail-v1';
 export const ROLE_IDS = ['background.primary', 'headline.primary', 'copy.secondary', 'cta.primary', 'legal.primary'];
 export const familyFor = (w,h) => w/h >= 5 ? 'strip' : w/h >= 2 ? 'landscape' : w/h < .8 ? 'portrait' : 'square';
+const contentFingerprint = campaign => JSON.stringify(campaign.contentVariants || []);
 const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function sourceFingerprint(campaign, format) {
  return JSON.stringify([TEMPLATE_ID, campaign.contentVariants || [], format.width, format.height, format.roleOverrides || {}, campaign.templateMotion ?? .8]);
@@ -70,9 +71,10 @@ export function productionCampaign(campaign) {
    const issues=[...(rendered?.productionIssues||[])];
    if(p.requirements?.legal&&content?.legal!==p.requirements.legal)issues.push({rule:'legal-content',detail:'Content legal text differs from the placement requirement.'});
    if(!content)issues.push({rule:'missing-content',detail:'Assign an existing content variant.'});
-   if(base.sourceType!=='template')issues.push({rule:'content-binding',detail:'Figma content variant publishing is not yet available. No variant substitution has been applied.'});
+   if(base.sourceType!=='template'&&!rendered)issues.push({rule:'content-binding',detail:'Publish semantic content variants from Figma for this format.'});
    if(!rendered)issues.push({rule:'unpublished-content',detail:'Publish this content variant.'});
-   formats.push({...base,...rendered,id:`${base.id}::${variantId}`,placementIds:[id],productionIssues:issues,outdated:base.sourceType==='template'&&base.sourceFingerprint!==sourceFingerprint(campaign,base)});
+   const outdated=base.sourceType==='template'?base.sourceFingerprint!==sourceFingerprint(campaign,base):base.sourceType==='figma'?base.contentFingerprint!==contentFingerprint(campaign):false;
+   formats.push({...base,...rendered,id:`${base.id}::${variantId}`,placementIds:[id],productionIssues:issues,outdated});
   }
  }
  return {...campaign,placements,formats};

@@ -22,6 +22,9 @@ describe('Bannermatic Figma MVP2 sync',()=>{
   expect(code).toContain('format:"SVG_STRING"');
   expect(code).toContain('previewSvg');
   expect(code).toContain('previewHtml');
+  expect(code).toContain('semanticRole');
+  expect(code).toContain('variantRenders');
+  expect(code).toContain('connection.spec.contentVariants');
   expect(code).toContain('bannermatic:play');
   expect(code).toContain('bannermatic:pause');
   expect(ui).toContain('Publish Creative');
