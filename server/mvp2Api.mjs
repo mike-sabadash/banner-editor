@@ -1,3 +1,5 @@
+import {publishTemplate} from '../src/mvp2/production.mjs';
+import {campaignZip} from './mvp2Packaging.mjs';
 import path from "node:path";
 import {BannermaticStore} from "./mvp2Store.mjs";
 import {applyCreativePublish,figmaSpecFromCampaign} from "./mvp2Contract.mjs";
@@ -45,6 +47,21 @@ export async function handleMvp2Api(req,res,{json,readBody}){
   if(!auth)return json(req,res,401,{error:"Unauthorized"});
   if(req.method==="GET"&&url==="/api/campaigns")return json(req,res,200,{items:bannermaticStore.listCampaigns(auth)});
   if(req.method==="POST"&&url==="/api/campaigns"){bannermaticStore.requireRole(auth,["owner","admin","producer"]);const body=await readBody(req);return json(req,res,201,await bannermaticStore.createCampaign(auth,body));}
+  const templateMatch=matchCampaignAction(url,"template-publish");
+  if(templateMatch&&req.method==='POST'){
+   bannermaticStore.requireRole(auth,['owner','admin','designer']);
+   const campaignId=decodeURIComponent(templateMatch[1]),campaign=bannermaticStore.getCampaign(auth,campaignId);
+   const updated=await bannermaticStore.updateCampaign(auth,campaignId,publishTemplate(campaign));
+   await bannermaticCreativeStore.add(updated,{touched:updated.formats.map(f=>f.id)});
+   return json(req,res,200,updated);
+  }
+  const download=url.match(/^\/api\/campaigns\/([^/?#]+)\/builds\/([^/?#]+)\/download$/);
+  if(download&&req.method==='GET'){
+   const campaignId=decodeURIComponent(download[1]);bannermaticStore.getCampaign(auth,campaignId);
+   const build=bannermaticBuildStore.get(campaignId,decodeURIComponent(download[2]));
+   if(!build)return json(req,res,404,{error:'Build not found'});
+   const bytes=campaignZip(build);res.writeHead(200,{'Content-Type':'application/zip','Content-Length':bytes.length,'Content-Disposition':'attachment; filename="campaign.zip"','Cache-Control':'private, no-store'});res.end(bytes);return true;
+  }
   const pairMatch=matchCampaignAction(url,"figma-pair");if(pairMatch&&req.method==="POST")return json(req,res,201,await bannermaticStore.createFigmaPair(auth,decodeURIComponent(pairMatch[1])));
   const specMatch=matchCampaignAction(url,"figma-spec");if(specMatch&&req.method==="GET"){const campaign=bannermaticStore.getCampaign(auth,decodeURIComponent(specMatch[1]));return json(req,res,200,figmaSpecFromCampaign(campaign));}
   const ttResolveMatch=matchCampaignAction(url,"tt-resolve");

@@ -16,7 +16,9 @@ describe('Bannermatic modular customer journey',()=>{
   expect(product).toContain('<DeliveryWorkspace');
  });
  it('keeps the customer journey connected to Figma without claiming runtime completion',()=>{
-  expect(product).toContain('?view=editor&campaign=');
+  expect(product).toContain("const openFigma=");
+  expect(product).toContain("setScreen('creative')");
+  expect(product).toContain('<FigmaConnectPanel');
   expect(product).toContain("can(role,'edit-creative')");
  });
 });

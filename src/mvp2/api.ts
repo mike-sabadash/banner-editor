@@ -32,6 +32,8 @@ export const api={
  async builds(id:string){return request<{items:CampaignBuild[]}>(`/api/campaigns/${encodeURIComponent(id)}/builds`)},
  async createBuild(id:string){return request<{build:CampaignBuild;compliance:any}>(`/api/campaigns/${encodeURIComponent(id)}/builds`,{method:"POST"})},
  async build(id:string,buildId:string){return request<CampaignBuild>(`/api/campaigns/${encodeURIComponent(id)}/builds/${encodeURIComponent(buildId)}`)},
+ async publishTemplate(id:string){return request<Campaign>(`/api/campaigns/${encodeURIComponent(id)}/template-publish`,{method:'POST'})},
+ async downloadBuild(id:string,buildId:string){const r=await fetch(`${BASE}/api/campaigns/${encodeURIComponent(id)}/builds/${encodeURIComponent(buildId)}/download`,{headers:{authorization:`Bearer ${token()}`}});if(!r.ok)throw new Error((await r.json()).error||'Download failed');return r.blob()},
  async members(){return request<{items:Array<{id:string;role:AccessRole;user:{id:string,email:string,name:string}|null}>}>("/api/workspace/members")},
  async setRole(id:string,role:AccessRole){return request(`/api/workspace/members/${encodeURIComponent(id)}`,{method:"PATCH",body:JSON.stringify({role})})},
  async invitations(){return request<{items:WorkspaceInvitation[]}>("/api/workspace/invitations")},

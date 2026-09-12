@@ -26,7 +26,8 @@ async function analyzeTT(input){const hasDocs=Array.isArray(input.documents)&&in
 
 export const server=http.createServer(async(req,res)=>{try{
  if(req.method==="OPTIONS"){cors(req,res);res.writeHead(204);return res.end();}
- if(await handleMvp2Api(req,res,{json,readBody}))return;
+ cors(req,res);
+ if(await handleMvp2Api(req,res,{json,readBody}) || res.writableEnded)return;
  if(req.method==="GET"&&req.url==="/healthz")return json(req,res,200,{ok:true,service:"banner-openrouter-gateway",model:MODEL,keyConfigured:Boolean(API_KEY),aiTT:true,ttKnowledge:true,bannermaticMvp2:true});
  if(req.method==="GET"&&req.url==="/api/tt/kb")return json(req,res,200,listTTKnowledge());
  if(req.method==="POST"&&req.url==="/api/tt/kb/refresh"){const body=await readBody(req);return json(req,res,200,await refreshTTKnowledge(String(body.id||""),{askOpenRouter,model:MODEL}));}

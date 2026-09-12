@@ -1,3 +1,4 @@
+import {productionCampaign} from '../src/mvp2/production.mjs';
 const nonEmpty=value=>value!==undefined&&value!==null&&String(value).trim()!=='';
 const asList=value=>Array.isArray(value)?value.filter(Boolean):nonEmpty(value)?[value]:[];
 
@@ -7,6 +8,11 @@ function requirementBool(value){return value===true||String(value).toLowerCase()
 export function placementCompliance(campaign,placement){
  const format=(campaign.formats||[]).find(f=>(f.placementIds||[]).includes(placement.id));
  const requirements=placement.requirements||{};const checks=[];
+ if(format?.outdated)checks.push(check('outdated','blocked',true,false,'Content or overrides changed. Publish Changes to rebuild.'));
+ for(const issue of format?.productionIssues||[])checks.push(check(issue.rule,'blocked',issue.role||null,null,issue.detail));
+ if(placement.creativeType&&!/^html5?$/i.test(placement.creativeType))checks.push(check('output','blocked',placement.creativeType,'HTML5','This exporter supports HTML5 only.'));
+ for(const name of ['clickUrl','impressionUrl'])if(requirements[name]&&!/^https?:\/\/[^\s]+$/i.test(requirements[name]))checks.push(check(name,'blocked',requirements[name],'HTTP(S) URL','Correct this URL in Campaign.'));
+
  if(!format){checks.push(check('creative','blocked',null,'published creative','No visual format is linked to this placement.'));return summarize(placement,format,checks)}
  checks.push(check('dimensions',Number(format.width)===Number(placement.width)&&Number(format.height)===Number(placement.height)?'ready':'blocked',`${format.width}×${format.height}`,`${placement.width}×${placement.height}`,'',Number(format.width)!==Number(placement.width)||Number(format.height)!==Number(placement.height)?{type:'open-figma',label:'Resize creative to required dimensions'}:null));
  checks.push(check('creative',format.creativeState==='published'?'ready':'blocked',format.creativeState||'missing','published','',format.creativeState!=='published'?{type:'open-figma',label:'Publish creative from Figma'}:null));
@@ -20,4 +26,4 @@ export function placementCompliance(campaign,placement){
  return summarize(placement,format,checks);
 }
 function summarize(placement,format,checks){const blocked=checks.filter(c=>c.status==='blocked').length,unknown=checks.filter(c=>c.status==='unknown').length;return{placementId:placement.id,platform:placement.platform,placement:placement.placement,size:`${placement.width}×${placement.height}`,formatId:format?.id||null,status:blocked?'blocked':unknown?'warning':'ready',checks,blocked,unknown};}
-export function campaignCompliance(campaign){const placements=(campaign.placements||[]).map(p=>placementCompliance(campaign,p));const summary={ready:placements.filter(p=>p.status==='ready').length,warning:placements.filter(p=>p.status==='warning').length,blocked:placements.filter(p=>p.status==='blocked').length,total:placements.length};return{campaignId:campaign.id,creativeVersion:Number(campaign.creativeVersion||0),mediaPlanVersion:Number(campaign.mediaPlanVersion||0),ttSnapshotVersion:Number(campaign.ttSnapshotVersion||0),summary,placements};}
+export function campaignCompliance(input){const campaign=productionCampaign(input);const placements=(campaign.placements||[]).map(p=>placementCompliance(campaign,p));const summary={ready:placements.filter(p=>p.status==='ready').length,warning:placements.filter(p=>p.status==='warning').length,blocked:placements.filter(p=>p.status==='blocked').length,total:placements.length};return{campaignId:campaign.id,creativeVersion:Number(campaign.creativeVersion||0),mediaPlanVersion:Number(campaign.mediaPlanVersion||0),ttSnapshotVersion:Number(campaign.ttSnapshotVersion||0),summary,placements};}
