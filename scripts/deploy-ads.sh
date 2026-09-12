@@ -47,8 +47,19 @@ fi
 pm2 save >/dev/null 2>&1 || true
 
 printf '\n== Runtime checks ==\n'
-curl -fsS http://127.0.0.1:8791/healthz
-printf '\n'
+gateway_health=""
+for attempt in {1..20}; do
+  if gateway_health="$(curl -fsS --max-time 2 http://127.0.0.1:8791/healthz 2>/dev/null)"; then
+    printf '%s\n' "$gateway_health"
+    break
+  fi
+  if [ "$attempt" -eq 20 ]; then
+    echo "ERROR: gateway did not become ready within 20 seconds" >&2
+    pm2 describe banner-openrouter-gateway || true
+    exit 1
+  fi
+  sleep 1
+done
 curl -fsS --max-time 20 https://ads.rechord.online/healthz
 printf '\n'
 curl -fsS --max-time 20 https://ads.rechord.online/ | grep -q '<div id="root"></div>'
