@@ -3,6 +3,7 @@ import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
 
 const code=readFileSync(new URL('./mvp2-sync-code.js',import.meta.url),'utf8');
+const ui=readFileSync(new URL('./mvp2-sync-ui.html',import.meta.url),'utf8');
 
 type MockNode=any;
 function makeNode(id:string,type:string,name:string,x=0,y=0,width=100,height=30){
@@ -21,6 +22,13 @@ function makeNode(id:string,type:string,name:string,x=0,y=0,width=100,height=30)
 function setMeta(node:MockNode,key:string,value:string){node.setSharedPluginData('banner_campaign',key,value)}
 
 describe('MVP2 Figma creative sync runtime',()=>{
+ it('keeps the current campaign resumable while exposing an explicit safe campaign switch',()=>{
+  expect(ui).toContain('Connect a different campaign');
+  expect(ui).toContain('Keep the current campaign');
+  expect(ui).toContain('The current campaign canvas will stay unchanged');
+  expect(ui).toContain('Campaign switched');
+  expect(code).toContain('figma.clientStorage.setAsync(TOKEN_KEY,result.token)');
+ });
  it('copies headline content and relative Motion/easing to every linked resize while preserving layout',async()=>{
   const page=makeNode('page','PAGE','Page'),roots=[makeNode('r1','COMPONENT','1200×628',0,0,1200,628),makeNode('r2','COMPONENT','300×250',0,0,300,250),makeNode('r3','COMPONENT','728×90',0,0,728,90)];
   roots.forEach((root,index)=>{setMeta(root,'campaignId','campaign-1');setMeta(root,'formatId',`format-${index}`);setMeta(root,'familyId',index===2?'Strip':'Rectangle');page.appendChild(root)});
