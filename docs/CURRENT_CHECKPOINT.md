@@ -125,4 +125,25 @@ Status remains deliberately incomplete:
 - `BROWSER RUNTIME VERIFIED`: no on this new slice.
 - `FIGMA RUNTIME VERIFIED`: no.
 
-The exact next action is to verify the single resulting deployment, then run the real no-terminal flow using `figma-plugin/manifest-mvp2.json`. Do not start adaptation-engine work until the five-format baseline and return publication are captured.
+## Runtime audit and creative-sync correction — 2026-09-13
+
+The user completed the real Browser → Figma pairing and saw the same campaign in Figma. The run then proved that the Cloud-connected MVP2 plugin had no user-facing content/Motion sync: selecting formats and pressing `Sync missing formats` only returned a misleading green missing-format status.
+
+The correction is coded on local branch `codex/figma-creative-sync-runtime`:
+
+- explicit source layer pinning;
+- semantic/custom layer roles;
+- All / Same family / Selected target scopes;
+- Content / Appearance / Motion / Timing / Easing / Layout-size property scopes;
+- relative Motion transfer through the Figma manual keyframe API;
+- local layout preserved by default;
+- truthful missing-format/no-op/extra-canvas reporting;
+- stable-format-ID reconciliation and publication deduplication;
+- live HTML publication containing Figma keyframes and cubic-bezier easing;
+- canonical `figma-plugin/manifest.json` for the current Cloud plugin, with the former build retained as `manifest-legacy.json`.
+
+Evidence: `node --check figma-plugin/mvp2-sync-code.js` passed; 47 test files / 193 tests passed; production build passed. The runtime mock copied headline text, relative translation Motion and custom cubic-bezier easing while preserving target layout.
+
+Status: CODED and AUTOMATED TESTED. NOT PUSHED, NOT DEPLOYED, and the corrected build is NOT YET FIGMA VERIFIED.
+
+Exactly one next task: package the corrected three-file plugin, import it through `figma-plugin/manifest.json`, and execute the seven-step runtime acceptance in `docs/FIGMA_RUNTIME_AUDIT_2026-09-13.md`. Do not begin the new adaptation engine before this acceptance passes.
