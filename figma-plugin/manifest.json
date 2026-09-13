@@ -1,9 +1,9 @@
 {
-  "name": "Bannermatic · Cloud Sync MVP2",
-  "id": "bannermatic-cloud-sync-mvp2-local",
+  "name": "Bannermatic · Smart Resize MVP3",
+  "id": "bannermatic-smart-resize-mvp3-local",
   "api": "1.0.0",
-  "main": "mvp2-sync-code.js",
-  "ui": "mvp2-sync-ui.html",
+  "main": "mvp3-sync-code.js",
+  "ui": "mvp3-sync-ui.html",
   "editorType": ["figma"],
   "documentAccess": "dynamic-page",
   "networkAccess": { "allowedDomains": ["https://ads.rechord.online"] }
