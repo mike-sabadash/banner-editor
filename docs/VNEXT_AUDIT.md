@@ -91,7 +91,7 @@ Create a fresh local account/campaign. Upload an XLSX with 300×250, 300×600 an
 - TypeScript and Vite production build pass.
 - Cloud Browser could not load the local app because the browser client blocks local workspace addresses before page load. Therefore visual browser runtime is NOT VERIFIED.
 - Figma runtime is NOT VERIFIED.
-- Publishing the verified commit triggered the branch's pre-existing push workflow. GitHub Actions deployed exact remote head `0057494b043210bf591599dffc82e47cc467ba82` successfully to `ads.rechord.online` without a separate manual workflow dispatch. The public homepage, Sign in route and RU switch were then browser-verified; authenticated production and Figma journeys remain NOT VERIFIED.
+- Publishing the verified commits triggered the branch's pre-existing push workflow. After adding a bounded gateway-readiness check, GitHub Actions deployed exact remote head `5d754f1f54e7ebd6a1eabeb456757111b6315973` successfully to `ads.rechord.online` without a separate manual workflow dispatch. The public homepage, account-start route and RU switch were browser-verified.
 - The product owner confirmed that the current server is a working draft environment, so branch auto-deploy remains enabled for this phase. A separate approval gate is still required before this environment has real users or valuable production data.
 
 ## Representative campaign and Figma content checkpoint — 12 Sep 2026
@@ -102,3 +102,11 @@ Create a fresh local account/campaign. Upload an XLSX with 300×250, 300×600 an
 - Figma publications now carry a content fingerprint. Content edits block delivery until Figma republishes; older metadata-only Figma publications cannot silently pass variant export.
 - Automated evidence: 45 test files / 183 tests passed; TypeScript and Vite production build passed; `node --check figma-plugin/mvp2-sync-code.js` passed.
 - Real Figma runtime is still **NOT VERIFIED**. The plugin behavior above is CODED and automated TESTED only until exercised inside the Figma desktop runtime.
+
+## Public draft acceptance — 12 Sep 2026
+
+- A fresh isolated synthetic workspace and campaign completed the live `https://ads.rechord.online` API journey: register, create campaign, save placements/content, resolve TT, publish Template creative, run compliance, create a build and download the campaign ZIP.
+- The campaign used two independent placements sharing one 300×250 visual format, two content variants and different click destinations. Production reported 4/4 deliverables ready and generated four nested HTML5 packages plus `manifest.json`.
+- The downloaded 5,210-byte archive was opened. Its nested packages contained both RU and EN copy and the distinct Yandex Direct and AdRiver tracking destinations.
+- Live evidence IDs: campaign `cmp_2f0745f8-8062-4106-bf98-c4ab1b151938`, build `bld_8628c1d0-4241-4cb7-9c77-863946f0b6b6`.
+- Authenticated UI acceptance remains **NOT VERIFIED** because browser authentication requires user-provided credentials. Real Figma desktop runtime acceptance also remains **NOT VERIFIED**.
