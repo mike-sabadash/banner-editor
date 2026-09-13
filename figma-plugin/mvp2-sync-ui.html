@@ -24,6 +24,7 @@
   <div class="eyebrow">CONTINUE A CLOUD CAMPAIGN</div><b>Enter the one-time code from Bannermatic Cloud</b>
   <div class="pair"><input id="code" maxlength="6" inputmode="numeric" autocomplete="one-time-code" placeholder="000000"><button id="pair" class="primary">Continue</button></div>
   <div id="connect-status" class="status">Open the Campaign in Bannermatic Cloud and choose Continue in Figma.</div>
+  <button id="cancel-switch" class="disconnect" style="display:none">Keep the current campaign</button>
  </section>
  <section id="campaign" class="card campaign">
   <div class="eyebrow">SAME CAMPAIGN · FIGMA WORKSPACE</div><h2 id="name" style="font-size:16px;margin:5px 0 0">Campaign</h2><div id="campaign-id" class="campaign-id"></div>
@@ -50,13 +51,16 @@
   <div class="actions"><button id="sync">Add missing formats</button><button id="publish" class="primary">Publish to Cloud</button></div>
   <div id="status" class="status">Ready to continue this campaign.</div>
   <div class="note">Add missing formats only reconciles Cloud sizes. Use Sync changes above for content, appearance and Figma Motion.</div>
-  <button id="disconnect" class="disconnect">Disconnect this plugin</button>
+  <button id="switch-campaign" class="disconnect">Connect a different campaign</button>
+  <button id="disconnect" class="disconnect">Disconnect this Figma file from the campaign</button>
  </section>
  <script>
   const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)],send=(type,extra={})=>parent.postMessage({pluginMessage:{type,...extra}},'*');
-  let selection={selectedCount:0,selectedFormats:0,candidate:null},source=null,scope='all';
+  let selection={selectedCount:0,selectedFormats:0,candidate:null},source=null,scope='all',switchingCampaign=false,connectionState=null;
   function show(connection){
-   $('#connect').style.display=connection?'none':'block';$('#campaign').classList.toggle('on',!!connection);
+   connectionState=connection||null;
+   $('#connect').style.display=(!connection||switchingCampaign)?'block':'none';$('#campaign').classList.toggle('on',!!connection);
+   $('#cancel-switch').style.display=connection&&switchingCampaign?'block':'none';
    if(!connection)return;
    const formats=Array.isArray(connection.formats)?connection.formats:[];
    $('#name').textContent=connection.campaignName||'Campaign';$('#campaign-id').textContent=connection.campaignId||'';
@@ -70,21 +74,24 @@
   function selectedParts(){return $$('[data-part]:checked').map(input=>input.dataset.part)}
   function renderSelection(){const candidate=selection.candidate;if(candidate){$('#selection-help').textContent=`Selected: ${candidate.name} · ${candidate.format}`;if(document.activeElement!==$('#role'))$('#role').value=candidate.role||candidate.name.toLowerCase().replace(/[^a-z0-9]+/g,'-')}else $('#selection-help').textContent=source&&scope==='selected'?`${selection.selectedFormats} target format(s) selected.`:'Select one layer inside the master format.';if(source){$('#source-summary').style.display='block';$('#source-summary').innerHTML=`<b>${source.roleLabel||source.role}: ${source.name}</b>${source.format}`;$('#sync-ready').textContent='Source set';const target=scope==='selected'?`${selection.selectedFormats} selected format(s)`:scope==='family'?'the same family':'all other formats';$('#creative-sync').disabled=!selectedParts().length||(scope==='selected'&&!selection.selectedFormats);$('#creative-sync').textContent=`Sync ${source.roleLabel||source.name} → ${target}`}else{$('#source-summary').style.display='none';$('#sync-ready').textContent='No source';$('#creative-sync').disabled=true;$('#creative-sync').textContent='Set a source layer first'}}
   $('#code').oninput=e=>e.target.value=e.target.value.replace(/\D/g,'').slice(0,6);
-  $('#pair').onclick=()=>{const code=$('#code').value;if(code.length!==6){$('#connect-status').textContent='Enter the 6-digit code.';return}$('#pair').disabled=true;$('#connect-status').textContent='Opening the same campaign…';send('pair',{code})};
+  $('#pair').onclick=()=>{const code=$('#code').value;if(code.length!==6){$('#connect-status').textContent='Enter the 6-digit code.';return}$('#pair').disabled=true;$('#connect-status').textContent=switchingCampaign?'Switching to the new campaign…':'Opening the same campaign…';send('pair',{code})};
   $('#pin-source').onclick=()=>{if(!selection.candidate){status('Select one layer inside a campaign format first.','danger');return}status('Setting the selected layer as sync source…');send('pin-source',{role:$('#role').value})};
   $$('#scope button').forEach(button=>button.onclick=()=>{scope=button.dataset.scope;$$('#scope button').forEach(item=>item.classList.toggle('on',item===button));renderSelection()});
   $$('[data-part]').forEach(input=>input.onchange=renderSelection);
   $('#creative-sync').onclick=()=>{const parts=selectedParts();if(!source||!parts.length)return;status(`Syncing ${source.roleLabel||source.name} to ${scope} formats…`);send('creative-sync',{scope,parts,createMissing:$('#create-missing').checked})};
-  $('#sync').onclick=()=>{status('Checking Cloud for missing formats…');send('sync')};$('#publish').onclick=()=>{status('Publishing this campaign back to Cloud…');send('publish')};$('#disconnect').onclick=()=>send('disconnect');
+  $('#sync').onclick=()=>{status('Checking Cloud for missing formats…');send('sync')};$('#publish').onclick=()=>{status('Publishing this campaign back to Cloud…');send('publish')};
+  $('#switch-campaign').onclick=()=>{switchingCampaign=true;$('#code').value='';$('#connect-status').textContent='Enter the code for the new campaign. The current campaign canvas will stay unchanged.';show(connectionState);$('#code').focus()};
+  $('#cancel-switch').onclick=()=>{switchingCampaign=false;$('#code').value='';show(connectionState)};
+  $('#disconnect').onclick=()=>send('disconnect');
   window.onmessage=e=>{const m=e.data.pluginMessage;if(!m)return;
    if(m.type==='status'){show(m.connection);return}
    if(m.type==='selection-state'){selection=m.selection||selection;source=m.source||null;renderSelection();return}
-   if(m.type==='paired'){show(fromSpec(m.result.synced?.spec));status(`Campaign connected · ${m.result.synced?.created||0} missing format(s) created.`,'ok');$('#pair').disabled=false;return}
+   if(m.type==='paired'){const wasSwitching=switchingCampaign;switchingCampaign=false;show(fromSpec(m.result.synced?.spec));status(wasSwitching?`Campaign switched · ${m.result.synced?.created||0} missing format(s) created for this campaign.`:`Campaign connected · ${m.result.synced?.created||0} missing format(s) created.`,'ok');$('#pair').disabled=false;return}
    if(m.type==='source-pinned'){source=m.result.source;renderSelection();status(`${source.roleLabel||source.role} is now the source. Choose a target scope and properties.`,'ok');return}
    if(m.type==='creative-synced'){const r=m.result;status(`Synced ${r.source.name} → ${r.updated} format(s). ${r.created} missing linked layer(s) created; ${r.tracks} Motion track(s) written. ${r.preserved}.`,'ok');return}
    if(m.type==='synced'){show(fromSpec(m.result.spec));const extra=m.result.extras?` ${m.result.extras} extra campaign canvas(es) left unchanged.`:'';status(m.result.created?`${m.result.created} missing format(s) added. ${m.result.updated} required format(s) preserved.${extra}`:`No missing formats. ${m.result.updated} required format(s) already exist and were not changed.${extra}`,'ok');return}
    if(m.type==='published'){status(`Published to the same Cloud Campaign · version ${m.result.version?.version??m.result.campaign?.creativeVersion??''}.`,'ok');return}
-   if(m.type==='disconnected'){show(null);$('#code').value='';$('#connect-status').textContent='Disconnected. Choose Continue in Figma in the Cloud Campaign to reconnect.';return}
+   if(m.type==='disconnected'){switchingCampaign=false;show(null);$('#code').value='';$('#connect-status').textContent='Disconnected. Choose Continue in Figma in the Cloud Campaign to reconnect.';return}
    if(m.type==='error'){$('#pair').disabled=false;$('#connect-status').textContent=m.message;status(m.message,'danger')}
   };
   send('status');
