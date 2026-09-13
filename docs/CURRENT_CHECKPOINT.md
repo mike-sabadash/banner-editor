@@ -180,3 +180,18 @@ Honest status:
 - `CAMPAIGN DISAPPEARANCE ROOT CAUSE`: the UI error path is fixed. Server data currently remains file-backed under `/var/www/banner-editor/runtime`; migration to an explicitly managed/backup data directory requires a separately approved production-data migration and is still a release-hardening item.
 
 Exactly one next task after review/deployment approval: import the packaged canonical MVP12 through `figma-plugin/manifest.json` and execute one fresh Campaign Browser → Figma → Master edit (long text + two new images + motion) → five resizes → repeat update → Publish → Cloud reload → Preflight → ZIP acceptance. Record per-format failures; do not call the adaptation engine production-quality until that run passes.
+
+## Latest authoritative state — production deployment 2026-09-13
+
+This section supersedes earlier `NOT DEPLOYED` statements in this document.
+
+- PR #50 was retargeted directly to `codex/mvp2-figma-cloud-runtime`, marked ready and merged.
+- Production code commit: `584eb76a29babd30b8249f384c83d78ea82e9469`.
+- Deploy workflow run: `34784743513`, completed successfully.
+- Independent public verification: `/healthz` returned `ok`; the production entry returned HTTP 200; `/assets/index-CPHu4AwH.js` contains the new `New code`, `Refresh` and `Delete campaign` UI markers.
+- PR #46 is closed as superseded because its commits are included in PR #50's merge.
+- Automated baseline: 48 test files / 201 tests passed; production build and plugin syntax checks passed.
+- Packaged plugin build used for real acceptance: `bannermatic-figma-mvp12-87f3806.zip`; import its `manifest.json`.
+- Honest remaining status: the exact deployed Cloud lifecycle and exact packaged plugin still require one user-run Figma Desktop end-to-end acceptance. Do not call responsive adaptation production-quality before that run.
+
+Exactly one next task: run a fresh Browser Campaign → new pairing code → Switch campaign in Figma → Master edit with long text, two new images and motion → propagate to all five formats → repeat sync → Publish to Cloud → reload → Preflight → ZIP. Record every incorrect format and fix against this evidence before adding broader polish.
