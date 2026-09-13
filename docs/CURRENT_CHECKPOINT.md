@@ -60,14 +60,49 @@ Content is now a two-panel workspace with a compact language/completeness varian
 - Authenticated responsive visual acceptance: not yet verified (credentials are not available in the browser session).
 - Real Figma desktop runtime: not yet verified.
 
+## Product-owner correction: integration before UI polish
+
+The previous order over-prioritized Cloud table presentation while the core Browser ↔ Figma journey was still not visibly proven. Media Plan and Content Matrix remain valid completed work, but Campaign Wall polish is no longer the next priority.
+
+The user must not be asked to trust code, CI or written claims. Every core milestone must end with a version the user can run and a short self-test scenario. If the user cannot personally continue the journey in the product, the capability is not accepted.
+
+## Ecosystem rule
+
+Bannermatic must feel like one continuous ecosystem, not two unrelated products.
+
+The required mental and interaction model is:
+
+1. The user creates a Campaign in the browser.
+2. The browser clearly explains why Figma is the next step and offers one dominant Continue in Figma action.
+3. The Figma plugin opens/claims the same Campaign without asking the user to reconstruct campaign context.
+4. The plugin visibly shows the same campaign name, required formats, Media Plan/TT context and current progress.
+5. The user continues the same task: receives required formats, creates only missing formats, edits the Master, adapts/syncs formats and publishes Creative.
+6. The browser receives the published result and continues the same Campaign through Campaign Wall → Preflight → Delivery.
+
+Both sides must use consistent campaign identity, terminology, statuses, next actions and onboarding. Handoff state must be explicit: Not connected → Ready to continue in Figma → Connected → Formats created → Changes unpublished → Published → Returned to Cloud.
+
+The Browser is the Campaign Control Center and source of truth for campaign meaning, Media Plan, TT, status and delivery. Figma is the Creative Workspace/Provider. This ownership boundary must be understandable from the interface without developer explanation.
+
+## Revised priority order
+
+1. P0 — Real Browser → Figma pairing and campaign continuation.
+2. P0 — Current resize/adaptation baseline on real formats.
+3. P0 — Real Figma → Cloud publication, previews, Preflight and ZIP.
+4. P0/P1 — Creative Adaptation Research Gate and 25-case benchmark before any new resize engine.
+5. P1 — Campaign Wall, Overview and operational Preflight based on real runtime data.
+6. P2 — Campaign index, Settings, navigation, responsive/i18n and visual polish.
+7. Release hardening and final customer-visible acceptance.
+
 ## Exactly one next task
 
-Upgrade the existing Creative page into the next P1 Campaign Wall slice with real multi-format preview/status hierarchy, using the verified Bannerflow reference and preserving Figma/Template provider contracts.
+Run and fix the Real Figma Runtime Acceptance + Resize Baseline so the user can start a campaign in the browser, continue that exact campaign in the plugin and see an obvious single-product handoff.
 
 Definition of Done:
 
-1. Re-open the verified Campaign Wall extraction and compare it with the current CampaignWall component.
-2. Make real previews dominant and expose dimensions, placements, content, sync/override and validation state without fake data.
-3. Add useful family/status/content navigation controls only where the current campaign model supports them.
-4. Preserve Template/Figma publication, live HTML vs snapshot distinction and synchronized playback.
-5. Cover the view with tests, deploy, verify the public build, then update this checkpoint, Notion and PR #44.
+1. A real browser campaign produces a clear Continue in Figma handoff with no hidden developer data.
+2. The real Figma Desktop plugin claims that campaign and displays its identity, required formats and TT/progress context.
+3. Only missing formats are created; existing formats and manual overrides survive repeat sync.
+4. The current baseline is visibly tested on 300×250, 300×600, 728×90, 320×50 and 1200×628 without claiming that rough output is production-quality.
+5. Content and supported motion sync are tested; failures and limitations are recorded honestly.
+6. Publish Creative returns a versioned result to the same browser campaign; Cloud preview, Preflight and production ZIP are verified.
+7. The user receives the exact plugin build/location and a short no-terminal test scenario. CI alone does not satisfy acceptance.
