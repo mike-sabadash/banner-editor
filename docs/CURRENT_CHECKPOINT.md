@@ -10,7 +10,7 @@ This file is the canonical resume point for a new Codex session. Read it before 
 - Production branch: codex/mvp2-figma-cloud-runtime
 - Current review branch: codex/campaign-lifecycle-figma-mvp12
 - Current stacked base: codex/figma-creative-sync-runtime (PR #46)
-- Pull request for this slice: pending until the branch is pushed
+- Pull request for this slice: https://github.com/mike-sabadash/banner-editor/pull/50
 - Draft production: https://ads.rechord.online/
 - Auto-deploy: every push to the branch; GitHub Actions concurrency serializes deployments
 - Product model: Campaign → Media Plan → Content → Creative → Preflight → Delivery
@@ -174,7 +174,7 @@ Honest status:
 
 - `CODED`: yes.
 - `AUTOMATED TESTED`: yes.
-- `PUSHED / PR`: not yet at the time of this edit.
+- `PUSHED / PR`: yes — draft PR #50; GitHub `Plugin final checks` run #247 passed.
 - `DEPLOYED`: no.
 - `REAL FIGMA VERIFIED`: no. The user-attached MVP12 was exercised before these corrections, but this exact canonical build has not yet been imported and run.
 - `CAMPAIGN DISAPPEARANCE ROOT CAUSE`: the UI error path is fixed. Server data currently remains file-backed under `/var/www/banner-editor/runtime`; migration to an explicitly managed/backup data directory requires a separately approved production-data migration and is still a release-hardening item.
