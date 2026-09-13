@@ -2,107 +2,116 @@
 
 Updated: 2026-09-13 (UTC)
 
-This file is the canonical resume point for a new Codex session. Read it before changing code. The exact remote branch head and the live deployment must still be verified at session start because this document is committed together with the code it describes.
+This file is the canonical resume point for the next implementation session. Read it before changing product code. Recheck remote branch head, PR status and live runtime at session start; documentation is not runtime evidence.
 
 ## Working line
 
-- Repository: mike-sabadash/banner-editor
-- Branch: codex/mvp2-figma-cloud-runtime
-- Pull request: https://github.com/mike-sabadash/banner-editor/pull/44
+- Repository: `mike-sabadash/banner-editor`
+- Implementation branch: `codex/mvp2-figma-cloud-runtime`
+- Main implementation PR: #44 — https://github.com/mike-sabadash/banner-editor/pull/44
+- Planning specification: `docs/FIGMA_CREATIVE_WORKSPACE_SPEC.md`
+- Planning branch: `docs/figma-creative-workspace-spec-2026-09-13`
 - Draft production: https://ads.rechord.online/
-- Auto-deploy: every push to the branch; GitHub Actions concurrency serializes deployments
-- Product model: Campaign → Media Plan → Content → Creative → Preflight → Delivery
-- Sources of truth: Cloud owns campaign meaning/data/status; Figma is the Creative Provider
+- Product flow: Campaign → Media Plan → Content → Creative → Preflight → Delivery
+- Ownership: Cloud owns campaign meaning/Media Plan/TT/status/versions/delivery; Figma owns editable creative/master/layers/assets/layout/motion/manual overrides.
 
-## Current milestone
+## Current evidence baseline
 
-Phase B / Product UX: Media Plan production grid and Content Matrix are complete and deployed.
+Existing implementation already contains a meaningful Cloud/Figma contract: scoped one-use campaign pairing, campaign spec, required formats, missing-format-only generation concept, semantic text roles, Content Variant publication, versioned creative snapshots, stale-content blocking, compliance and campaign ZIP generation.
 
-The grid is being upgraded from a passive five-column list to an operational campaign-production view with:
+Cloud production vertical-slice evidence exists from prior sessions, including same-dimension placements with independent delivery context. Media Plan production grid, Content Matrix and viewport-scroll work are already valid completed work and must not be rolled back.
 
-- platform grouping;
-- search and creative-state filtering;
-- TT, ZIP and duration requirements;
-- content assignment counts;
-- real creative state and version links into the Creative workspace;
-- responsive column controls and campaign/version summary.
+However, acceptance remains deliberately split:
 
-Content is now a two-panel workspace with a compact language/completeness variant list, one selected-variant inspector and a placement × variant assignment matrix. It preserves ContentVariant and placement.contentVariantIds as the persistence contract.
+- `CODED`: substantial Cloud/Figma contract exists.
+- `TESTED`: automated contract/build tests exist.
+- `DEPLOYED`: draft environment has been deployed on prior verified heads; exact current head must be rechecked.
+- `BROWSER RUNTIME VERIFIED`: some public Cloud routes/API journeys were previously verified, but the exact Browser → Figma handoff on current head is not accepted.
+- `FIGMA RUNTIME VERIFIED`: **NO** for the real end-to-end MVP2 continuation flow.
+- Adaptation/resize quality: **NOT ACCEPTED**; current output is a baseline only.
 
-## Completed before this milestone
+Do not collapse these statuses into `done`.
 
-- End-to-end production vertical slice: media plan normalization, content variants, Template/Figma providers, deterministic compliance, versioned nested HTML5 ZIP delivery.
-- Representative XLSX acceptance: 10 placements, 5 sizes, 2 TT profiles, 4 content variants, 10 nested packages.
-- Public draft acceptance and persistence checks.
-- P0 viewport scrolling fix deployed and public asset verified.
-- Media Plan visual references inspected and extracted into the Notion UX/UI audit.
+## Product-owner correction — integration before more UI polish
 
-## Guardrails
+The Browser and Figma plugin must behave as one ecosystem. The user creates/reviews a Campaign in Cloud, sees one clear `Continue in Figma` action, continues the **same campaign** inside the plugin, publishes, then returns to the same Cloud Campaign for previews, Preflight and Delivery.
 
-- Do not start a new resize/adaptation engine before the Creative Adaptation Research Gate and 25-case visual benchmark are complete.
-- Preserve placement provenance, independent TT/delivery contexts and creative versions on media-plan re-import.
-- Do not claim authenticated browser acceptance or Figma desktop runtime acceptance until each has been executed.
-- Do not store secrets in this file or Notion.
-- banners.rechord.online is outside this deployment path and must not be changed.
+Do not make the user reconstruct context, copy hidden IDs or use terminal commands. Campaign name, required formats, TT/progress context and handoff state must be visible on both sides.
 
-## Verification baseline
+## Creative Workspace architecture guardrails
 
-- Tests after this milestone: 45 files / 185 tests passed.
-- Production build after this milestone: passed.
-- Figma plugin syntax check: passed.
-- Public /healthz: green.
-- Deployed code commit: 15539f9203235967e0ae6cffeeb210943d42ffd8.
-- PR check: Plugin final checks run 34750378777 / #238, success.
-- Public production bundle: /assets/index-K4hZ7UvD.js; the new TT & limits grid marker is present.
-- Content Matrix deployed code: 760bba9f51e9831bb3e0028b5622a95536996fa9.
-- Content Matrix PR check: Plugin final checks run 34750690547 / #240, success.
-- Current public bundle: /assets/index-ViA8Xv4j.js; the Content assignment matrix marker is present.
-- Authenticated responsive visual acceptance: not yet verified (credentials are not available in the browser session).
-- Real Figma desktop runtime: not yet verified.
+The new implementation contract is `docs/FIGMA_CREATIVE_WORKSPACE_SPEC.md`. It records evidence, competitive/open-source research, Browser↔Figma ownership, state machine, sync contract, manual-override preservation, benchmark and implementation milestones.
 
-## Product-owner correction: integration before UI polish
+Mandatory rules:
 
-The previous order over-prioritized Cloud table presentation while the core Browser ↔ Figma journey was still not visibly proven. Media Plan and Content Matrix remain valid completed work, but Campaign Wall polish is no longer the next priority.
+- Do not build a new resize/adaptation engine before the Creative Adaptation Research Gate and 25-case benchmark.
+- Current resize/generation must first be recorded honestly as a baseline on real formats.
+- Use Figma-native Auto Layout/constraints/components/component properties/variables where they genuinely solve deterministic layout problems.
+- Do not mistake responsive UI mechanics for arbitrary graphic composition.
+- AI may propose bounded structured Delta operations after a deterministic Anchor; it may not freely generate absolute pixel geometry.
+- Never silently overwrite manual overrides.
+- Never conflate one Visual Format with one Placement: equal dimensions may serve several placements with independent TT, click/tracking and delivery contexts.
+- Never call generated SVG/generic HTML wrapper motion equivalent to real Figma motion unless runtime evidence proves it.
+- Unknown stays Unknown; no fake previews/statuses/readiness.
 
-The user must not be asked to trust code, CI or written claims. Every core milestone must end with a version the user can run and a short self-test scenario. If the user cannot personally continue the journey in the product, the capability is not accepted.
+## Exactly one next implementation task
 
-## Ecosystem rule
+# Real Browser → Figma Runtime Acceptance + Resize Baseline
 
-Bannermatic must feel like one continuous ecosystem, not two unrelated products.
+Do this before any new adaptation-engine work and before further broad UI polish.
 
-The required mental and interaction model is:
+### Required user-visible scenario
 
-1. The user creates a Campaign in the browser.
-2. The browser clearly explains why Figma is the next step and offers one dominant Continue in Figma action.
-3. The Figma plugin opens/claims the same Campaign without asking the user to reconstruct campaign context.
-4. The plugin visibly shows the same campaign name, required formats, Media Plan/TT context and current progress.
-5. The user continues the same task: receives required formats, creates only missing formats, edits the Master, adapts/syncs formats and publishes Creative.
-6. The browser receives the published result and continues the same Campaign through Campaign Wall → Preflight → Delivery.
+The product owner must be able to complete, without terminal:
 
-Both sides must use consistent campaign identity, terminology, statuses, next actions and onboarding. Handoff state must be explicit: Not connected → Ready to continue in Figma → Connected → Formats created → Changes unpublished → Published → Returned to Cloud.
+1. Create/open a Campaign in browser.
+2. Import/review Media Plan and reach one clear `Continue in Figma` action.
+3. Open the exact Bannermatic plugin build in Figma Desktop.
+4. Pair and see the same Campaign name/identity, required formats and TT/progress context.
+5. Receive the required set and create/update **only missing formats**.
+6. Repeat sync and prove existing creative/manual changes survive.
+7. Run the **current baseline** on `300×250`, `300×600`, `728×90`, `320×50`, `1200×628`; save screenshots and limitations without calling rough output production-quality.
+8. Test currently supported content and motion sync; record unsupported behavior honestly.
+9. Publish Creative from real Figma runtime back to the same Campaign.
+10. In Cloud, see the actual published Creative Version/preview, run Preflight and generate/download Campaign ZIP if compliance permits.
 
-The Browser is the Campaign Control Center and source of truth for campaign meaning, Media Plan, TT, status and delivery. Figma is the Creative Workspace/Provider. This ownership boundary must be understandable from the interface without developer explanation.
+### Definition of Done
 
-## Revised priority order
+- Exact deployed browser URL supplied.
+- Exact Figma plugin build/manifest or installable plugin reference supplied.
+- Short no-terminal self-test supplied to the user.
+- Same `campaignId` proven across Browser, plugin and publication.
+- Existing format roots/manual edits survive repeat missing-format sync.
+- Real Figma Desktop runtime executed; automated simulation does not count.
+- Actual publication appears in Cloud and is used by Preflight/Build.
+- Five-format current resize baseline captured and scored as baseline, not marketing claim.
+- Any failure is recorded by exact status: CODED / TESTED / DEPLOYED / BROWSER RUNTIME VERIFIED / FIGMA RUNTIME VERIFIED.
 
-1. P0 — Real Browser → Figma pairing and campaign continuation.
-2. P0 — Current resize/adaptation baseline on real formats.
-3. P0 — Real Figma → Cloud publication, previews, Preflight and ZIP.
-4. P0/P1 — Creative Adaptation Research Gate and 25-case benchmark before any new resize engine.
-5. P1 — Campaign Wall, Overview and operational Preflight based on real runtime data.
-6. P2 — Campaign index, Settings, navigation, responsive/i18n and visual polish.
-7. Release hardening and final customer-visible acceptance.
+### What does NOT satisfy this milestone
 
-## Exactly one next task
+- green CI alone;
+- `node --check`;
+- source inspection;
+- API-only Cloud acceptance;
+- mock/generated preview without real Figma publish;
+- placeholder format components;
+- claiming resize quality without the benchmark.
 
-Run and fix the Real Figma Runtime Acceptance + Resize Baseline so the user can start a campaign in the browser, continue that exact campaign in the plugin and see an obvious single-product handoff.
+## What comes immediately after
 
-Definition of Done:
+Only after the runtime milestone above:
 
-1. A real browser campaign produces a clear Continue in Figma handoff with no hidden developer data.
-2. The real Figma Desktop plugin claims that campaign and displays its identity, required formats and TT/progress context.
-3. Only missing formats are created; existing formats and manual overrides survive repeat sync.
-4. The current baseline is visibly tested on 300×250, 300×600, 728×90, 320×50 and 1200×628 without claiming that rough output is production-quality.
-5. Content and supported motion sync are tested; failures and limitations are recorded honestly.
-6. Publish Creative returns a versioned result to the same browser campaign; Cloud preview, Preflight and production ZIP are verified.
-7. The user receives the exact plugin build/location and a short no-terminal test scenario. CI alone does not satisfy acceptance.
+1. Stable campaign binding/recovery.
+2. Explicit semantic Master/slot mapping.
+3. Three-way property-level partial sync with manual override preservation.
+4. Figma-native deterministic Anchor benchmark.
+5. Creative Adaptation Research Gate / 25-case comparison and `reuse / adapt / build` ADR.
+6. AI-assisted bounded Delta only if benchmark evidence justifies it.
+7. Publish contract v2 and release hardening.
+
+## References
+
+- `docs/FIGMA_CREATIVE_WORKSPACE_SPEC.md` — implementation contract for the Figma Creative Workspace.
+- `docs/MVP2_CHECKLIST.md` — acceptance contract.
+- `docs/VNEXT_AUDIT.md` — production vertical-slice evidence/history.
+- `docs/MVP2_STATUS.md` — older evidence snapshot; do not treat as current if it conflicts with this checkpoint.
