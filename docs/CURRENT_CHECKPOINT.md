@@ -16,7 +16,7 @@ This file is the canonical resume point for a new Codex session. Read it before 
 
 ## Current milestone
 
-Phase B / Product UX: Media Plan production data grid is complete and deployed.
+Phase B / Product UX: Media Plan production grid and Content Matrix are complete and deployed.
 
 The grid is being upgraded from a passive five-column list to an operational campaign-production view with:
 
@@ -26,6 +26,8 @@ The grid is being upgraded from a passive five-column list to an operational cam
 - content assignment counts;
 - real creative state and version links into the Creative workspace;
 - responsive column controls and campaign/version summary.
+
+Content is now a two-panel workspace with a compact language/completeness variant list, one selected-variant inspector and a placement × variant assignment matrix. It preserves ContentVariant and placement.contentVariantIds as the persistence contract.
 
 ## Completed before this milestone
 
@@ -52,17 +54,20 @@ The grid is being upgraded from a passive five-column list to an operational cam
 - Deployed code commit: 15539f9203235967e0ae6cffeeb210943d42ffd8.
 - PR check: Plugin final checks run 34750378777 / #238, success.
 - Public production bundle: /assets/index-K4hZ7UvD.js; the new TT & limits grid marker is present.
+- Content Matrix deployed code: 760bba9f51e9831bb3e0028b5622a95536996fa9.
+- Content Matrix PR check: Plugin final checks run 34750690547 / #240, success.
+- Current public bundle: /assets/index-ViA8Xv4j.js; the Content assignment matrix marker is present.
 - Authenticated responsive visual acceptance: not yet verified (credentials are not available in the browser session).
 - Real Figma desktop runtime: not yet verified.
 
 ## Exactly one next task
 
-Build the Content Matrix + inspector as the next Phase B product-UX slice while preserving the existing content-variant and per-placement assignment contract.
+Upgrade the existing Creative page into the next P1 Campaign Wall slice with real multi-format preview/status hierarchy, using the verified Bannerflow reference and preserving Figma/Template provider contracts.
 
 Definition of Done:
 
-1. Inspect the already verified Content Workspace references and record an explicit Reference Extraction before implementation.
-2. Replace the current card-per-placement checkbox layout with a dense matrix and a contextual variant inspector.
-3. Preserve ContentVariant fields, placement.contentVariantIds and stale-content fingerprint behavior.
-4. Cover assignment/editing behavior with tests and pass the full suite plus production build.
-5. Deploy, verify the public build, then update this checkpoint, Notion and PR #44.
+1. Re-open the verified Campaign Wall extraction and compare it with the current CampaignWall component.
+2. Make real previews dominant and expose dimensions, placements, content, sync/override and validation state without fake data.
+3. Add useful family/status/content navigation controls only where the current campaign model supports them.
+4. Preserve Template/Figma publication, live HTML vs snapshot distinction and synchronized playback.
+5. Cover the view with tests, deploy, verify the public build, then update this checkpoint, Notion and PR #44.
