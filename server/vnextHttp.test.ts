@@ -13,7 +13,8 @@ async function readBody(req:http.IncomingMessage){let body='';for await(const ch
 async function start(_suffix:string):Promise<Running>{
  vi.resetModules();
  const {handleMvp2Api}=await import('./mvp2Api.mjs');
- const server=http.createServer(async(req,res)=>{try{if(await handleMvp2Api(req,res,{json,readBody})||res.writableEnded)return;json(req,res,404,{error:'Not found'});}catch(error){json(req,res,500,{error:error instanceof Error?error.message:String(error)});}});
+ const layoutReview=async(input:any,scope:any)=>({rationale:'Mock bounded review',elements:(input.target?.elements||[]).map((element:any)=>({id:element.id,dx:0,dy:0,dScale:0,dFontSize:0})),model:'test-layout-model',scope});
+ const server=http.createServer(async(req,res)=>{try{if(await handleMvp2Api(req,res,{json,readBody,layoutReview})||res.writableEnded)return;json(req,res,404,{error:'Not found'});}catch(error){json(req,res,500,{error:error instanceof Error?error.message:String(error)});}});
  await new Promise<void>((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve)});
  const address=server.address();if(!address||typeof address==='string')throw new Error('No HTTP address');
  return {server,base:`http://127.0.0.1:${address.port}`};
@@ -45,6 +46,9 @@ describe('vNext live HTTP campaign production',()=>{
   expect(auth.response.status).toBe(201);const token=(auth.body as any).token,headers={'content-type':'application/json',authorization:`Bearer ${token}`};
   const created=await request(`${running.base}/api/campaigns`,{method:'POST',headers,body:JSON.stringify({name:'Production proof',locale:'en'})});
   expect(created.response.status).toBe(201);const id=(created.body as any).id;
+  const pair=await request(`${running.base}/api/campaigns/${id}/figma-pair`,{method:'POST',headers});expect(pair.response.status).toBe(201);
+  const claimed=await request(`${running.base}/api/figma/pair/claim`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({code:(pair.body as any).code})});expect(claimed.response.status).toBe(200);
+  const reviewed=await request(`${running.base}/api/figma/layout-review`,{method:'POST',headers:{'content-type':'application/json',authorization:`Bearer ${(claimed.body as any).token}`},body:JSON.stringify({target:{elements:[{id:'headline'}]}})});expect(reviewed.response.status).toBe(200);expect(reviewed.body).toMatchObject({model:'test-layout-model',elements:[{id:'headline'}]});
   const placements=[
    {id:'p-yandex',platform:'Yandex',placement:'ROS',width:300,height:250,contentVariantIds:['en','ru'],creativeType:'HTML5',requirements:{sourceLabel:'Client TT',maxZipKb:150,maxDurationSec:1,clickTag:true,clickUrl:'https://example.test/yandex',legal:'18+'}},
    {id:'p-mail',platform:'Mail',placement:'Homepage',width:300,height:250,contentVariantIds:['en','ru'],creativeType:'HTML5',requirements:{sourceLabel:'Client TT',maxZipKb:150,maxDurationSec:1,clickTag:true,clickUrl:'https://example.test/mail',legal:'18+'}}
@@ -73,5 +77,8 @@ describe('vNext live HTTP campaign production',()=>{
   await stop(running.server);running=await start('reload');
   const restored=await request(`${running.base}/api/campaigns/${id}`,{headers});expect(restored.response.status).toBe(200);expect((restored.body as any).contentVariants[0].headline).toBe('Changed after publish');
   const history=await request(`${running.base}/api/campaigns/${id}/builds`,{headers});expect(history.response.status).toBe(200);expect((history.body as any).items).toHaveLength(2);
+  const renamed=await request(`${running.base}/api/campaigns/${id}`,{method:'PATCH',headers,body:JSON.stringify({name:'Renamed production proof'})});expect(renamed.response.status).toBe(200);expect((renamed.body as any).name).toBe('Renamed production proof');
+  const deleted=await request(`${running.base}/api/campaigns/${id}`,{method:'DELETE',headers});expect(deleted.response.status).toBe(200);expect(deleted.body).toMatchObject({ok:true,id,name:'Renamed production proof'});
+  const missing=await request(`${running.base}/api/campaigns/${id}`,{headers});expect(missing.response.status).toBe(404);
  });
 });

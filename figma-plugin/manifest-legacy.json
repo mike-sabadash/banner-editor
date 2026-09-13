@@ -1,0 +1,10 @@
+{
+  "name": "Banner Campaign · TT Knowledge",
+  "id": "banner-campaign-mvp-local",
+  "api": "1.0.0",
+  "main": "code-v8.js",
+  "ui": "ui-v14.html",
+  "editorType": ["figma"],
+  "documentAccess": "dynamic-page",
+  "networkAccess": { "allowedDomains": ["https://banners.rechord.online", "https://ads.rechord.online"] }
+}
