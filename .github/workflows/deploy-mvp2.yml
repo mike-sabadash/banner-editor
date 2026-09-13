@@ -4,7 +4,13 @@ on:
   push:
     branches:
       - codex/mvp2-figma-cloud-runtime
+    paths-ignore:
+      - 'docs/**'
   workflow_dispatch:
+
+concurrency:
+  group: bannermatic-draft-production
+  cancel-in-progress: false
 
 jobs:
   deploy:

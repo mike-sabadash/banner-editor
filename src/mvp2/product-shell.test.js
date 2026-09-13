@@ -3,6 +3,8 @@ import {readFileSync} from 'node:fs';
 const main=readFileSync(new URL('../main.tsx',import.meta.url),'utf8');
 const product=readFileSync(new URL('./BannermaticProduct.tsx',import.meta.url),'utf8');
 const viewport=readFileSync(new URL('./viewport.css',import.meta.url),'utf8');
+const mediaPlan=readFileSync(new URL('./MediaPlanWorkspace.tsx',import.meta.url),'utf8');
+const workspaces=readFileSync(new URL('./next-elite-workspaces.css',import.meta.url),'utf8');
 describe('Bannermatic modular customer journey',()=>{
  it('uses the modular product shell for authenticated users',()=>{
   expect(main).toContain('return <BannermaticProduct/>');
@@ -31,5 +33,16 @@ describe('Bannermatic modular customer journey',()=>{
   expect(viewport).toContain('.ne-content');
   expect(viewport).toContain('overflow-y: auto');
   expect(viewport).toContain('height: calc(100dvh - 56px)');
+ });
+ it('renders the media plan as an operational production grid',()=>{
+  expect(mediaPlan).toContain("type CreativeFilter='all'|'ready'|'attention'|'missing'");
+  expect(mediaPlan).toContain('Search media plan');
+  expect(mediaPlan).toContain('Creative status filter');
+  expect(mediaPlan).toContain('TT & limits');
+  expect(mediaPlan).toContain('ne-plan-group');
+  expect(mediaPlan).toContain('format.creativeVersion');
+  expect(mediaPlan).toContain('onOpenCreative');
+  expect(workspaces).toContain('.ne-plan-table');
+  expect(workspaces).toContain('.ne-plan-toolbar');
  });
 });
