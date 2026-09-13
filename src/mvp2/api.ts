@@ -7,6 +7,7 @@ export type CampaignBuild={id:string;campaignId:string;campaignName:string;creat
 export type CreativeVersion={id:string;campaignId:string;version:number;createdAt:string;touched:string[];formats:Array<any>};
 export type TTResolution={campaignId:string;results?:Array<any>;placementId?:string;status?:"matched"|"ambiguous"|"not_found";matches?:Array<any>;reason?:string};
 export type FigmaPair={code:string;campaignId:string;campaignName:string;expiresAt:string};
+export type FigmaConnectionStatus={campaignId:string;campaignName:string;state:"not_connected"|"ready_to_continue"|"connected"|"published";requiredFormats:number;placements:number;pairExpiresAt:string|null;connectedAt:string|null;connectionExpiresAt:string|null;lastPublishedAt:string|null;creativeVersion:number};
 export type WorkspaceInvitation={id:string;email:string;role:AccessRole;expiresAt:string;createdAt?:string;token?:string};
 
 function token(){return localStorage.getItem(TOKEN_KEY)||""}
@@ -26,6 +27,7 @@ export const api={
  async compliance(id:string){return request<{campaignId:string;creativeVersion:number;mediaPlanVersion:number;ttSnapshotVersion:number;summary:{ready:number;warning:number;blocked:number;total:number};placements:Array<any>}>(`/api/campaigns/${encodeURIComponent(id)}/compliance`)},
  async figmaSpec(id:string){return request<any>(`/api/campaigns/${encodeURIComponent(id)}/figma-spec`)},
  async figmaPair(id:string){return request<FigmaPair>(`/api/campaigns/${encodeURIComponent(id)}/figma-pair`,{method:"POST"})},
+ async figmaStatus(id:string){return request<FigmaConnectionStatus>(`/api/campaigns/${encodeURIComponent(id)}/figma-status`)},
  async ttResolve(id:string,placementId?:string){return placementId?request<TTResolution>(`/api/campaigns/${encodeURIComponent(id)}/tt-resolve`,{method:"POST",body:JSON.stringify({placementId})}):request<TTResolution>(`/api/campaigns/${encodeURIComponent(id)}/tt-resolve`)},
  async creativeVersions(id:string){return request<{items:CreativeVersion[]}>(`/api/campaigns/${encodeURIComponent(id)}/creative-versions`)},
  async creativeVersion(id:string,version:number){return request<CreativeVersion>(`/api/campaigns/${encodeURIComponent(id)}/creative-versions/${version}`)},

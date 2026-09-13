@@ -106,3 +106,23 @@ Definition of Done:
 5. Content and supported motion sync are tested; failures and limitations are recorded honestly.
 6. Publish Creative returns a versioned result to the same browser campaign; Cloud preview, Preflight and production ZIP are verified.
 7. The user receives the exact plugin build/location and a short no-terminal test scenario. CI alone does not satisfy acceptance.
+
+## Implementation progress — visible handoff slice
+
+Session 2026-09-13 added the first observable Browser ↔ Figma continuity slice:
+
+- Cloud exposes campaign-scoped Figma handoff state: `not_connected → ready_to_continue → connected → published`.
+- Creative workspace shows one dominant `Continue in Figma` action, the same campaign name, placement/format counts and a three-step Browser → Figma → Cloud journey.
+- The Figma plugin shows the same campaign ID/name, Media Plan/TT versions, placement count and exact required-format list.
+- Plugin actions now say `Sync missing formats` and `Publish to Cloud`; repeat-sync copy explicitly states that existing layers/manual changes are preserved.
+- Automated evidence: 46 test files / 190 tests passed; production build passed; `node --check figma-plugin/mvp2-sync-code.js` passed.
+
+Status remains deliberately incomplete:
+
+- `CODED`: yes for this visible handoff slice.
+- `TESTED`: yes, automated only.
+- `DEPLOYED`: not yet recorded at the time of this checkpoint edit.
+- `BROWSER RUNTIME VERIFIED`: no on this new slice.
+- `FIGMA RUNTIME VERIFIED`: no.
+
+The exact next action is to verify the single resulting deployment, then run the real no-terminal flow using `figma-plugin/manifest-mvp2.json`. Do not start adaptation-engine work until the five-format baseline and return publication are captured.

@@ -23,6 +23,10 @@ describe('Bannermatic modular customer journey',()=>{
   expect(product).toContain("setScreen('creative')");
   expect(product).toContain('<FigmaConnectPanel');
   expect(product).toContain("can(role,'edit-creative')");
+  const panel=readFileSync(new URL('./FigmaConnectPanel.tsx',import.meta.url),'utf8');
+  expect(panel).toContain('Continue in Figma');
+  expect(panel).toContain('api.figmaStatus');
+  expect(panel).toContain('same campaign');
  });
  it('keeps long product workspaces reachable inside the viewport',()=>{
   expect(main).toContain('import "./mvp2/viewport.css"');

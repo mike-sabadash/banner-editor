@@ -14,7 +14,15 @@ describe('Bannermatic Figma MVP2 sync',()=>{
   expect(code).toContain('existingKeys');
   expect(code).toContain('const missing=required.filter');
   expect(code).toContain('for(const root of existing)');
-  expect(ui).toContain('does not delete or overwrite your creative');
+  expect(ui).toContain('Existing layers and manual creative changes are preserved');
+ });
+ it('makes the same-campaign continuation and required formats visible in the plugin',()=>{
+  expect(code).toContain('campaignId:connection.spec.campaignId');
+  expect(code).toContain('formats:connection.spec.formats||[]');
+  expect(ui).toContain('SAME CAMPAIGN · FIGMA WORKSPACE');
+  expect(ui).toContain('Continue in Figma');
+  expect(ui).toContain('Publish to Cloud');
+  expect(ui).toContain('format-list');
  });
  it('publishes creative through the scoped Figma endpoint with snapshot and live HTML representation',()=>{
   expect(code).toContain('/api/figma/creative-publish');
@@ -27,7 +35,7 @@ describe('Bannermatic Figma MVP2 sync',()=>{
   expect(code).toContain('connection.spec.contentVariants');
   expect(code).toContain('bannermatic:play');
   expect(code).toContain('bannermatic:pause');
-  expect(ui).toContain('Publish Creative');
+  expect(ui).toContain('Publish to Cloud');
  });
  it('uses existing banner_campaign metadata namespace for compatibility',()=>{expect(code).toContain('const NS="banner_campaign"')});
  it('allows network access only to Bannermatic Cloud',()=>{

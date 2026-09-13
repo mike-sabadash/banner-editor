@@ -63,6 +63,7 @@ export async function handleMvp2Api(req,res,{json,readBody}){
    const bytes=campaignZip(build);res.writeHead(200,{'Content-Type':'application/zip','Content-Length':bytes.length,'Content-Disposition':'attachment; filename="campaign.zip"','Cache-Control':'private, no-store'});res.end(bytes);return true;
   }
   const pairMatch=matchCampaignAction(url,"figma-pair");if(pairMatch&&req.method==="POST")return json(req,res,201,await bannermaticStore.createFigmaPair(auth,decodeURIComponent(pairMatch[1])));
+  const statusMatch=matchCampaignAction(url,"figma-status");if(statusMatch&&req.method==="GET")return json(req,res,200,bannermaticStore.figmaConnectionStatus(auth,decodeURIComponent(statusMatch[1])));
   const specMatch=matchCampaignAction(url,"figma-spec");if(specMatch&&req.method==="GET"){const campaign=bannermaticStore.getCampaign(auth,decodeURIComponent(specMatch[1]));return json(req,res,200,figmaSpecFromCampaign(campaign));}
   const ttResolveMatch=matchCampaignAction(url,"tt-resolve");
   if(ttResolveMatch&&req.method==="GET"){const campaign=bannermaticStore.getCampaign(auth,decodeURIComponent(ttResolveMatch[1]));return json(req,res,200,resolveCampaignTT(campaign));}
