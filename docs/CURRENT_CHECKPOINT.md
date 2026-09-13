@@ -16,7 +16,7 @@ This file is the canonical resume point for a new Codex session. Read it before 
 
 ## Current milestone
 
-Phase B / Product UX: Media Plan production data grid is implemented and locally verified; deployment verification is next.
+Phase B / Product UX: Media Plan production data grid is complete and deployed.
 
 The grid is being upgraded from a passive five-column list to an operational campaign-production view with:
 
@@ -49,17 +49,20 @@ The grid is being upgraded from a passive five-column list to an operational cam
 - Production build after this milestone: passed.
 - Figma plugin syntax check: passed.
 - Public /healthz: green.
+- Deployed code commit: 15539f9203235967e0ae6cffeeb210943d42ffd8.
+- PR check: Plugin final checks run 34750378777 / #238, success.
+- Public production bundle: /assets/index-K4hZ7UvD.js; the new TT & limits grid marker is present.
 - Authenticated responsive visual acceptance: not yet verified (credentials are not available in the browser session).
 - Real Figma desktop runtime: not yet verified.
 
 ## Exactly one next task
 
-Push the verified Media Plan production grid to PR #44, wait for the serialized auto-deploy, and prove that the public server is serving that exact build.
+Build the Content Matrix + inspector as the next Phase B product-UX slice while preserving the existing content-variant and per-placement assignment contract.
 
 Definition of Done:
 
-1. Grid behavior and reference-derived UI are covered by tests.
-2. Full unit suite, production build, plugin syntax and workflow syntax pass.
-3. PR branch is advanced without overwriting unrelated work.
-4. Deploy workflow succeeds and /healthz plus the new CSS/JS markers are publicly visible.
-5. Final commit SHA, workflow result, production evidence, blockers and the next single task are recorded in Notion and in a PR comment.
+1. Inspect the already verified Content Workspace references and record an explicit Reference Extraction before implementation.
+2. Replace the current card-per-placement checkbox layout with a dense matrix and a contextual variant inspector.
+3. Preserve ContentVariant fields, placement.contentVariantIds and stale-content fingerprint behavior.
+4. Cover assignment/editing behavior with tests and pass the full suite plus production build.
+5. Deploy, verify the public build, then update this checkpoint, Notion and PR #44.
