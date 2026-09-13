@@ -1,10 +1,10 @@
 {
-  "name": "Banner Campaign MVP",
-  "id": "banner-campaign-mvp-local",
+  "name": "Bannermatic · Cloud Sync MVP2",
+  "id": "bannermatic-cloud-sync-mvp2-local",
   "api": "1.0.0",
-  "main": "code-timeline-safe.js",
-  "ui": "ui.html",
+  "main": "mvp2-sync-code.js",
+  "ui": "mvp2-sync-ui.html",
   "editorType": ["figma"],
   "documentAccess": "dynamic-page",
-  "networkAccess": { "allowedDomains": ["none"] }
+  "networkAccess": { "allowedDomains": ["https://ads.rechord.online"] }
 }
