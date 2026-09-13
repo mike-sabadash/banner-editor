@@ -22,7 +22,7 @@ function matchBuildPath(url){return String(url||"").match(/^\/api\/campaigns\/([
 function matchCreativeVersionPath(url){return String(url||"").match(/^\/api\/campaigns\/([^/?#]+)\/creative-versions\/([^/?#]+)$/);}
 function matchMemberPath(url){return String(url||"").match(/^\/api\/workspace\/members\/([^/?#]+)$/);}
 
-export async function handleMvp2Api(req,res,{json,readBody}){
+export async function handleMvp2Api(req,res,{json,readBody,layoutReview}){
  const url=String(req.url||"").split("?")[0];
  if(!url.startsWith("/api/auth/")&&!url.startsWith("/api/campaigns")&&!url.startsWith("/api/workspace/")&&!url.startsWith("/api/figma/"))return false;
  await bannermaticStore.load();await bannermaticBuildStore.load();await bannermaticCreativeStore.load();
@@ -34,6 +34,7 @@ export async function handleMvp2Api(req,res,{json,readBody}){
   if(url.startsWith("/api/figma/")){
    const pluginAuth=await bannermaticStore.authenticatePlugin(bearer(req));if(!pluginAuth)return json(req,res,401,{error:"Plugin session is invalid or expired"});
    if(req.method==="GET"&&url==="/api/figma/campaign")return json(req,res,200,figmaSpecFromCampaign(pluginAuth.campaign));
+   if(req.method==="POST"&&url==="/api/figma/layout-review"){if(typeof layoutReview!=="function")return json(req,res,503,{error:"AI layout review is not available"});const body=await readBody(req);return json(req,res,200,await layoutReview(body,{campaignId:pluginAuth.campaign.id,workspaceId:pluginAuth.workspaceId}));}
    if(req.method==="POST"&&url==="/api/figma/creative-publish"){
     if(!["owner","admin","designer"].includes(pluginAuth.role))return json(req,res,403,{error:"Creative publish is not allowed for this role"});
     const body=await readBody(req),publication=applyCreativePublish(pluginAuth.campaign,body);const auth={workspace:{id:pluginAuth.workspaceId},user:{id:pluginAuth.userId},role:"owner"};const updated=await bannermaticStore.updateCampaign(auth,pluginAuth.campaign.id,publication.patch);const version=await bannermaticCreativeStore.add(updated,{touched:publication.touched});return json(req,res,200,{campaign:updated,touched:publication.touched,version,compliance:campaignCompliance(updated)});
@@ -79,6 +80,7 @@ export async function handleMvp2Api(req,res,{json,readBody}){
   if(publishMatch&&req.method==="POST"){bannermaticStore.requireRole(auth,["owner","admin","designer"]);const campaignId=decodeURIComponent(publishMatch[1]);const campaign=bannermaticStore.getCampaign(auth,campaignId);const body=await readBody(req);const publication=applyCreativePublish(campaign,body);const updated=await bannermaticStore.updateCampaign({...auth,role:"owner"},campaignId,publication.patch);const version=await bannermaticCreativeStore.add(updated,{touched:publication.touched});return json(req,res,200,{campaign:updated,touched:publication.touched,version,compliance:campaignCompliance(updated)});}
   const campaignMatch=matchCampaignPath(url);if(campaignMatch&&req.method==="GET")return json(req,res,200,bannermaticStore.getCampaign(auth,decodeURIComponent(campaignMatch[1])));
   if(campaignMatch&&(req.method==="PUT"||req.method==="PATCH")){bannermaticStore.requireRole(auth,["owner","admin","producer"]);const body=await readBody(req);return json(req,res,200,await bannermaticStore.updateCampaign(auth,decodeURIComponent(campaignMatch[1]),body));}
+  if(campaignMatch&&req.method==="DELETE"){bannermaticStore.requireRole(auth,["owner","admin","producer"]);const campaignId=decodeURIComponent(campaignMatch[1]);const deleted=await bannermaticStore.deleteCampaign(auth,campaignId);await Promise.all([bannermaticBuildStore.deleteCampaign(campaignId),bannermaticCreativeStore.deleteCampaign(campaignId)]);return json(req,res,200,{ok:true,...deleted});}
   if(req.method==="GET"&&url==="/api/workspace/members")return json(req,res,200,{items:bannermaticStore.listMembers(auth)});
   if(url==="/api/workspace/invitations"&&req.method==="GET")return json(req,res,200,{items:bannermaticStore.listInvitations(auth)});
   if(url==="/api/workspace/invitations"&&req.method==="POST"){const body=await readBody(req);return json(req,res,201,await bannermaticStore.createInvitation(auth,body));}

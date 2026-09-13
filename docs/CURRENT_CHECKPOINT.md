@@ -7,8 +7,10 @@ This file is the canonical resume point for a new Codex session. Read it before 
 ## Working line
 
 - Repository: mike-sabadash/banner-editor
-- Branch: codex/mvp2-figma-cloud-runtime
-- Pull request: https://github.com/mike-sabadash/banner-editor/pull/44
+- Production branch: codex/mvp2-figma-cloud-runtime
+- Current review branch: codex/campaign-lifecycle-figma-mvp12
+- Current stacked base: codex/figma-creative-sync-runtime (PR #46)
+- Pull request for this slice: pending until the branch is pushed
 - Draft production: https://ads.rechord.online/
 - Auto-deploy: every push to the branch; GitHub Actions concurrency serializes deployments
 - Product model: Campaign → Media Plan → Content → Creative → Preflight → Delivery
@@ -147,3 +149,34 @@ Evidence: `node --check figma-plugin/mvp2-sync-code.js` passed; 47 test files / 
 Status: CODED and AUTOMATED TESTED. NOT PUSHED, NOT DEPLOYED, and the corrected build is NOT YET FIGMA VERIFIED.
 
 Exactly one next task: package the corrected three-file plugin, import it through `figma-plugin/manifest.json`, and execute the seven-step runtime acceptance in `docs/FIGMA_RUNTIME_AUDIT_2026-09-13.md`. Do not begin the new adaptation engine before this acceptance passes.
+
+## Campaign lifecycle + Creative Workspace MVP12 — 2026-09-13
+
+User evidence exposed four coupled failures: campaigns appeared to vanish, rename/delete did not exist, Cloud hid newly issued pairing codes when an older plugin session was still active, and the plugin's resize UX mixed missing-format sync with Master propagation.
+
+Implemented on `codex/campaign-lifecycle-figma-mvp12` without production deployment:
+
+- campaign list request failures preserve the last visible list and show a retry action instead of being treated as logout;
+- campaign cards have inline rename and explicit confirmed deletion;
+- deletion removes the campaign, pending pairing codes, active plugin sessions, creative-version history and build history;
+- Cloud can issue and visibly display a fresh one-time code even while an older Figma session remains connected;
+- issuing a replacement code invalidates only the previous unused code, not active plugin sessions;
+- the user-attached MVP12 controller/UI are now retained as versioned source and are the canonical `manifest.json` runtime;
+- plugin UI has an obvious `Switch campaign` action and working target-format selection;
+- Master layers receive stable unique semantic slots; new nested layers and multiple images are reconciled by `masterSourceId` instead of name-only deduplication;
+- deterministic Rectangle / Vertical / Strip layout and text fitting run before optional AI review;
+- AI review is explicit in the UI, authenticated with the same campaign-scoped plugin token, routed through `ads.rechord.online`, bounded to small deltas and rolled back if the layout score becomes worse;
+- the plugin no longer needs the separate `banners.rechord.online` domain.
+
+Evidence at this checkpoint: 48 test files / 201 tests passed; production build passed; plugin controller and UI scripts parse; HTTP lifecycle covers new pairing, authenticated AI review, rename, persistence reload and deletion.
+
+Honest status:
+
+- `CODED`: yes.
+- `AUTOMATED TESTED`: yes.
+- `PUSHED / PR`: not yet at the time of this edit.
+- `DEPLOYED`: no.
+- `REAL FIGMA VERIFIED`: no. The user-attached MVP12 was exercised before these corrections, but this exact canonical build has not yet been imported and run.
+- `CAMPAIGN DISAPPEARANCE ROOT CAUSE`: the UI error path is fixed. Server data currently remains file-backed under `/var/www/banner-editor/runtime`; migration to an explicitly managed/backup data directory requires a separately approved production-data migration and is still a release-hardening item.
+
+Exactly one next task after review/deployment approval: import the packaged canonical MVP12 through `figma-plugin/manifest.json` and execute one fresh Campaign Browser → Figma → Master edit (long text + two new images + motion) → five resizes → repeat update → Publish → Cloud reload → Preflight → ZIP acceptance. Record per-format failures; do not call the adaptation engine production-quality until that run passes.

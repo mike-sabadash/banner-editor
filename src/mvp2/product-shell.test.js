@@ -27,6 +27,15 @@ describe('Bannermatic modular customer journey',()=>{
   expect(panel).toContain('Continue in Figma');
   expect(panel).toContain('api.figmaStatus');
   expect(panel).toContain('same campaign');
+  expect(panel).toContain('New plugin code');
+  expect(panel).toContain('pair?');
+ });
+ it('keeps campaign lifecycle actions explicit and recoverable',()=>{
+  expect(product).toContain('api.deleteCampaign');
+  expect(product).toContain('renameCampaign');
+  expect(product).toContain('Delete campaign?');
+  expect(product).toContain('current list was preserved');
+  expect(product).toContain('RefreshCcw');
  });
  it('keeps long product workspaces reachable inside the viewport',()=>{
   expect(main).toContain('import "./mvp2/viewport.css"');

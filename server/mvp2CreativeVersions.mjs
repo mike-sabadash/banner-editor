@@ -26,4 +26,5 @@ export class CreativeVersionStore{
  list(campaignId){return this.items.filter(x=>x.campaignId===campaignId).map(clone).sort((a,b)=>b.version-a.version);}
  async add(campaign,meta){await this.load();const snapshot=creativeSnapshot(campaign,meta);if(this.items.some(x=>x.campaignId===campaign.id&&x.version===snapshot.version))throw Object.assign(new Error('Creative version already exists'),{status:409});this.items.push(snapshot);await this.persist();return clone(snapshot);}
  get(campaignId,version){const item=this.items.find(x=>x.campaignId===campaignId&&x.version===Number(version));return item?clone(item):null;}
+ async deleteCampaign(campaignId){await this.load();this.items=this.items.filter(x=>x.campaignId!==campaignId);await this.persist();}
 }

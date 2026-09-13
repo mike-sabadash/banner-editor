@@ -24,6 +24,7 @@ export const api={
  async campaign(id:string){return request<Campaign>(`/api/campaigns/${encodeURIComponent(id)}`)},
  async createCampaign(name:string,locale:"en"|"ru"){return request<Campaign>("/api/campaigns",{method:"POST",body:JSON.stringify({name,locale})})},
  async updateCampaign(id:string,patch:Partial<Campaign>){return request<Campaign>(`/api/campaigns/${encodeURIComponent(id)}`,{method:"PATCH",body:JSON.stringify(patch)})},
+ async deleteCampaign(id:string){return request<{ok:true;id:string;name:string}>(`/api/campaigns/${encodeURIComponent(id)}`,{method:"DELETE"})},
  async compliance(id:string){return request<{campaignId:string;creativeVersion:number;mediaPlanVersion:number;ttSnapshotVersion:number;summary:{ready:number;warning:number;blocked:number;total:number};placements:Array<any>}>(`/api/campaigns/${encodeURIComponent(id)}/compliance`)},
  async figmaSpec(id:string){return request<any>(`/api/campaigns/${encodeURIComponent(id)}/figma-spec`)},
  async figmaPair(id:string){return request<FigmaPair>(`/api/campaigns/${encodeURIComponent(id)}/figma-pair`,{method:"POST"})},

@@ -4,7 +4,6 @@ import vm from 'node:vm';
 const code=readFileSync(new URL('./mvp2-sync-code.js',import.meta.url),'utf8');
 const ui=readFileSync(new URL('./mvp2-sync-ui.html',import.meta.url),'utf8');
 const manifest=JSON.parse(readFileSync(new URL('./manifest-mvp2.json',import.meta.url),'utf8'));
-const canonicalManifest=JSON.parse(readFileSync(new URL('./manifest.json',import.meta.url),'utf8'));
 describe('Bannermatic Figma MVP2 sync',()=>{
  it('parses the current plugin controller and UI script',()=>{
   expect(()=>new vm.Script(code,{filename:'mvp2-sync-code.js'})).not.toThrow();
@@ -57,6 +56,5 @@ describe('Bannermatic Figma MVP2 sync',()=>{
  it('uses existing banner_campaign metadata namespace for compatibility',()=>{expect(code).toContain('const NS="banner_campaign"')});
  it('allows network access only to Bannermatic Cloud',()=>{
   expect(manifest.main).toBe('mvp2-sync-code.js');expect(manifest.ui).toBe('mvp2-sync-ui.html');expect(manifest.networkAccess.allowedDomains).toEqual(['https://ads.rechord.online']);
-  expect(canonicalManifest).toEqual(manifest);
  });
 });
