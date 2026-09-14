@@ -28,3 +28,12 @@ jobs:
       - run: node --check server/openrouterGateway.mjs
       - run: node --check server/ttKnowledgeService.mjs
       - run: bash -n scripts/deploy-ads.sh
+      - name: Package checked Figma plugin
+        uses: actions/upload-artifact@v4
+        with:
+          name: bannermatic-figma-${{ github.event.pull_request.head.sha }}
+          path: |
+            figma-plugin/manifest.json
+            figma-plugin/mvp12-sync-code.js
+            figma-plugin/mvp12-sync-ui.html
+          if-no-files-found: error
