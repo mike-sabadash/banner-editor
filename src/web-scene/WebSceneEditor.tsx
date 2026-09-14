@@ -1,7 +1,10 @@
 import {useEffect,useMemo,useRef,useState,type PointerEvent as ReactPointerEvent} from "react";
-import {ChevronRight,Eye,EyeOff,Image as ImageIcon,Layers3,MousePointer2,Pause,Play,Plus,RectangleHorizontal,Sparkles,Type,Upload} from "lucide-react";
-import {DEFAULT_SCENES,MASTER_FORMAT,RU_CORE_10,generateScene,type Box,type LayerRole,type MotionPreset,type Scene,type SceneLayer} from "./sceneModel";
+import {ChevronRight,Eye,EyeOff,Image as ImageIcon,Layers3,MousePointer2,Pause,Play,Plus,RectangleHorizontal,Sparkles,Type} from "lucide-react";
+import type {Campaign} from "../mvp2/domain";
+import {formatsFromCampaign,ttForFormat,validateScenesForTT} from "./campaignBridge";
+import {DEFAULT_SCENES,MASTER_FORMAT,RU_CORE_10,generateScene,type LayerRole,type MotionPreset,type Scene,type SceneLayer} from "./sceneModel";
 import "./sceneEditor.css";
+import "./campaignScene.css";
 
 const ROLES:LayerRole[]=["background","hero","logo","headline","copy","cta","legal","graphic"];
 const PRESETS:{id:MotionPreset;label:string;glyph:string}[]=[
@@ -11,7 +14,7 @@ const PRESETS:{id:MotionPreset;label:string;glyph:string}[]=[
 type Tool="select"|"text"|"image"|"shape";
 const clamp=(v:number,min:number,max:number)=>Math.min(max,Math.max(min,v));
 
-export default function WebSceneEditor(){
+export default function WebSceneEditor({campaign}:{campaign?:Campaign}={}){
   const [scenes,setScenes]=useState<Scene[]>(DEFAULT_SCENES);
   const [sceneId,setSceneId]=useState(DEFAULT_SCENES[0].id);
   const [layerId,setLayerId]=useState(DEFAULT_SCENES[0].layers[1].id);
@@ -25,14 +28,19 @@ export default function WebSceneEditor(){
   const imageInput=useRef<HTMLInputElement>(null);
   const startedAt=useRef(0);
 
+  const targetFormats=useMemo(()=>{const fromCampaign=formatsFromCampaign(campaign);return fromCampaign.length?fromCampaign:RU_CORE_10},[campaign]);
   const scene=scenes.find(s=>s.id===sceneId)??scenes[0];
   const layer=scene.layers.find(l=>l.id===layerId)??scene.layers[0];
-  const format=formatId==="master"?MASTER_FORMAT:RU_CORE_10.find(f=>f.id===formatId)??MASTER_FORMAT;
+  const format=formatId==="master"?MASTER_FORMAT:targetFormats.find(f=>f.id===formatId)??MASTER_FORMAT;
   const output=useMemo(()=>generateScene(scene,format),[scene,format]);
   const totalDuration=useMemo(()=>scenes.reduce((sum,s)=>sum+s.durationMs,0),[scenes]);
   const sceneStart=useMemo(()=>scenes.slice(0,Math.max(0,scenes.findIndex(s=>s.id===scene.id))).reduce((sum,s)=>sum+s.durationMs,0),[scenes,scene.id]);
   const scenePlayMs=playing?Math.max(0,playMs-sceneStart):0;
   const editable=formatId==="master";
+  const tt=campaign&&formatId!=="master"?ttForFormat(campaign,formatId):undefined;
+  const ttCheck=useMemo(()=>validateScenesForTT(scenes,tt),[scenes,tt]);
+
+  useEffect(()=>{if(formatId!=="master"&&!targetFormats.some(f=>f.id===formatId))setFormatId("master")},[targetFormats,formatId]);
 
   const patchLayerById=(targetId:string,patch:Partial<SceneLayer>)=>setScenes(all=>all.map(s=>s.id===scene.id?{...s,layers:s.layers.map(l=>l.id===targetId?{...l,...patch}:l)}:s));
   const patchLayer=(patch:Partial<SceneLayer>)=>layer&&patchLayerById(layer.id,patch);
@@ -53,7 +61,7 @@ export default function WebSceneEditor(){
 
   return <div className="bm-shell">
     <input ref={imageInput} className="bm-hidden" type="file" accept="image/*" onChange={e=>{addImageFile(e.target.files?.[0]);e.currentTarget.value=""}}/>
-    <header className="bm-topbar"><div className="bm-brand"><span className="bm-logo">B</span><div><strong>Bannermatic</strong><small>Campaign / Creative editor</small></div></div><div className="bm-top-actions"><span className="bm-save-state">● Saved</span><button className="bm-button" onClick={togglePlay}>{playing?<Pause size={15}/>:<Play size={15}/>} Preview</button><button className="bm-button primary" onClick={()=>setGenerated(true)}><Sparkles size={15}/>Generate formats</button></div></header>
+    <header className="bm-topbar"><div className="bm-brand"><span className="bm-logo">B</span><div><strong>Bannermatic</strong><small>{campaign?`${campaign.name} · Media Plan v${campaign.mediaPlanVersion||0}`:"Campaign / Creative editor"}</small></div></div><div className="bm-top-actions"><span className="bm-save-state">● Saved</span><button className="bm-button" onClick={togglePlay}>{playing?<Pause size={15}/>:<Play size={15}/>} Preview</button><button className="bm-button primary" onClick={()=>setGenerated(true)}><Sparkles size={15}/>Adapt to media plan</button></div></header>
 
     <main className="bm-workspace">
       <aside className="bm-left bm-panel">
@@ -65,49 +73,23 @@ export default function WebSceneEditor(){
       </aside>
 
       <section className="bm-center">
-        <div className="bm-stagebar"><div><span className="bm-status-dot"/><b>{format.label}</b><small>{format.width} × {format.height} · {formatId==="master"?"editable master":"responsive preview"}</small></div><select value={formatId} onChange={e=>setFormatId(e.target.value)}><option value="master">Master · 300×600</option>{RU_CORE_10.map(f=><option key={f.id} value={f.id}>{f.label} · {f.family}</option>)}</select></div>
+        <div className="bm-stagebar"><div><span className="bm-status-dot"/><b>{format.label}</b><small>{format.width} × {format.height} · {formatId==="master"?"editable master":"responsive preview"}</small></div><select value={formatId} onChange={e=>setFormatId(e.target.value)}><option value="master">Master · 300×600</option>{targetFormats.map(f=><option key={f.id} value={f.id}>{f.label} · {f.family}</option>)}</select></div>
+        {campaign&&formatId!=="master"&&<div className={`bm-tt-strip ${ttCheck.status}`}><div><b>TT · {ttCheck.status==="ready"?"Ready":ttCheck.status==="attention"?`${ttCheck.issues.length} issue${ttCheck.issues.length===1?"":"s"}`:"Needs review"}</b><span>{tt?.platforms.join(" · ")||"Unknown platform"}{tt?.placements.length?` · ${tt.placements.length} placement${tt.placements.length===1?"":"s"}`:""}</span></div><div className="bm-tt-chips">{tt?.maxDurationSec&&<em>≤ {tt.maxDurationSec}s</em>}{tt?.maxZipKb&&<em>≤ {tt.maxZipKb} KB</em>}{tt?.clickTagRequired&&<em>clickTAG</em>}{tt?.trackingRequired&&<em>Pixel</em>}</div>{ttCheck.issues.length>0&&<p>{ttCheck.issues.join(" · ")}</p>}</div>}
         <div className="bm-stage">
-          <div className="bm-tools" aria-label="Canvas tools">
-            <button className={tool==="select"?"active":""} onClick={()=>setTool("select")} title="Select"><MousePointer2 size={17}/></button>
-            <button className={tool==="text"?"active":""} onClick={()=>setTool("text")} title="Text"><Type size={17}/></button>
-            <button className={tool==="image"?"active":""} onClick={()=>{setTool("image");imageInput.current?.click()}} title="Image"><ImageIcon size={17}/></button>
-            <button className={tool==="shape"?"active":""} onClick={()=>setTool("shape")} title="Shape"><RectangleHorizontal size={17}/></button>
-          </div>
-          <div className="bm-canvas-frame"><div ref={canvasRef} className={`bm-canvas family-${format.family} ${editable?"editable":"preview"}`} style={{aspectRatio:`${format.width}/${format.height}`}} onPointerDown={onCanvasPointerDown}>
-            {output.layers.filter(item=>playing?scenePlayMs>=item.startMs&&scenePlayMs<=item.endMs:true).map(item=><div key={`${scene.id}-${item.id}-${playing?"play":"still"}`} className={`bm-object kind-${item.kind} role-${item.role} motion-${item.motion} ${item.id===layer?.id?"selected":""} ${playing?"is-playing":""}`} style={{left:`${item.box.x}%`,top:`${item.box.y}%`,width:`${item.box.w}%`,height:`${item.box.h}%`,color:item.color,background:item.kind==="shape"?item.color:undefined,fontSize:item.fontSize?`${item.fontSize}px`:undefined,fontWeight:item.fontWeight,"--mx":`${item.motionVector.x}%`,"--my":`${item.motionVector.y}%`,"--motion-duration":`${item.motionDurationMs}ms`} as React.CSSProperties} onPointerDown={e=>beginMove(e,item)} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();const preset=e.dataTransfer.getData("text/motion") as MotionPreset;if(PRESETS.some(p=>p.id===preset)){setLayerId(item.id);patchLayerById(item.id,{motion:preset})}}}>
-              {item.kind==="image"&&item.assetUrl?<img src={item.assetUrl} alt="" style={{objectFit:item.fit??"cover"}}/>:item.kind==="text"?<span>{item.text}</span>:item.role!=="background"?<span className="bm-shape-label">{item.name}</span>:null}
-              {editable&&item.id===layer?.id&&item.role!=="background"&&<><i className="bm-handle nw"/><i className="bm-handle ne"/><i className="bm-handle sw"/><i className="bm-handle se" onPointerDown={e=>beginResize(e,item)}/></>}
-            </div>)}
-          </div></div>
-          {!editable&&<div className="bm-readonly-note">Responsive preview · edit the Master, then refine per-format overrides later</div>}
+          <div className="bm-tools" aria-label="Canvas tools"><button className={tool==="select"?"active":""} onClick={()=>setTool("select")} title="Select"><MousePointer2 size={17}/></button><button className={tool==="text"?"active":""} onClick={()=>setTool("text")} title="Text"><Type size={17}/></button><button className={tool==="image"?"active":""} onClick={()=>{setTool("image");imageInput.current?.click()}} title="Image"><ImageIcon size={17}/></button><button className={tool==="shape"?"active":""} onClick={()=>setTool("shape")} title="Shape"><RectangleHorizontal size={17}/></button></div>
+          <div className="bm-canvas-frame"><div ref={canvasRef} className={`bm-canvas family-${format.family} ${editable?"editable":"preview"}`} style={{aspectRatio:`${format.width}/${format.height}`}} onPointerDown={onCanvasPointerDown}>{output.layers.filter(item=>playing?scenePlayMs>=item.startMs&&scenePlayMs<=item.endMs:true).map(item=><div key={`${scene.id}-${item.id}-${playing?"play":"still"}`} className={`bm-object kind-${item.kind} role-${item.role} motion-${item.motion} ${item.id===layer?.id?"selected":""} ${playing?"is-playing":""}`} style={{left:`${item.box.x}%`,top:`${item.box.y}%`,width:`${item.box.w}%`,height:`${item.box.h}%`,color:item.color,background:item.kind==="shape"?item.color:undefined,fontSize:item.fontSize?`${item.fontSize}px`:undefined,fontWeight:item.fontWeight,"--mx":`${item.motionVector.x}%`,"--my":`${item.motionVector.y}%`,"--motion-duration":`${item.motionDurationMs}ms`} as React.CSSProperties} onPointerDown={e=>beginMove(e,item)} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();const preset=e.dataTransfer.getData("text/motion") as MotionPreset;if(PRESETS.some(p=>p.id===preset)){setLayerId(item.id);patchLayerById(item.id,{motion:preset})}}}>{item.kind==="image"&&item.assetUrl?<img src={item.assetUrl} alt="" style={{objectFit:item.fit??"cover"}}/>:item.kind==="text"?<span>{item.text}</span>:item.role!=="background"?<span className="bm-shape-label">{item.name}</span>:null}{editable&&item.id===layer?.id&&item.role!=="background"&&<><i className="bm-handle nw"/><i className="bm-handle ne"/><i className="bm-handle sw"/><i className="bm-handle se" onPointerDown={e=>beginResize(e,item)}/></>}</div>)}</div></div>
+          {!editable&&<div className="bm-readonly-note">Responsive preview · generated from Master + format family rules</div>}
         </div>
 
-        <div className="bm-timeline">
-          <div className="bm-timeline-head"><div><button className="bm-icon" onClick={togglePlay}>{playing?<Pause size={14}/>:<Play size={14}/>}</button><b>Scene timeline</b><small>Visibility only · motion lives in presets</small></div><span>{(scene.durationMs/1000).toFixed(1)} sec</span></div>
-          <div className="bm-scene-ruler">{scenes.map(s=><button key={s.id} className={s.id===scene.id?"active":""} style={{width:`${s.durationMs/totalDuration*100}%`}} onClick={()=>{setPlaying(false);setSceneId(s.id);setLayerId(s.layers[0]?.id||"")}}>{s.name}</button>)}</div>
-          <div className="bm-track-list">{scene.layers.map(l=><div key={l.id} className={`bm-track-row ${l.id===layer?.id?"active":""}`} onClick={()=>setLayerId(l.id)}><span>{l.name}</span><div className="bm-track"><i style={{left:`${l.startMs/scene.durationMs*100}%`,width:`${Math.max(2,(l.endMs-l.startMs)/scene.durationMs*100)}%`}}/></div><small>{l.motion}</small></div>)}</div>
-        </div>
+        <div className="bm-timeline"><div className="bm-timeline-head"><div><button className="bm-icon" onClick={togglePlay}>{playing?<Pause size={14}/>:<Play size={14}/>}</button><b>Scene timeline</b><small>Visibility only · motion lives in presets</small></div><span>{(scene.durationMs/1000).toFixed(1)} sec</span></div><div className="bm-scene-ruler">{scenes.map(s=><button key={s.id} className={s.id===scene.id?"active":""} style={{width:`${s.durationMs/totalDuration*100}%`}} onClick={()=>{setPlaying(false);setSceneId(s.id);setLayerId(s.layers[0]?.id||"")}}>{s.name}</button>)}</div><div className="bm-track-list">{scene.layers.map(l=><div key={l.id} className={`bm-track-row ${l.id===layer?.id?"active":""}`} onClick={()=>setLayerId(l.id)}><span>{l.name}</span><div className="bm-track"><i style={{left:`${l.startMs/scene.durationMs*100}%`,width:`${Math.max(2,(l.endMs-l.startMs)/scene.durationMs*100)}%`}}/></div><small>{l.motion}</small></div>)}</div></div>
       </section>
 
-      <aside className="bm-right bm-panel">
-        <div className="bm-inspector-tabs"><button className={inspectorTab==="design"?"active":""} onClick={()=>setInspectorTab("design")}>Design</button><button className={inspectorTab==="motion"?"active":""} onClick={()=>setInspectorTab("motion")}>Motion</button></div>
-        {layer&&inspectorTab==="design"&&<div className="bm-inspector">
-          <div className="bm-inspector-title"><div><small>SELECTED</small><h3>{layer.name}</h3></div><button className="bm-text-danger" onClick={deleteLayer}>Delete</button></div>
-          <label><small>ROLE</small><select value={layer.role} onChange={e=>patchLayer({role:e.target.value as LayerRole})}>{ROLES.map(r=><option key={r}>{r}</option>)}</select></label>
-          {layer.kind==="text"&&<><label><small>TEXT</small><textarea value={layer.text||""} onChange={e=>patchLayer({text:e.target.value})}/></label><div className="bm-two"><label><small>SIZE</small><input type="number" value={layer.fontSize??18} onChange={e=>patchLayer({fontSize:Number(e.target.value)})}/></label><label><small>WEIGHT</small><input type="number" min="100" max="900" step="50" value={layer.fontWeight??500} onChange={e=>patchLayer({fontWeight:Number(e.target.value)})}/></label></div></>}
-          {layer.kind==="image"&&<label><small>IMAGE FIT</small><select value={layer.fit??"cover"} onChange={e=>patchLayer({fit:e.target.value as "cover"|"contain"})}><option value="cover">Cover</option><option value="contain">Contain</option></select></label>}
-          {editable&&<><small>MASTER GEOMETRY</small><div className="bm-four">{(["x","y","w","h"] as const).map(key=><label key={key}><span>{key.toUpperCase()}</span><input type="number" step="0.5" value={Math.round(layer.masterBox[key]*10)/10} onChange={e=>patchLayer({masterBox:{...layer.masterBox,[key]:Number(e.target.value)}})}/></label>)}</div></>}
-          <div className="bm-two"><label><small>IN · MS</small><input type="number" step="50" min="0" value={layer.startMs} onChange={e=>patchLayer({startMs:clamp(Number(e.target.value),0,layer.endMs)})}/></label><label><small>OUT · MS</small><input type="number" step="50" min={layer.startMs} max={scene.durationMs} value={layer.endMs} onChange={e=>patchLayer({endMs:clamp(Number(e.target.value),layer.startMs,scene.durationMs)})}/></label></div>
-        </div>}
-        {layer&&inspectorTab==="motion"&&<div className="bm-inspector bm-motion-panel">
-          <div><small>MOTION PRESETS</small><h3>Drag a preset onto an object</h3><p>Directional motion adapts to every target format from the final responsive position.</p></div>
-          <div className="bm-preset-grid">{PRESETS.map(p=><button key={p.id} draggable onDragStart={e=>e.dataTransfer.setData("text/motion",p.id)} onClick={()=>applyPreset(p.id)} className={layer.motion===p.id?"active":""}><span>{p.glyph}</span><b>{p.label}</b></button>)}</div>
-          <div className="bm-divider"/><label><small>DURATION · MS</small><input type="number" step="50" min="0" value={layer.motionDurationMs} onChange={e=>patchLayer({motionDurationMs:Number(e.target.value)})}/></label><label><small>EASING</small><select value={layer.easing} onChange={e=>patchLayer({easing:e.target.value as SceneLayer["easing"]})}><option>ease-out</option><option>ease-in-out</option><option>linear</option></select></label>
-          <div className="bm-motion-hint"><Sparkles size={14}/><span>Applied to <b>{layer.name}</b>. Responsive formats keep the intent, not master pixels.</span></div>
-        </div>}
+      <aside className="bm-right bm-panel"><div className="bm-inspector-tabs"><button className={inspectorTab==="design"?"active":""} onClick={()=>setInspectorTab("design")}>Design</button><button className={inspectorTab==="motion"?"active":""} onClick={()=>setInspectorTab("motion")}>Motion</button></div>
+        {layer&&inspectorTab==="design"&&<div className="bm-inspector"><div className="bm-inspector-title"><div><small>SELECTED</small><h3>{layer.name}</h3></div><button className="bm-text-danger" onClick={deleteLayer}>Delete</button></div><label><small>ROLE</small><select value={layer.role} onChange={e=>patchLayer({role:e.target.value as LayerRole})}>{ROLES.map(r=><option key={r}>{r}</option>)}</select></label>{layer.kind==="text"&&<><label><small>TEXT</small><textarea value={layer.text||""} onChange={e=>patchLayer({text:e.target.value})}/></label><div className="bm-two"><label><small>SIZE</small><input type="number" value={layer.fontSize??18} onChange={e=>patchLayer({fontSize:Number(e.target.value)})}/></label><label><small>WEIGHT</small><input type="number" min="100" max="900" step="50" value={layer.fontWeight??500} onChange={e=>patchLayer({fontWeight:Number(e.target.value)})}/></label></div></>}{layer.kind==="image"&&<label><small>IMAGE FIT</small><select value={layer.fit??"cover"} onChange={e=>patchLayer({fit:e.target.value as "cover"|"contain"})}><option value="cover">Cover</option><option value="contain">Contain</option></select></label>}{editable&&<><small>MASTER GEOMETRY</small><div className="bm-four">{(["x","y","w","h"] as const).map(key=><label key={key}><span>{key.toUpperCase()}</span><input type="number" step="0.5" value={Math.round(layer.masterBox[key]*10)/10} onChange={e=>patchLayer({masterBox:{...layer.masterBox,[key]:Number(e.target.value)}})}/></label>)}</div></>}<div className="bm-two"><label><small>IN · MS</small><input type="number" step="50" min="0" value={layer.startMs} onChange={e=>patchLayer({startMs:clamp(Number(e.target.value),0,layer.endMs)})}/></label><label><small>OUT · MS</small><input type="number" step="50" min={layer.startMs} max={scene.durationMs} value={layer.endMs} onChange={e=>patchLayer({endMs:clamp(Number(e.target.value),layer.startMs,scene.durationMs)})}/></label></div></div>}
+        {layer&&inspectorTab==="motion"&&<div className="bm-inspector bm-motion-panel"><div><small>MOTION PRESETS</small><h3>Drag a preset onto an object</h3><p>Directional motion adapts to every target format from the final responsive position.</p></div><div className="bm-preset-grid">{PRESETS.map(p=><button key={p.id} draggable onDragStart={e=>e.dataTransfer.setData("text/motion",p.id)} onClick={()=>applyPreset(p.id)} className={layer.motion===p.id?"active":""}><span>{p.glyph}</span><b>{p.label}</b></button>)}</div><div className="bm-divider"/><label><small>DURATION · MS</small><input type="number" step="50" min="0" value={layer.motionDurationMs} onChange={e=>patchLayer({motionDurationMs:Number(e.target.value)})}/></label><label><small>EASING</small><select value={layer.easing} onChange={e=>patchLayer({easing:e.target.value as SceneLayer["easing"]})}><option>ease-out</option><option>ease-in-out</option><option>linear</option></select></label><div className="bm-motion-hint"><Sparkles size={14}/><span>Applied to <b>{layer.name}</b>. Responsive formats keep the intent, not master pixels.</span></div></div>}
       </aside>
     </main>
 
-    {generated&&<div className="bm-format-drawer"><div className="bm-drawer-head"><div><small>RESPONSIVE OUTPUT</small><h2>10 formats × {scenes.length} scenes</h2><p>Master geometry is remapped through semantic zones; motion stays relative to each target layout.</p></div><button className="bm-button" onClick={()=>setGenerated(false)}>Close</button></div><div className="bm-format-grid">{RU_CORE_10.map(f=><button key={f.id} onClick={()=>{setFormatId(f.id);setGenerated(false)}}><div className="bm-thumb" style={{aspectRatio:`${f.width}/${f.height}`}}><span>{f.family}</span></div><b>{f.label}</b><small>{f.family} · adaptive</small></button>)}</div></div>}
+    {generated&&<div className="bm-format-drawer"><div className="bm-drawer-head"><div><small>CAMPAIGN OUTPUT</small><h2>{targetFormats.length} formats × {scenes.length} scenes</h2><p>{campaign?`${campaign.placements.length} placements from Media Plan v${campaign.mediaPlanVersion||0}. TT is validated per target format.`:"No campaign attached: using RU Core 10 demo formats."}</p></div><button className="bm-button" onClick={()=>setGenerated(false)}>Close</button></div><div className="bm-format-grid">{targetFormats.map(f=>{const check=campaign?validateScenesForTT(scenes,ttForFormat(campaign,f.id)):undefined;return <button key={f.id} onClick={()=>{setFormatId(f.id);setGenerated(false)}}><div className="bm-thumb" style={{aspectRatio:`${f.width}/${f.height}`}}><span>{f.family}</span></div><b>{f.label}</b><small>{check?`TT: ${check.status}`:`${f.family} · adaptive`}</small></button>})}</div></div>}
   </div>
 }
