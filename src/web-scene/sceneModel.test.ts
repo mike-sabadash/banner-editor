@@ -1,5 +1,5 @@
 import {describe,expect,it} from "vitest";
-import {DEFAULT_SCENES,RU_CORE_10,familyFor,generateScene,motionVector,templateFor} from "./sceneModel";
+import {DEFAULT_SCENES,RU_CORE_10,adaptBox,familyFor,generateScene,motionVector,templateFor} from "./sceneModel";
 
 describe("scene responsive model",()=>{
   it("defines the RU core 10 preset",()=>{
@@ -23,7 +23,16 @@ describe("scene responsive model",()=>{
     expect(motionVector("from-right",{x:50,y:5,w:25,h:90}).x).toBeGreaterThan(0);
     expect(motionVector("from-bottom",{x:5,y:50,w:80,h:30}).y).toBeGreaterThan(0);
   });
-  it("suppresses copy in micro strips but retains core content",()=>{
+  it("maps master geometry inside the semantic target zone",()=>{
+    const hero=DEFAULT_SCENES[0].layers.find(layer=>layer.role==="hero")!;
+    const target=templateFor("wide","hero");
+    const mapped=adaptBox(hero,"wide");
+    expect(mapped.x).toBeGreaterThanOrEqual(target.x);
+    expect(mapped.y).toBeGreaterThanOrEqual(target.y);
+    expect(mapped.x+mapped.w).toBeLessThanOrEqual(target.x+target.w+.001);
+    expect(mapped.y+mapped.h).toBeLessThanOrEqual(target.y+target.h+.001);
+  });
+  it("suppresses optional copy in micro strips but retains core content",()=>{
     const scene=DEFAULT_SCENES[0];
     const format=RU_CORE_10.find(f=>f.id==="320x50")!;
     const generated=generateScene(scene,format);
