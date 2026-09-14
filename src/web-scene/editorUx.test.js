@@ -3,6 +3,7 @@ import {readFileSync} from "node:fs";
 
 const editor=readFileSync(new URL("./WebSceneEditor.tsx",import.meta.url),"utf8");
 const css=readFileSync(new URL("./sceneEditor.css",import.meta.url),"utf8");
+const campaignCss=readFileSync(new URL("./campaignScene.css",import.meta.url),"utf8");
 const store=readFileSync(new URL("../../server/mvp2Store.mjs",import.meta.url),"utf8");
 
 describe("professional scene editor UX",()=>{
@@ -29,6 +30,11 @@ describe("professional scene editor UX",()=>{
     expect(editor).toContain('"PT Sans"');
     expect(editor).toContain('type="color"');
     expect(css).toContain("fonts.googleapis.com");
+  });
+  it("keeps responsive preview stage and timeline in fixed grid rows when TT is visible",()=>{
+    expect(campaignCss).toContain(".bm-tt-strip{grid-row:2");
+    expect(campaignCss).toContain(".bm-center>.bm-stage{grid-row:2}");
+    expect(campaignCss).toContain(".bm-center>.bm-timeline{grid-row:3}");
   });
   it("keeps campaign index payloads free from heavy creative documents",()=>{
     expect(store).toContain("const {creativeDocument,...summary}=c");
