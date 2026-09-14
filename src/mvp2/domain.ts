@@ -23,9 +23,11 @@ export type VisualFormat={
  previewUrl?:string;previewHtml?:string;previewSvg?:string;previewType?:string;durationSec?:number;estimatedZipKb?:number;clickTagPresent?:boolean;publishedAt?:string;
 };
 
+export type CreativeDocument={version:number;masterFormat:{width:number;height:number};scenes:Array<any>;updatedAt?:string};
+
 export type Campaign={
  id:string;name:string;status:"draft"|"media-ready"|"creative"|"compliance"|"ready"|"delivered";placements:Placement[];formats:VisualFormat[];locale:"en"|"ru";
- contentVariants?:ContentVariant[];concepts?:Array<any>;families?:Array<any>;templateMotion?:number;
+ contentVariants?:ContentVariant[];concepts?:Array<any>;families?:Array<any>;templateMotion?:number;creativeDocument?:CreativeDocument;
  creativeVersion?:number;mediaPlanVersion?:number;ttSnapshotVersion?:number;createdAt?:string;updatedAt?:string;
 };
 

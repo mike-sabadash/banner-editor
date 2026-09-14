@@ -48,6 +48,12 @@ export async function handleMvp2Api(req,res,{json,readBody,layoutReview}){
   if(!auth)return json(req,res,401,{error:"Unauthorized"});
   if(req.method==="GET"&&url==="/api/campaigns")return json(req,res,200,{items:bannermaticStore.listCampaigns(auth)});
   if(req.method==="POST"&&url==="/api/campaigns"){bannermaticStore.requireRole(auth,["owner","admin","producer"]);const body=await readBody(req);return json(req,res,201,await bannermaticStore.createCampaign(auth,body));}
+  const sceneDocumentMatch=matchCampaignAction(url,"scene-document");
+  if(sceneDocumentMatch&&req.method==="PATCH"){
+   bannermaticStore.requireRole(auth,["owner","admin","designer"]);const campaignId=decodeURIComponent(sceneDocumentMatch[1]),body=await readBody(req);const current=bannermaticStore.getCampaign(auth,campaignId);const creativeDocument=body?.creativeDocument;
+   if(!creativeDocument||!Array.isArray(creativeDocument.scenes))return json(req,res,400,{error:"Valid creativeDocument.scenes is required"});
+   const updated=await bannermaticStore.updateCampaign({...auth,role:"owner"},campaignId,{creativeDocument,status:current.status==="delivered"?"delivered":"creative"});return json(req,res,200,updated);
+  }
   const templateMatch=matchCampaignAction(url,"template-publish");
   if(templateMatch&&req.method==='POST'){
    bannermaticStore.requireRole(auth,['owner','admin','designer']);
