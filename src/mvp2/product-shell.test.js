@@ -18,16 +18,17 @@ describe('Bannermatic modular customer journey',()=>{
   expect(product).toContain('<CampaignWall');
   expect(product).toContain('<DeliveryWorkspace');
  });
- it('keeps the customer journey connected to Figma without claiming runtime completion',()=>{
+ it('keeps the customer journey in the same campaign while making the web editor primary and Figma optional',()=>{
   expect(product).toContain("const openFigma=");
   expect(product).toContain("setScreen('creative')");
   expect(product).toContain('<FigmaConnectPanel');
   expect(product).toContain("can(role,'edit-creative')");
   const panel=readFileSync(new URL('./FigmaConnectPanel.tsx',import.meta.url),'utf8');
-  expect(panel).toContain('Continue in Figma');
+  expect(panel).toContain('Open Creative Editor');
+  expect(panel).toContain('campaignId=');
   expect(panel).toContain('api.figmaStatus');
   expect(panel).toContain('same campaign');
-  expect(panel).toContain('New plugin code');
+  expect(panel).toContain('Optional bridge');
   expect(panel).toContain('pair?');
  });
  it('keeps campaign lifecycle actions explicit and recoverable',()=>{
