@@ -16,6 +16,7 @@ export type SceneLayer = {
   masterBox:Box;
   fontSize?:number;
   fontWeight?:number;
+  fontFamily?:string;
   motion:MotionPreset;
   motionDurationMs:number;
   easing:"ease-out"|"ease-in-out"|"linear";
@@ -55,19 +56,19 @@ export const DEFAULT_SCENES:Scene[]=[
   {id:"scene-1",name:"Product",durationMs:2200,layers:[
     base("bg-1","Background","shape","background",B(0,0,100,100),{color:"#111827",endMs:2200}),
     base("hero-1","Product image","shape","hero",B(12,42,76,38),{color:"#6757ff",motion:"from-right",motionDurationMs:520,startMs:120,endMs:2200}),
-    base("headline-1","Headline","text","headline",B(9,13,82,15),{text:"Летний запуск",color:"#ffffff",fontSize:34,fontWeight:760,motion:"from-left",motionDurationMs:420,startMs:80,endMs:2200}),
-    base("copy-1","Copy","text","copy",B(9,30,72,9),{text:"Новый продукт уже здесь",color:"#cbd5e1",fontSize:16,fontWeight:450,motion:"fade",motionDurationMs:320,startMs:260,endMs:2200})
+    base("headline-1","Headline","text","headline",B(9,13,82,15),{text:"Летний запуск",color:"#ffffff",fontSize:34,fontWeight:760,fontFamily:"Inter",motion:"from-left",motionDurationMs:420,startMs:80,endMs:2200}),
+    base("copy-1","Copy","text","copy",B(9,30,72,9),{text:"Новый продукт уже здесь",color:"#cbd5e1",fontSize:16,fontWeight:450,fontFamily:"Inter",motion:"fade",motionDurationMs:320,startMs:260,endMs:2200})
   ]},
   {id:"scene-2",name:"Offer",durationMs:2200,layers:[
     base("bg-2","Background","shape","background",B(0,0,100,100),{color:"#24104f",endMs:2200}),
     base("graphic-2","Graphic","shape","graphic",B(17,40,66,36),{color:"#f4b740",motion:"scale-in",motionDurationMs:460,startMs:120,endMs:2200}),
-    base("headline-2","Headline","text","headline",B(9,14,82,18),{text:"−30% до воскресенья",color:"#ffffff",fontSize:32,fontWeight:760,motion:"from-bottom",motionDurationMs:420,startMs:120,endMs:2200}),
-    base("cta-2","CTA","text","cta",B(9,82,42,8),{text:"Подробнее",color:"#111318",fontSize:14,fontWeight:700,motion:"fade",motionDurationMs:300,startMs:520,endMs:2200})
+    base("headline-2","Headline","text","headline",B(9,14,82,18),{text:"−30% до воскресенья",color:"#ffffff",fontSize:32,fontWeight:760,fontFamily:"Inter",motion:"from-bottom",motionDurationMs:420,startMs:120,endMs:2200}),
+    base("cta-2","CTA","text","cta",B(9,82,42,8),{text:"Подробнее",color:"#111318",fontSize:14,fontWeight:700,fontFamily:"Inter",motion:"fade",motionDurationMs:300,startMs:520,endMs:2200})
   ]},
   {id:"scene-3",name:"Legal",durationMs:1600,layers:[
     base("bg-3","End card","shape","background",B(0,0,100,100),{color:"#12151b",endMs:1600}),
-    base("logo-3","Logo","text","logo",B(10,30,42,12),{text:"BRAND",color:"#ffffff",fontSize:28,fontWeight:800,motion:"scale-in",motionDurationMs:330,startMs:80,endMs:1600}),
-    base("legal-3","Legal","text","legal",B(10,72,80,12),{text:"Реклама. Подробности на сайте.",color:"#b7bfcc",fontSize:11,fontWeight:450,motion:"fade",motionDurationMs:300,startMs:260,endMs:1600})
+    base("logo-3","Logo","text","logo",B(10,30,42,12),{text:"BRAND",color:"#ffffff",fontSize:28,fontWeight:800,fontFamily:"Inter",motion:"scale-in",motionDurationMs:330,startMs:80,endMs:1600}),
+    base("legal-3","Legal","text","legal",B(10,72,80,12),{text:"Реклама. Подробности на сайте.",color:"#b7bfcc",fontSize:11,fontWeight:450,fontFamily:"Inter",motion:"fade",motionDurationMs:300,startMs:260,endMs:1600})
   ]}
 ];
 
@@ -94,12 +95,12 @@ export function adaptBox(layer:SceneLayer,targetFamily:LayoutFamily):Box{
   const ry=(layer.masterBox.y-source.y)/source.h;
   const rw=layer.masterBox.w/source.w;
   const rh=layer.masterBox.h/source.h;
-  const w=clamp(target.w*rw,Math.min(4,target.w),target.w);
-  const h=clamp(target.h*rh,Math.min(4,target.h),target.h);
-  return B(
-    clamp(target.x+target.w*rx,target.x,target.x+target.w-w),
-    clamp(target.y+target.h*ry,target.y,target.y+target.h-h),w,h
-  );
+  const bleed=layer.role==="hero"||layer.role==="graphic";
+  const w=clamp(target.w*rw,Math.min(4,target.w),bleed?target.w*1.45:target.w);
+  const h=clamp(target.h*rh,Math.min(4,target.h),bleed?target.h*1.45:target.h);
+  const minX=bleed?target.x-target.w*.18:target.x,maxX=bleed?target.x+target.w*1.18-w:target.x+target.w-w;
+  const minY=bleed?target.y-target.h*.18:target.y,maxY=bleed?target.y+target.h*1.18-h:target.y+target.h-h;
+  return B(clamp(target.x+target.w*rx,minX,maxX),clamp(target.y+target.h*ry,minY,maxY),w,h);
 }
 
 export function motionVector(preset:MotionPreset,box:Box){
