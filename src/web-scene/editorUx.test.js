@@ -18,8 +18,8 @@ describe("professional scene editor UX",()=>{
   });
   it("supports grid and contextual snapping",()=>{
     expect(editor).toContain("snapMove");
-    expect(editor).toContain("Snap to grid and objects");
-    expect(editor).toContain("4 px");
+    expect(editor).toContain(">Snap</button>");
+    expect(editor).toContain("[1,2,4,8]");
     expect(css).toContain(".bm-guide.vertical");
   });
   it("ships a Cyrillic-friendly font library and color control",()=>{
@@ -28,8 +28,10 @@ describe("professional scene editor UX",()=>{
     expect(editor).toContain('type="color"');
     expect(css).toContain("fonts.googleapis.com");
   });
-  it("keeps TT overlay, responsive stage and timeline in one center grid column",()=>{
-    expect(campaignCss).toContain(".bm-tt-strip{grid-row:2;grid-column:1");
+  it("keeps compact TT control inside the stage controls",()=>{
+    expect(editor).toContain("bm-tt-compact");
+    expect(editor).toContain("bm-tt-popover");
+    expect(editor).toContain("bm-stage-controls");
     expect(campaignCss).toContain(".bm-center>.bm-stage{grid-row:2;grid-column:1");
     expect(campaignCss).toContain(".bm-center>.bm-timeline{grid-row:3;grid-column:1");
   });
