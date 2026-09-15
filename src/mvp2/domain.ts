@@ -24,7 +24,15 @@ export type VisualFormat={
 };
 
 export type CampaignFont={id:string;family:string;style:"Regular"|"Medium"|"Semibold"|"Bold";weight:number;fileName:string;dataUrl:string};
-export type CreativeDocument={version:number;masterFormat:{width:number;height:number};scenes:Array<any>;fonts?:CampaignFont[];updatedAt?:string};
+export type CreativeDocument={
+ version:number;
+ masterFormat:{width:number;height:number};
+ scenes:Array<any>;
+ fonts?:CampaignFont[];
+ responsiveMasters?:Array<any>;
+ formatOverrides?:Record<string,any>;
+ updatedAt?:string;
+};
 
 export type Campaign={
  id:string;name:string;status:"draft"|"media-ready"|"creative"|"compliance"|"ready"|"delivered";placements:Placement[];formats:VisualFormat[];locale:"en"|"ru";
