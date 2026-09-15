@@ -18,4 +18,4 @@
 .bm-preview-family{margin-bottom:28px}.bm-preview-family-head{display:flex;align-items:baseline;gap:9px;margin-bottom:11px}.bm-preview-family-head h2{margin:0;font-size:16px}.bm-preview-family-head span{color:#7f8998;font-size:10px}
 .bm-preview-card-head{display:flex;justify-content:space-between;gap:10px}.bm-preview-card-head em{height:max-content;padding:3px 6px;border-radius:4px;background:#202631;color:#aeb7c5;font-size:9px;font-style:normal;white-space:nowrap}.inheritance-responsive-master{border-color:rgba(115,103,255,.62)!important}.inheritance-responsive-master .bm-preview-card-head em{background:rgba(115,103,255,.18);color:#c8c3ff}.inheritance-individual .bm-preview-card-head em{background:rgba(233,182,93,.13);color:#e9bd6b}
 .bm-based-on{margin:5px 0 0;color:#7e8897;font-size:9px}
-@media(max-width:1180px){.bm-reset-panel{display:none}.responsive-action{max-width:120px;font-size:9px}}
+@media(max-width:1180px){.bm-reset-panel{left:8px;right:auto;bottom:8px;width:220px}.responsive-action{max-width:120px;font-size:9px}}
