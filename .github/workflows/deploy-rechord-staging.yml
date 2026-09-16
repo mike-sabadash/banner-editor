@@ -1,0 +1,58 @@
+name: Deploy Rechord staging
+
+on:
+  push:
+    branches:
+      - ops/rechord-staging-deploy
+    paths:
+      - '.github/workflows/deploy-rechord-staging.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: rechord-staging
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify server key exists
+        run: |
+          if [ -z "${{ secrets.BANNERMATIC_SERVER_SSH_KEY }}" ]; then
+            echo "Server SSH key is not configured" >&2
+            exit 1
+          fi
+      - name: Configure SSH
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.BANNERMATIC_SERVER_SSH_KEY }}" > ~/.ssh/rechord_server
+          chmod 600 ~/.ssh/rechord_server
+          ssh-keyscan -p 2222 213.182.208.29 >> ~/.ssh/known_hosts
+      - name: Deploy exact Rechord staging commit
+        run: |
+          ssh -i ~/.ssh/rechord_server -p 2222 -o IdentitiesOnly=yes root@213.182.208.29 'bash -s' <<'REMOTE'
+          set -euo pipefail
+          cd /var/www/rechord-staging
+
+          if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+            echo "STOP: tracked staging changes found"
+            git status --short
+            exit 1
+          fi
+
+          git fetch origin codex/release-candidate-2026-09-09
+          EXPECTED_SHA="f0c2122e43783c2c105cffa75776b809aec850bd"
+          ACTUAL_SHA="$(git rev-parse FETCH_HEAD)"
+
+          [ "$ACTUAL_SHA" = "$EXPECTED_SHA" ] || {
+            echo "STOP: unexpected commit $ACTUAL_SHA"
+            exit 1
+          }
+
+          git checkout --detach "$EXPECTED_SHA"
+          bash scripts/start-staging.sh
+          REMOTE
+      - name: Verify public staging
+        run: |
+          curl -fsS --max-time 30 https://staging.rechord.online/health
+          curl -fsS --max-time 30 https://staging.rechord.online/app.html | grep -q 'chord-analyzer.js'
