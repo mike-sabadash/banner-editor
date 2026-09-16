@@ -8,6 +8,6 @@ describe("professional scene editor UX",()=>{
  it("renders the selected format at 1:1 CSS pixels",()=>{expect(editor).toContain('width:`${format.width}px`');expect(editor).toContain('height:`${format.height}px`');expect(productCss).toContain("max-width:none!important")});
  it("supports Space-drag panning",()=>{expect(editor).toContain('e.code==="Space"');expect(editor).toContain("beginPan");expect(editor).toContain("scrollLeft");expect(productCss).toContain(".bm-stage.space-pan")});
  it("supports delete duplicate copy and paste",()=>{expect(editor).toContain("deleteLayer");expect(editor).toContain("duplicateLayer");expect(editor).toContain('k==="c"');expect(editor).toContain('k==="v"');expect(editor).toContain('k==="d"')});
- it("supports grid and contextual snapping",()=>{expect(editor).toContain("snapMove");expect(editor).toContain(">Snap</button>");expect(editor).toContain("[1,2,4,8]")});
+ it("supports grid snapping",()=>{expect(editor).toContain("gridSnap");expect(editor).toContain(">Snap</button>");expect(editor).toContain("[1,2,4,8]")});
  it("ships Cyrillic-friendly fonts",()=>{expect(editor).toContain('"Golos Text"');expect(editor).toContain('"PT Sans"')});
 });
