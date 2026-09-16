@@ -1,7 +1,7 @@
 import fs from 'node:fs';
-// One-shot source migration. Remove after the generated editor change lands.
 const p='src/web-scene/WebSceneEditor.tsx';
 let s=fs.readFileSync(p,'utf8');
+if(s.includes('ChevronRight,Copy,Crop')&&s.includes('const undo=()=>')&&s.includes('duplicateLayer=()=>'))process.exit(0);
 const rep=(a,b)=>{if(!s.includes(a))throw new Error(`missing replacement anchor: ${a.slice(0,80)}`);s=s.replace(a,b)};
 rep('import {ChevronRight,Crop,Eye,EyeOff,Grid3X3,Image as ImageIcon,Layers3,Magnet,MousePointer2,Pause,Play,Plus,RectangleHorizontal,Sparkles,Type,Upload} from "lucide-react";', 'import {ChevronRight,Copy,Crop,Eye,EyeOff,Grid3X3,Image as ImageIcon,Layers3,Magnet,MousePointer2,Pause,Play,Plus,Redo2,RectangleHorizontal,Sparkles,Type,Undo2,Upload} from "lucide-react";');
 rep('type MasterDialog={mode:"create"|"update";family:LayoutFamily}|null;','type MasterDialog={mode:"create"|"update";family:LayoutFamily}|null;\ntype EditorSnapshot={scenes:Scene[];responsive:ResponsiveState};');
