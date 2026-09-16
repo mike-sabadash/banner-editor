@@ -14,9 +14,12 @@ export type CampaignBorder={enabled:boolean;color:string};
 export const DEFAULT_CAMPAIGN_BORDER:CampaignBorder={enabled:false,color:"#000000"};
 
 export function mergedDisplayFormats(campaign?:Campaign){
+  const campaignFormats=formatsFromCampaign(campaign);
+  // A real campaign/media plan is the source of truth. RU_CORE_10 is only a
+  // useful empty-state/demo fallback when no formats have been attached yet.
+  const source=campaignFormats.length?campaignFormats:RU_CORE_10;
   const map=new Map<string,OutputFormat>();
-  for(const format of RU_CORE_10)map.set(`${format.width}x${format.height}`,format);
-  for(const format of formatsFromCampaign(campaign))map.set(`${format.width}x${format.height}`,format);
+  for(const format of source)map.set(`${format.width}x${format.height}`,format);
   return [...map.values()];
 }
 export const mergeCampaignFormats=mergedDisplayFormats;
