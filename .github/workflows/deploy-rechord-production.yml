@@ -1,0 +1,94 @@
+name: Deploy Rechord production
+
+on:
+  push:
+    branches:
+      - ops/rechord-staging-deploy
+    paths:
+      - '.github/workflows/deploy-rechord-production.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: rechord-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure SSH
+        run: |
+          test -n "${{ secrets.BANNERMATIC_SERVER_SSH_KEY }}"
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.BANNERMATIC_SERVER_SSH_KEY }}" > ~/.ssh/rechord_server
+          chmod 600 ~/.ssh/rechord_server
+          ssh-keyscan -p 2222 213.182.208.29 >> ~/.ssh/known_hosts
+      - name: Verify and deploy exact Rechord release
+        run: |
+          ssh -i ~/.ssh/rechord_server -p 2222 -o IdentitiesOnly=yes root@213.182.208.29 'bash -s' <<'REMOTE'
+          set -euo pipefail
+          cd /var/www/rechord
+
+          EXPECTED_CURRENT="850a11a5b08d91e08af35369753727e393b80213"
+          EXPECTED_RELEASE="e10de65a9ee0672e41446949d8e3c4641d602434"
+          CURRENT_SHA="$(git rev-parse HEAD)"
+
+          [ "$CURRENT_SHA" = "$EXPECTED_CURRENT" ] || {
+            echo "STOP: production changed since preflight: $CURRENT_SHA"
+            exit 1
+          }
+
+          if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+            echo "STOP: tracked production changes found"
+            git status --short
+            exit 1
+          fi
+
+          git fetch origin codex/release-candidate-2026-09-09
+          FETCHED_SHA="$(git rev-parse FETCH_HEAD)"
+          [ "$FETCHED_SHA" = "$EXPECTED_RELEASE" ] || {
+            echo "STOP: unexpected release head $FETCHED_SHA"
+            exit 1
+          }
+
+          TEST_DIR="$(mktemp -d /var/www/rechord-release-test.XXXXXX)"
+          cleanup_test() {
+            git worktree remove --force "$TEST_DIR" >/dev/null 2>&1 || true
+          }
+          trap cleanup_test EXIT
+
+          git worktree add --detach "$TEST_DIR" "$EXPECTED_RELEASE"
+          (
+            cd "$TEST_DIR"
+            npm ci
+            npm test
+            php -l api/community/index.php
+            php -l api/community/feed.php
+          )
+          cleanup_test
+          trap - EXIT
+
+          if ! (
+            set -e
+            git checkout --detach "$EXPECTED_RELEASE"
+            npm ci --omit=dev
+            systemctl restart rechord
+            curl --fail --silent --show-error --retry 8 --retry-connrefused --retry-delay 1 --max-time 5 http://127.0.0.1:8787/healthz
+          ); then
+            echo "DEPLOY FAILED: rolling back to $CURRENT_SHA" >&2
+            git checkout --detach "$CURRENT_SHA"
+            npm ci --omit=dev
+            systemctl restart rechord
+            curl --fail --silent --show-error --retry 8 --retry-connrefused --retry-delay 1 --max-time 5 http://127.0.0.1:8787/healthz
+            echo "ROLLBACK COMPLETE: $(git rev-parse --short HEAD)" >&2
+            exit 1
+          fi
+
+          echo
+          echo "PRODUCTION COMMIT: $(git rev-parse --short HEAD)"
+          echo "PRODUCTION SERVICE: $(systemctl is-active rechord)"
+          REMOTE
+      - name: Verify public production
+        run: |
+          curl -fsS --retry 5 --retry-delay 1 --max-time 30 https://rechord.online/healthz
+          curl -fsS --retry 5 --retry-delay 1 --max-time 30 https://rechord.online/app.html | grep -q 'chord-analyzer.js'
