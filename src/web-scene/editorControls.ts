@@ -4,10 +4,15 @@ import {RU_CORE_10,type OutputFormat} from "./sceneModel";
 
 export const FONT_FAMILIES=["Inter","Manrope","Roboto","Montserrat","Golos Text","PT Sans","PT Serif","Rubik","Oswald","Unbounded"] as const;
 export const FONT_STYLES=[
+  {label:"Light",name:"Light",weight:300},
   {label:"Regular",name:"Regular",weight:400},
+  {label:"Regular 450",name:"Regular 450",weight:450},
   {label:"Medium",name:"Medium",weight:500},
   {label:"Semibold",name:"Semibold",weight:600},
   {label:"Bold",name:"Bold",weight:700},
+  {label:"Bold 760",name:"Bold 760",weight:760},
+  {label:"Extra Bold",name:"Extra Bold",weight:800},
+  {label:"Black",name:"Black",weight:900},
 ] as const;
 
 export type CampaignBorder={enabled:boolean;color:string};

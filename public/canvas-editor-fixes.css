@@ -30,6 +30,28 @@
 .bm-object>.bm-handle.sw{left:-2px!important;bottom:-2px!important}
 .bm-object>.bm-handle.w{left:-2px!important;top:50%!important}
 
+/* Text frames follow the standard design-tool auto-height model: the frame height is
+   content-driven, while the left/right handles change only the wrapping width. This
+   prevents a text layer from becoming a giant empty rectangle when it is resized. */
+.bm-object.kind-text{
+  height:auto!important;
+  min-height:1em!important;
+  overflow:visible!important;
+}
+.bm-object.kind-text>span{
+  display:block!important;
+  height:auto!important;
+  min-height:1em!important;
+}
+.bm-object.kind-text>.bm-handle.n,
+.bm-object.kind-text>.bm-handle.s,
+.bm-object.kind-text>.bm-handle.nw,
+.bm-object.kind-text>.bm-handle.ne,
+.bm-object.kind-text>.bm-handle.se,
+.bm-object.kind-text>.bm-handle.sw{display:none!important}
+.bm-object.kind-text>.bm-handle.e,
+.bm-object.kind-text>.bm-handle.w{top:50%!important}
+
 /* Keep guides hairline-thin as well. */
 .bm-guide.vertical{width:1px!important}
 .bm-guide.horizontal{height:1px!important}
