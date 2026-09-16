@@ -1,0 +1,38 @@
+name: Inspect Rechord production
+
+on:
+  push:
+    branches:
+      - ops/rechord-staging-deploy
+    paths:
+      - '.github/workflows/inspect-rechord-production.yml'
+  workflow_dispatch:
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure SSH
+        run: |
+          test -n "${{ secrets.BANNERMATIC_SERVER_SSH_KEY }}"
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.BANNERMATIC_SERVER_SSH_KEY }}" > ~/.ssh/rechord_server
+          chmod 600 ~/.ssh/rechord_server
+          ssh-keyscan -p 2222 213.182.208.29 >> ~/.ssh/known_hosts
+      - name: Inspect production without changes
+        run: |
+          ssh -i ~/.ssh/rechord_server -p 2222 -o IdentitiesOnly=yes root@213.182.208.29 'bash -s' <<'REMOTE'
+          set -euo pipefail
+          test -d /var/www/rechord/.git
+          cd /var/www/rechord
+          echo "PRODUCTION_PATH: $PWD"
+          echo "PRODUCTION_SHA: $(git rev-parse HEAD)"
+          echo "PRODUCTION_BRANCH: $(git branch --show-current || true)"
+          echo "TRACKED_STATUS_BEGIN"
+          git status --short --untracked-files=no
+          echo "TRACKED_STATUS_END"
+          echo "SERVICE: $(systemctl is-active rechord)"
+          systemctl show rechord --property=ExecStart --no-pager
+          echo "LOOPBACK_HEALTH:"
+          curl -fsS --max-time 10 http://127.0.0.1:8787/healthz
+          REMOTE
