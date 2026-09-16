@@ -1,0 +1,29 @@
+name: Editor UX autopatch
+on:
+  push:
+    branches: [codex/editor-ux-functional-parity]
+    paths: [scripts/apply-editor-ux-fix.mjs]
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: codex/editor-ux-functional-parity
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/apply-editor-ux-fix.mjs
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - name: Commit generated editor fix
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add src/web-scene/WebSceneEditor.tsx
+          git diff --cached --check
+          git commit -m "Fix editor duplicate text editing and undo redo"
+          git push
