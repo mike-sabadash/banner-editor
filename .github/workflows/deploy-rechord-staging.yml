@@ -54,5 +54,5 @@ jobs:
           REMOTE
       - name: Verify public staging
         run: |
-          curl -fsS --max-time 30 https://staging.rechord.online/health
+          curl -fsS --max-time 30 https://staging.rechord.online/healthz
           curl -fsS --max-time 30 https://staging.rechord.online/app.html | grep -q 'chord-analyzer.js'
