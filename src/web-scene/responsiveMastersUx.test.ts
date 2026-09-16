@@ -29,11 +29,9 @@ describe("Responsive Masters editor UX",()=>{
     expect(fonts).toContain("...(fresh.creativeDocument||");
   });
 
-  it("groups All Formats Preview by family and marks inheritance",()=>{
+  it("groups All Formats Preview by family and renders through responsive inheritance",()=>{
     expect(preview).toContain("RESPONSIVE_FAMILY_LABELS[group.family]");
-    expect(preview).toContain("Responsive Master");
-    expect(preview).toContain("overrides");
-    expect(preview).toContain("Based on");
+    expect(preview).toContain("formatInheritance(format,responsive)");
     expect(preview).toContain("generateScene(active,format,responsive)");
   });
 });
