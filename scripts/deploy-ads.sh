@@ -19,6 +19,7 @@ git fetch origin "$BRANCH"
 git switch "$BRANCH" 2>/dev/null || git switch -c "$BRANCH" --track "origin/$BRANCH"
 git pull --ff-only origin "$BRANCH"
 
+python3 scripts/apply-text-editor-hotfix.py
 npm ci
 npm test
 npm run build
