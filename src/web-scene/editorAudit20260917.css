@@ -1,0 +1,30 @@
+/* Creative Editor UX audit fixes — 2026-09-17.
+   This layer intentionally changes presentation only; scene/responsive runtime stays intact. */
+
+/* Keep the editor usable on ordinary laptop widths instead of letting topbar actions collide. */
+.bm-topbar{min-width:0}.bm-brand{min-width:0}.bm-brand>div{min-width:0}.bm-brand small{max-width:min(42vw,520px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bm-top-actions{min-width:0;flex-wrap:nowrap}.bm-top-actions .bm-button{white-space:nowrap}
+
+/* The active format is the primary canvas context: make it readable and keep controls compact. */
+.bm-stagebar{gap:12px}.bm-stagebar>div:first-child{min-width:0;overflow:hidden}.bm-stagebar>div:first-child b,.bm-stagebar>div:first-child small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bm-stage-controls{min-width:0}.bm-stage-controls>select{min-width:190px;max-width:250px}.bm-grid-size{flex:none}
+
+/* Selection actions should remain discoverable without turning every row into a button wall. */
+.bm-row-actions{opacity:.28}.bm-scene-row:hover .bm-row-actions,.bm-scene-row:focus-within .bm-row-actions,.bm-scene-row.active .bm-row-actions,.bm-layer-row:hover .bm-row-actions,.bm-layer-row:focus-within .bm-row-actions,.bm-layer-row.active .bm-row-actions{opacity:1}.bm-layer-row:focus-within,.bm-scene-row:focus-within{outline:1px solid rgba(13,153,255,.35);outline-offset:-1px}
+
+/* Timeline: selected row and trim handles must be visible before hover; values remain scannable. */
+.bm-track-row.active .bm-track{border-color:rgba(13,153,255,.48)}.bm-track-row.active .bm-timing-bar{background:#0d99ff!important}.bm-track-row>small{font-variant-numeric:tabular-nums;color:#8d98a8}.bm-trim-handle{width:8px}
+
+/* Loading/hydration feedback belongs to the product shell, not ad-hoc inline styles. */
+.bm-editor-load-state{min-height:100vh;display:grid;place-items:center;padding:32px;background:#0b0d10;color:#eef2f7;font-family:Inter,system-ui}.bm-editor-load-state section{width:min(420px,100%);padding:24px;border:1px solid rgba(255,255,255,.09);border-radius:12px;background:#11151b;box-shadow:0 24px 70px rgba(0,0,0,.35)}.bm-editor-load-state small{font-size:9px;letter-spacing:.12em;color:#697586}.bm-editor-load-state h2{margin:7px 0 6px;font-size:18px}.bm-editor-load-state p{margin:0 0 18px;color:#919baa}.bm-editor-load-state section>div{display:flex;gap:8px}.bm-editor-loader{display:block;width:18px;height:18px;margin-bottom:14px;border:2px solid rgba(255,255,255,.14);border-top-color:#0d99ff;border-radius:50%;animation:bm-audit-spin .8s linear infinite}@keyframes bm-audit-spin{to{transform:rotate(360deg)}}
+.bm-editor-hydration-status{position:fixed;left:50%;bottom:14px;z-index:120;transform:translateX(-50%);padding:7px 10px;border:1px solid rgba(255,255,255,.1);border-radius:999px;background:rgba(17,21,27,.94);box-shadow:0 8px 28px rgba(0,0,0,.32);color:#aab4c3;font:10px/1.2 Inter,system-ui;backdrop-filter:blur(12px)}button.bm-editor-hydration-status{cursor:pointer}.bm-editor-hydration-status.warning{border-color:rgba(245,158,11,.35);color:#f5c46b}
+
+/* Prevent the floating campaign-font utility from covering the main editor actions. */
+@media(min-width:1181px){.bm-shell~div[style*="position: fixed"]{top:62px!important;right:12px!important}}
+
+@media(max-width:1180px){
+  .bm-workspace{grid-template-columns:188px minmax(420px,1fr) 248px!important}
+  .bm-topbar{padding-inline:10px!important}.bm-brand small{max-width:28vw}.bm-top-actions{gap:4px!important}.bm-top-actions .bm-button{padding-inline:8px!important;font-size:10px}.bm-stage-controls>select{min-width:150px;max-width:190px}.bm-stage{padding:18px!important}.bm-canvas-frame{padding:22px!important}
+}
+
+@media(max-width:920px){
+  .bm-workspace{grid-template-columns:164px minmax(360px,1fr) 224px!important}.bm-brand small{display:none}.bm-top-actions .bm-button:not(.primary){font-size:0;gap:0;padding-inline:8px!important}.bm-top-actions .bm-button:not(.primary) svg{width:15px;height:15px}.bm-save-state{display:none}.bm-stagebar small{display:none}.bm-stage-controls>select{min-width:132px;max-width:160px}
+}

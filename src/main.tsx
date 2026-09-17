@@ -11,7 +11,7 @@ import CampaignSceneEditor from "./web-scene/CampaignSceneEditor";
 import CampaignPreview from "./web-scene/CampaignPreview";
 import {hasToken} from "./mvp2/api";
 import type {Locale} from "./mvp2/i18n";
-import "./styles.css";import "./campaign/campaign.css";import "./campaign/delivery.css";import "./mvp2/design-system.css";import "./mvp2/cloud.css";import "./mvp2/cloud-v2.css";import "./mvp2/marketing.css";import "./mvp2/auth.css";import "./mvp2/design-enforcement.css";import "./mvp2/campaign-wall.css";import "./mvp2/media-plan.css";import "./mvp2/delivery-v2.css";import "./mvp2/figma-connect.css";import "./mvp2/next-elite-shell.css";import "./mvp2/next-elite-public.css";import "./mvp2/next-elite-workspaces.css";import "./mvp2/next-elite-wall.css";import "./mvp2/next-elite-delivery.css";import "./mvp2/viewport.css";import "./web-scene/editorRedesign.css";import "./web-scene/editorUxSystem.css";
+import "./styles.css";import "./campaign/campaign.css";import "./campaign/delivery.css";import "./mvp2/design-system.css";import "./mvp2/cloud.css";import "./mvp2/cloud-v2.css";import "./mvp2/marketing.css";import "./mvp2/auth.css";import "./mvp2/design-enforcement.css";import "./mvp2/campaign-wall.css";import "./mvp2/media-plan.css";import "./mvp2/delivery-v2.css";import "./mvp2/figma-connect.css";import "./mvp2/next-elite-shell.css";import "./mvp2/next-elite-public.css";import "./mvp2/next-elite-workspaces.css";import "./mvp2/next-elite-wall.css";import "./mvp2/next-elite-delivery.css";import "./mvp2/viewport.css";import "./web-scene/editorRedesign.css";import "./web-scene/editorUxSystem.css";import "./web-scene/editorAudit20260917.css";
 
 function Product(){
   const params=new URLSearchParams(location.search);

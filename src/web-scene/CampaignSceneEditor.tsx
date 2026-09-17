@@ -10,29 +10,38 @@ export default function CampaignSceneEditor(){
   const [error,setError]=useState("");
   const [loading,setLoading]=useState(true);
   const [attempt,setAttempt]=useState(0);
+  const [sceneDocumentState,setSceneDocumentState]=useState<"loading"|"loaded"|"unavailable">("loading");
+
   const load=useCallback(async()=>{
     if(!campaignId){setError("Campaign id is missing");setLoading(false);return}
-    setLoading(true);setError("");
+    setLoading(true);setError("");setSceneDocumentState("loading");
     try{
-      // The editor can render from campaign metadata immediately. The scene document
-      // is optional and may be slow for older/heavier campaigns, so do not block the UI on it.
       const meta=await api.campaignMeta(campaignId);
       setCampaign(meta);
       setLoading(false);
       try{
         const {creativeDocument}=await api.sceneDocument(campaignId);
         if(creativeDocument)setCampaign(current=>current?{...current,creativeDocument}:current);
+        setSceneDocumentState("loaded");
       }catch(e){
         console.warn("Could not load scene document; editor opened with campaign metadata",e);
+        setSceneDocumentState("unavailable");
       }
     }catch(e){
-      setError(e instanceof Error?e.message:String(e));setLoading(false);
+      setError(e instanceof Error?e.message:String(e));setLoading(false);setSceneDocumentState("unavailable");
     }
   },[campaignId,attempt]);
+
   useEffect(()=>{let alive=true;void (async()=>{if(alive)await load()})();return()=>{alive=false}},[load]);
   const retry=()=>setAttempt(value=>value+1);
-  if(error)return <main style={{padding:32,fontFamily:"Inter,system-ui",background:"#0b0d10",color:"white",minHeight:"100vh"}}><h2>Could not open campaign</h2><p>{error}</p><button onClick={retry}>Retry</button> <button onClick={()=>location.href="/"}>Back to campaigns</button></main>;
-  if(loading&&!campaign)return <main style={{padding:32,fontFamily:"Inter,system-ui",background:"#0b0d10",color:"white",minHeight:"100vh"}}>Loading campaign…</main>;
+
+  if(error)return <main className="bm-editor-load-state bm-editor-load-error"><section><small>BANNERMATIC</small><h2>Could not open campaign</h2><p>{error}</p><div><button className="bm-button primary" onClick={retry}>Retry</button><button className="bm-button" onClick={()=>location.href="/"}>Back to campaigns</button></div></section></main>;
+  if(loading&&!campaign)return <main className="bm-editor-load-state"><section><span className="bm-editor-loader"/><small>BANNERMATIC</small><h2>Opening creative editor</h2><p>Loading campaign and creative document…</p></section></main>;
   if(!campaign)return null;
-  return <><WebSceneEditor campaign={campaign}/><CampaignFonts campaign={campaign} onCampaign={setCampaign}/></>;
+
+  // Campaign metadata arrives first so the editor opens quickly. When the saved scene
+  // document follows, remount exactly once from that authoritative document instead of
+  // leaving the editor on DEFAULT_SCENES for the rest of the session.
+  const editorKey=`${campaign.id}:${campaign.creativeDocument?.updatedAt||sceneDocumentState}`;
+  return <><WebSceneEditor key={editorKey} campaign={campaign}/><CampaignFonts campaign={campaign} onCampaign={setCampaign}/>{sceneDocumentState==="loading"&&<div className="bm-editor-hydration-status">Loading saved creative…</div>}{sceneDocumentState==="unavailable"&&<button className="bm-editor-hydration-status warning" onClick={retry}>Saved creative unavailable · Retry</button>}</>;
 }
