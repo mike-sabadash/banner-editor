@@ -239,4 +239,39 @@ if marker9 not in css:
 .bm-playhead:before{content:"";position:absolute;top:-1px;left:-4px;width:9px;height:6px;background:#ff6258;clip-path:polygon(0 0,100% 0,50% 100%)}
 """
     css_path.write_text(css)
+# Timeline v4: scene selectors in header, proper tick ruler, visible red playhead.
+src=p.read_text()
+old='<div className="bm-timeline-options"><label className="bm-loop-control">'
+new='<div className="bm-timeline-options"><div className="bm-scene-tabs-top">{scenes.map((s,i)=><button key={s.id} className={s.id===scene.id?"active":""} onClick={()=>{setSceneId(s.id);setLayerId(s.layers[0]?.id||"")}}>{String(i+1).padStart(2,"0")} · {s.name}</button>)}</div><label className="bm-loop-control">'
+if old not in src: raise SystemExit("timeline header options missing")
+src=src.replace(old,new,1)
+old='<div className="bm-time-ruler">{Array.from({length:Math.max(2,Math.ceil(scene.durationMs/500)+1)},(_,i)=>{const ms=Math.min(i*500,scene.durationMs),left=ms/scene.durationMs*100;return <span key={ms} style={{left:`${left}%`}}><i/>{ms===0?"0":`${(ms/1000).toFixed(ms%1000?1:0)}s`}</span>})}</div><div className="bm-scene-ruler">{scenes.map(s=><button key={s.id} className={s.id===scene.id?"active":""} style={{width:`${s.durationMs/totalDuration*100}%`}} onClick={()=>{setSceneId(s.id);setLayerId(s.layers[0]?.id||"")}}>{s.name}</button>)}</div><div className="bm-track-list"><i className="bm-playhead" style={{left:`calc(150px + (100% - 260px) * ${clamp(scenePlayMs/Math.max(1,scene.durationMs),0,1)})`}}/>'
+new='<div className="bm-time-ruler">{Array.from({length:Math.max(2,Math.ceil(scene.durationMs/100)+1)},(_,i)=>{const ms=Math.min(i*100,scene.durationMs),left=ms/scene.durationMs*100,major=ms%500===0;return <span key={ms} className={major?"major":""} style={{left:`${left}%`}}><i/>{major&&(ms===0?"0:00":`0:${String(Math.round(ms/100)).padStart(2,"0")}`)}</span>})}</div><div className="bm-track-list"><i className="bm-playhead" style={{left:`calc(150px + (100% - 260px) * ${clamp(scenePlayMs/Math.max(1,scene.durationMs),0,1)})`}}/>'
+if old not in src: raise SystemExit("old ruler/scenes block missing")
+src=src.replace(old,new,1)
+p.write_text(src)
+css=css_path.read_text()
+marker10="/* timeline-v4-professional-ruler-2026-09-18 */"
+if marker10 not in css:
+    css += r"""
+/* timeline-v4-professional-ruler-2026-09-18 */
+.bm-timeline{grid-template-rows:42px 34px minmax(0,1fr)!important}
+.bm-timeline-head{overflow:visible!important}
+.bm-timeline-options{min-width:0!important}
+.bm-scene-tabs-top{display:flex;align-items:center;gap:3px;max-width:430px;overflow-x:auto;scrollbar-width:none}
+.bm-scene-tabs-top::-webkit-scrollbar{display:none}
+.bm-scene-tabs-top button{height:26px;padding:0 9px;border:1px solid #2b323d;border-radius:5px;background:#151a21;color:#8993a2;font-size:10px;white-space:nowrap}
+.bm-scene-tabs-top button.active{border-color:#5361d8;background:#202744;color:#eef1ff}
+.bm-scene-ruler{display:none!important}
+.bm-time-ruler{position:relative!important;height:34px!important;min-height:34px!important;margin:0 110px 0 150px!important;border-bottom:1px solid #343c48!important;background:#10141a!important;color:#8c96a5!important;overflow:visible!important}
+.bm-time-ruler span{position:absolute!important;bottom:0!important;top:auto!important;height:34px!important;transform:translateX(-50%)!important;font-size:9px!important;line-height:14px!important;color:#7d8795!important}
+.bm-time-ruler span:first-child{transform:none!important}
+.bm-time-ruler i{position:absolute!important;bottom:0!important;left:50%!important;width:1px!important;height:5px!important;margin:0!important;background:#4d5664!important}
+.bm-time-ruler span.major i{height:11px!important;background:#778292!important}
+.bm-time-ruler span.major{color:#a7afbb!important}
+.bm-track-list{position:relative!important}
+.bm-playhead{display:block!important;position:absolute!important;top:-34px!important;bottom:0!important;width:1px!important;min-width:1px!important;background:#ff4d45!important;z-index:100!important;pointer-events:none!important;transform:translateX(-.5px)!important;box-shadow:none!important}
+.bm-playhead:before{content:""!important;display:block!important;position:absolute!important;top:0!important;left:-4px!important;width:9px!important;height:7px!important;background:#ff4d45!important;clip-path:polygon(0 0,100% 0,50% 100%)!important}
+"""
+    css_path.write_text(css)
 print("EDITOR_UX_PASS_V2_OK")
