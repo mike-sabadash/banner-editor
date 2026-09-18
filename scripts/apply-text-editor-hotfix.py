@@ -18,7 +18,7 @@ s=replace_once(s,'onInput={e=>{if(editingTextId!==item.id)return;const el=e.curr
 # Hand tool + Space panning.
 s=replace_once(s,'Grid3X3,Image as ImageIcon,Layers3,Magnet,MousePointer2','Grid3X3,Hand,Image as ImageIcon,Layers3,Magnet,MousePointer2',"hand import")
 s=replace_once(s,'type Tool="select"|"text"|"image"|"shape";','type Tool="select"|"hand"|"text"|"image"|"shape";',"hand tool")
-s=replace_once(s,'[borderColor,setBorderColor]=useState("#000000"),[dragLayerId,setDragLayerId]=useState<string|null>(null);','[borderColor,setBorderColor]=useState("#000000"),[dragLayerId,setDragLayerId]=useState<string|null>(null),[timelineHeight,setTimelineHeight]=useState(240),[spaceHeld,setSpaceHeld]=useState(false),[loopPlayback,setLoopPlayback]=useState(campaign?.creativeDocument?.loop!==false);',"interaction state")
+s=replace_once(s,'[borderColor,setBorderColor]=useState("#000000"),[dragLayerId,setDragLayerId]=useState<string|null>(null);','[borderColor,setBorderColor]=useState("#000000"),[dragLayerId,setDragLayerId]=useState<string|null>(null),[timelineHeight,setTimelineHeight]=useState(()=>Math.min(520,Math.max(300,140+(scenes?.[0]?.layers?.length??4)*43))),[spaceHeld,setSpaceHeld]=useState(false),[loopPlayback,setLoopPlayback]=useState(campaign?.creativeDocument?.loop!==false);',"interaction state")
 s=replace_once(s,'const canvasRef=useRef<HTMLDivElement>(null),imageInput=','const canvasRef=useRef<HTMLDivElement>(null),stageRef=useRef<HTMLDivElement>(null),imageInput=',"stage ref")
 s=replace_once(s,'const beginMove=(e:ReactPointerEvent,item:ReturnType<typeof resolveSceneLayers>[number])=>{if(!editable||item.role==="background"||tool!=="select")return;','const beginMove=(e:ReactPointerEvent,item:ReturnType<typeof resolveSceneLayers>[number])=>{if(spaceHeld||tool==="hand")return;if(!editable||item.role==="background"||tool!=="select")return;',"pan bypass")
 s=replace_once(s,' const beginResize=',' const beginStagePan=(e:ReactPointerEvent)=>{if(!(spaceHeld||tool==="hand")||!stageRef.current)return;e.preventDefault();const stage=stageRef.current,sx=e.clientX,sy=e.clientY,left=stage.scrollLeft,top=stage.scrollTop;stage.classList.add("is-panning");const move=(ev:PointerEvent)=>{stage.scrollLeft=left-(ev.clientX-sx);stage.scrollTop=top-(ev.clientY-sy)},up=()=>{stage.classList.remove("is-panning");removeEventListener("pointermove",move);removeEventListener("pointerup",up)};addEventListener("pointermove",move);addEventListener("pointerup",up)};\n const beginTimelineResize=(e:ReactPointerEvent)=>{e.preventDefault();const sy=e.clientY,start=timelineHeight,move=(ev:PointerEvent)=>setTimelineHeight(clamp(start+(sy-ev.clientY),140,Math.max(220,window.innerHeight-180))),up=()=>{removeEventListener("pointermove",move);removeEventListener("pointerup",up)};addEventListener("pointermove",move);addEventListener("pointerup",up)};\n const setSceneDuration=(value:number)=>{const duration=Math.max(200,Math.round(value));checkpoint();setScenes(all=>all.map(s=>s.id===scene.id?{...s,durationMs:duration,layers:s.layers.map(l=>({...l,startMs:Math.min(l.startMs,Math.max(0,duration-40)),endMs:Math.min(Math.max(l.endMs,Math.min(duration,40)),duration)}))}:s))};\n const beginResize=',"pan timeline duration")
@@ -120,6 +120,22 @@ if marker3 not in css:
 .bm-track{height:24px!important}
 .bm-track .bm-timing-bar{top:3px!important;height:16px!important}
 @media(max-width:1250px){.bm-scene-ruler{padding-left:120px}.bm-track-row{grid-template-columns:120px minmax(200px,1fr) 96px}}
+'''
+    css_path.write_text(css)
+# Final timeline sizing pass: default height fits all layer tracks and splitter gets a generous hit target.
+css = css_path.read_text()
+marker4 = "/* timeline-all-tracks-visible-2026-09-18 */"
+if marker4 not in css:
+    css += r'''
+/* timeline-all-tracks-visible-2026-09-18 */
+.bm-timeline-resizer{height:10px;min-height:10px;margin-top:-4px;padding-top:4px;cursor:ns-resize;touch-action:none}
+.bm-timeline-resizer:before{content:"";position:absolute;inset:-7px 0 -7px;cursor:ns-resize}
+.bm-timeline-resizer:after{top:4px;width:56px;height:3px}
+.bm-timeline{grid-template-rows:42px 32px minmax(0,1fr);padding-bottom:10px}
+.bm-timeline-head{height:42px;min-height:42px}
+.bm-scene-ruler{height:32px;min-height:32px;padding-top:6px;padding-bottom:6px}
+.bm-track-list{overflow-y:auto;padding-top:6px}
+.bm-track-row{flex:0 0 42px;height:42px;min-height:42px}
 '''
     css_path.write_text(css)
 print("EDITOR_UX_PASS_V2_OK")
