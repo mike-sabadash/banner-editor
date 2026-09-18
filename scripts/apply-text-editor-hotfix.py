@@ -274,4 +274,30 @@ if marker10 not in css:
 .bm-playhead:before{content:""!important;display:block!important;position:absolute!important;top:0!important;left:-4px!important;width:9px!important;height:7px!important;background:#ff4d45!important;clip-path:polygon(0 0,100% 0,50% 100%)!important}
 """
     css_path.write_text(css)
+# Timeline v5: true scene-time scale, exact track alignment, always-visible playback playhead.
+src=p.read_text()
+old='<div className="bm-time-ruler">{Array.from({length:Math.max(2,Math.ceil(scene.durationMs/100)+1)},(_,i)=>{const ms=Math.min(i*100,scene.durationMs),left=ms/scene.durationMs*100,major=ms%500===0;return <span key={ms} className={major?"major":""} style={{left:`${left}%`}}><i/>{major&&(ms===0?"0:00":`0:${String(Math.round(ms/100)).padStart(2,"0")}`)}</span>})}</div><div className="bm-track-list"><i className="bm-playhead" style={{left:`calc(150px + (100% - 260px) * ${clamp(scenePlayMs/Math.max(1,scene.durationMs),0,1)})`}}/>'
+new='<div className="bm-time-ruler"><div className="bm-time-ruler-scale">{Array.from({length:Math.floor(scene.durationMs/100)+1},(_,i)=>{const ms=i*100,left=ms/scene.durationMs*100,major=ms%500===0;return <span key={ms} className={major?"major":""} style={{left:`${left}%`}}><i/>{major&&`${(ms/1000).toFixed(1)}s`}</span>})}<span className="major end" style={{left:"100%"}}><i/>{`${(scene.durationMs/1000).toFixed(1)}s`}</span></div></div><div className="bm-track-list"><div className="bm-playhead" style={{"--playhead-progress":clamp(scenePlayMs/Math.max(1,scene.durationMs),0,1)} as React.CSSProperties}/>'
+if old not in src: raise SystemExit("v4 ruler/playhead block missing")
+src=src.replace(old,new,1)
+p.write_text(src)
+css=css_path.read_text()
+marker11="/* timeline-v5-real-time-playhead-2026-09-18 */"
+if marker11 not in css:
+    css += r"""
+/* timeline-v5-real-time-playhead-2026-09-18 */
+.bm-time-ruler{margin:0!important;padding:0 130px 0 170px!important;box-sizing:border-box!important;border-bottom:0!important}
+.bm-time-ruler-scale{position:relative!important;width:100%!important;height:34px!important;border-bottom:1px solid #343c48!important}
+.bm-time-ruler-scale span{position:absolute!important;bottom:0!important;top:auto!important;height:34px!important;transform:translateX(-50%)!important;font-size:9px!important;line-height:14px!important;color:#7d8795!important;white-space:nowrap!important}
+.bm-time-ruler-scale span:first-child{transform:none!important}
+.bm-time-ruler-scale span.end{transform:translateX(-100%)!important}
+.bm-time-ruler-scale i{position:absolute!important;bottom:0!important;left:50%!important;width:1px!important;height:5px!important;background:#4d5664!important}
+.bm-time-ruler-scale span:first-child i{left:0!important}
+.bm-time-ruler-scale span.end i{left:100%!important}
+.bm-time-ruler-scale span.major i{height:11px!important;background:#778292!important}
+.bm-playhead{display:block!important;position:absolute!important;left:calc(170px + (100% - 300px) * var(--playhead-progress,0))!important;top:-34px!important;bottom:0!important;width:1px!important;height:auto!important;background:#ff4d45!important;z-index:999!important;pointer-events:none!important;transform:translateX(-.5px)!important;opacity:1!important}
+.bm-playhead:before{content:""!important;position:absolute!important;top:0!important;left:-4px!important;width:9px!important;height:7px!important;background:#ff4d45!important;clip-path:polygon(0 0,100% 0,50% 100%)!important}
+@media(max-width:1250px){.bm-time-ruler{padding-left:140px!important;padding-right:116px!important}.bm-playhead{left:calc(140px + (100% - 256px) * var(--playhead-progress,0))!important}}
+"""
+    css_path.write_text(css)
 print("EDITOR_UX_PASS_V2_OK")
