@@ -153,4 +153,24 @@ if marker5 not in css:
 .bm-track-list{min-height:0}
 '''
     css_path.write_text(css)
+# Runtime layout fix: make the timeline a fixed bottom overlay. This removes the
+# parent grid/min-content constraint that was keeping the visible panel short.
+src = p.read_text()
+src = replace_once(src,
+    '<section className="bm-center" style={{"--bm-timeline-height":`${timelineHeight}px`} as React.CSSProperties}>',
+    '<section className="bm-center" style={{"--bm-timeline-height":`${timelineHeight}px`} as React.CSSProperties}>',
+    "timeline center marker")
+p.write_text(src)
+css = css_path.read_text()
+marker6 = "/* timeline-overlay-layout-2026-09-18 */"
+if marker6 not in css:
+    css += r'''
+/* timeline-overlay-layout-2026-09-18 */
+.bm-center{position:relative!important;display:grid!important;grid-template-rows:48px minmax(0,1fr)!important;height:100%!important;min-height:0!important;overflow:hidden!important;padding-bottom:var(--bm-timeline-height,390px)!important}
+.bm-stage{grid-row:2!important;min-height:0!important;height:100%!important}
+.bm-timeline-resizer{position:absolute!important;left:0!important;right:0!important;bottom:var(--bm-timeline-height,390px)!important;height:14px!important;min-height:14px!important;z-index:80!important;cursor:ns-resize!important}
+.bm-timeline{position:absolute!important;left:0!important;right:0!important;bottom:0!important;height:var(--bm-timeline-height,390px)!important;min-height:220px!important;max-height:calc(100% - 100px)!important;box-sizing:border-box!important;z-index:70!important;display:grid!important;grid-template-rows:42px 32px minmax(0,1fr)!important;overflow:hidden!important}
+.bm-track-list{height:100%!important;min-height:0!important;overflow-y:auto!important}
+'''
+    css_path.write_text(css)
 print("EDITOR_UX_PASS_V2_OK")
