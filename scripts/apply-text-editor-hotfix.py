@@ -200,4 +200,19 @@ if marker7 not in css:
 .bm-timing-handle{width:7px!important;border-radius:2px!important}
 '''
     css_path.write_text(css)
+# Replace the overlay workaround with a real docked split layout. The overlay
+# reserved space twice (stage padding + absolute timeline), which caused the
+# large dead gap visible in production.
+css=css_path.read_text()
+marker8="/* timeline-docked-layout-2026-09-18 */"
+if marker8 not in css:
+    css += r'''
+/* timeline-docked-layout-2026-09-18 */
+.bm-center{position:relative!important;display:grid!important;grid-template-rows:48px minmax(0,1fr) 14px var(--bm-timeline-height,390px)!important;height:100%!important;min-height:0!important;overflow:hidden!important;padding-bottom:0!important}
+.bm-stage{position:relative!important;grid-row:2!important;height:auto!important;min-height:0!important;overflow:scroll!important}
+.bm-timeline-resizer{position:relative!important;grid-row:3!important;left:auto!important;right:auto!important;bottom:auto!important;width:100%!important;height:14px!important;min-height:14px!important;margin:0!important;z-index:80!important}
+.bm-timeline{position:relative!important;grid-row:4!important;left:auto!important;right:auto!important;bottom:auto!important;height:auto!important;min-height:0!important;max-height:none!important;width:100%!important;z-index:70!important}
+.bm-canvas-frame{min-width:calc(100% + 520px)!important;min-height:calc(100% + 280px)!important}
+'''
+    css_path.write_text(css)
 print("EDITOR_UX_PASS_V2_OK")
