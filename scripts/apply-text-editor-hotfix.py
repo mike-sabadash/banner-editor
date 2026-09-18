@@ -18,10 +18,10 @@ s=replace_once(s,'onInput={e=>{if(editingTextId!==item.id)return;const el=e.curr
 # Hand tool + Space panning.
 s=replace_once(s,'Grid3X3,Image as ImageIcon,Layers3,Magnet,MousePointer2','Grid3X3,Hand,Image as ImageIcon,Layers3,Magnet,MousePointer2',"hand import")
 s=replace_once(s,'type Tool="select"|"text"|"image"|"shape";','type Tool="select"|"hand"|"text"|"image"|"shape";',"hand tool")
-s=replace_once(s,'[borderColor,setBorderColor]=useState("#000000"),[dragLayerId,setDragLayerId]=useState<string|null>(null);','[borderColor,setBorderColor]=useState("#000000"),[dragLayerId,setDragLayerId]=useState<string|null>(null),[timelineHeight,setTimelineHeight]=useState(300),[spaceHeld,setSpaceHeld]=useState(false),[loopPlayback,setLoopPlayback]=useState(campaign?.creativeDocument?.loop!==false);',"interaction state")
+s=replace_once(s,'[borderColor,setBorderColor]=useState("#000000"),[dragLayerId,setDragLayerId]=useState<string|null>(null);','[borderColor,setBorderColor]=useState("#000000"),[dragLayerId,setDragLayerId]=useState<string|null>(null),[timelineHeight,setTimelineHeight]=useState(240),[spaceHeld,setSpaceHeld]=useState(false),[loopPlayback,setLoopPlayback]=useState(campaign?.creativeDocument?.loop!==false);',"interaction state")
 s=replace_once(s,'const canvasRef=useRef<HTMLDivElement>(null),imageInput=','const canvasRef=useRef<HTMLDivElement>(null),stageRef=useRef<HTMLDivElement>(null),imageInput=',"stage ref")
 s=replace_once(s,'const beginMove=(e:ReactPointerEvent,item:ReturnType<typeof resolveSceneLayers>[number])=>{if(!editable||item.role==="background"||tool!=="select")return;','const beginMove=(e:ReactPointerEvent,item:ReturnType<typeof resolveSceneLayers>[number])=>{if(spaceHeld||tool==="hand")return;if(!editable||item.role==="background"||tool!=="select")return;',"pan bypass")
-s=replace_once(s,' const beginResize=',' const beginStagePan=(e:ReactPointerEvent)=>{if(!(spaceHeld||tool==="hand")||!stageRef.current)return;e.preventDefault();const stage=stageRef.current,sx=e.clientX,sy=e.clientY,left=stage.scrollLeft,top=stage.scrollTop;stage.classList.add("is-panning");const move=(ev:PointerEvent)=>{stage.scrollLeft=left-(ev.clientX-sx);stage.scrollTop=top-(ev.clientY-sy)},up=()=>{stage.classList.remove("is-panning");removeEventListener("pointermove",move);removeEventListener("pointerup",up)};addEventListener("pointermove",move);addEventListener("pointerup",up)};\n const beginTimelineResize=(e:ReactPointerEvent)=>{e.preventDefault();const sy=e.clientY,start=timelineHeight,move=(ev:PointerEvent)=>setTimelineHeight(clamp(start+(sy-ev.clientY),150,Math.max(220,window.innerHeight-150))),up=()=>{removeEventListener("pointermove",move);removeEventListener("pointerup",up)};addEventListener("pointermove",move);addEventListener("pointerup",up)};\n const setSceneDuration=(value:number)=>{const duration=Math.max(200,Math.round(value));checkpoint();setScenes(all=>all.map(s=>s.id===scene.id?{...s,durationMs:duration,layers:s.layers.map(l=>({...l,startMs:Math.min(l.startMs,Math.max(0,duration-40)),endMs:Math.min(Math.max(l.endMs,Math.min(duration,40)),duration)}))}:s))};\n const beginResize=',"pan timeline duration")
+s=replace_once(s,' const beginResize=',' const beginStagePan=(e:ReactPointerEvent)=>{if(!(spaceHeld||tool==="hand")||!stageRef.current)return;e.preventDefault();const stage=stageRef.current,sx=e.clientX,sy=e.clientY,left=stage.scrollLeft,top=stage.scrollTop;stage.classList.add("is-panning");const move=(ev:PointerEvent)=>{stage.scrollLeft=left-(ev.clientX-sx);stage.scrollTop=top-(ev.clientY-sy)},up=()=>{stage.classList.remove("is-panning");removeEventListener("pointermove",move);removeEventListener("pointerup",up)};addEventListener("pointermove",move);addEventListener("pointerup",up)};\n const beginTimelineResize=(e:ReactPointerEvent)=>{e.preventDefault();const sy=e.clientY,start=timelineHeight,move=(ev:PointerEvent)=>setTimelineHeight(clamp(start+(sy-ev.clientY),140,Math.max(220,window.innerHeight-180))),up=()=>{removeEventListener("pointermove",move);removeEventListener("pointerup",up)};addEventListener("pointermove",move);addEventListener("pointerup",up)};\n const setSceneDuration=(value:number)=>{const duration=Math.max(200,Math.round(value));checkpoint();setScenes(all=>all.map(s=>s.id===scene.id?{...s,durationMs:duration,layers:s.layers.map(l=>({...l,startMs:Math.min(l.startMs,Math.max(0,duration-40)),endMs:Math.min(Math.max(l.endMs,Math.min(duration,40)),duration)}))}:s))};\n const beginResize=',"pan timeline duration")
 s=replace_once(s,'useEffect(()=>{const onKey=(e:KeyboardEvent)=>{const t=e.target as HTMLElement;if(t.matches("input,textarea,select,[contenteditable=true]"))return;','useEffect(()=>{const onKey=(e:KeyboardEvent)=>{const t=e.target as HTMLElement;if(t.matches("input,textarea,select,[contenteditable=true]"))return;if(e.code==="Space"){e.preventDefault();setSpaceHeld(true);return}',"space keydown")
 s=replace_once(s,'addEventListener("keydown",onKey);return()=>removeEventListener("keydown",onKey)},[layer?.id,scene.id,cropEdit,formatId]);','const onUp=(e:KeyboardEvent)=>{if(e.code==="Space")setSpaceHeld(false)};addEventListener("keydown",onKey);addEventListener("keyup",onUp);return()=>{removeEventListener("keydown",onKey);removeEventListener("keyup",onUp)}},[layer?.id,scene.id,cropEdit,formatId]);',"space keyup")
 
@@ -34,7 +34,7 @@ s=replace_once(s,'formatOverrides:responsive.formatOverrides,updatedAt:new Date(
 s=replace_once(s,'},[scenes,responsive,campaign?.id]);','},[scenes,responsive,loopPlayback,campaign?.id]);',"loop save dependency")
 
 # Real 1:1 artboard, hand tool, true resizable timeline.
-s=replace_once(s,'<section className="bm-center">','<section className="bm-center" style={{gridTemplateRows:`48px minmax(0,1fr) 8px ${timelineHeight}px`}}>',"resizable center")
+s=replace_once(s,'<section className="bm-center">','<section className="bm-center" style={{"--bm-timeline-height":`${timelineHeight}px`} as React.CSSProperties}>',"resizable center")
 s=replace_once(s,'<div className="bm-stage" onDragOver=','<div ref={stageRef} className={`bm-stage ${spaceHeld||tool==="hand"?"pan-ready":""}`} onPointerDown={e=>{if(spaceHeld||tool==="hand")beginStagePan(e);else if(!(e.target as HTMLElement).closest?.(".bm-canvas")){setLayerId("");setEditingTextId(null)}}} onDragOver=',"stage pan deselect")
 s=replace_once(s,'<div className="bm-tools"><button className={tool==="select"?"active":""}','<div className="bm-tools"><button title="Select · V" className={tool==="select"?"active":""}',"select title")
 s=replace_once(s,'</button><button disabled={!canCreate} className={tool==="text"?"active":""}','</button><button title="Hand · hold Space" className={tool==="hand"?"active":""} onClick={()=>setTool("hand")}><Hand size={16}/></button><button disabled={!canCreate} className={tool==="text"?"active":""}',"hand button")
@@ -101,6 +101,25 @@ if marker not in css:
 .bm-track .bm-timing-bar{top:3px!important;height:16px!important}
 .bm-track-row>small{font-size:10px!important}
 @media(max-width:1250px){.bm-workspace{grid-template-columns:230px minmax(500px,1fr) 270px}.bm-track-row{grid-template-columns:120px minmax(200px,1fr) 96px}}
+'''
+    css_path.write_text(css)
+# Timeline layout correction: keep the panel bottom-anchored, give every layer a real row,
+# and prevent rows from sliding underneath the controls/ruler.
+css = css_path.read_text()
+marker3 = "/* timeline-layout-fix-2026-09-18 */"
+if marker3 not in css:
+    css += r'''
+/* timeline-layout-fix-2026-09-18 */
+.bm-center{height:100%;grid-template-rows:48px minmax(0,1fr) 8px var(--bm-timeline-height,240px)}
+.bm-timeline-resizer{align-self:stretch}
+.bm-timeline{display:grid;grid-template-rows:38px 30px minmax(0,1fr);align-content:stretch;overflow:hidden;padding:0 14px 14px;background:#10141a}
+.bm-timeline-head{position:relative;top:auto;height:38px;min-height:38px;border-bottom:1px solid var(--bm-line);background:#10141a}
+.bm-scene-ruler{position:relative;top:auto;height:30px;min-height:30px;margin:0;padding:5px 110px 5px 150px;background:#10141a}
+.bm-track-list{min-height:0;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;gap:5px;padding:5px 0 18px;scrollbar-gutter:stable}
+.bm-track-row{flex:0 0 38px;height:38px;min-height:38px;grid-template-columns:150px minmax(240px,1fr) 110px;padding:0 8px}
+.bm-track{height:24px!important}
+.bm-track .bm-timing-bar{top:3px!important;height:16px!important}
+@media(max-width:1250px){.bm-scene-ruler{padding-left:120px}.bm-track-row{grid-template-columns:120px minmax(200px,1fr) 96px}}
 '''
     css_path.write_text(css)
 print("EDITOR_UX_PASS_V2_OK")
