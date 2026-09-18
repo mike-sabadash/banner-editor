@@ -18,7 +18,7 @@ s=replace_once(s,'onInput={e=>{if(editingTextId!==item.id)return;const el=e.curr
 # Hand tool + Space panning.
 s=replace_once(s,'Grid3X3,Image as ImageIcon,Layers3,Magnet,MousePointer2','Grid3X3,Hand,Image as ImageIcon,Layers3,Magnet,MousePointer2',"hand import")
 s=replace_once(s,'type Tool="select"|"text"|"image"|"shape";','type Tool="select"|"hand"|"text"|"image"|"shape";',"hand tool")
-s=replace_once(s,'[borderColor,setBorderColor]=useState("#000000"),[dragLayerId,setDragLayerId]=useState<string|null>(null);','[borderColor,setBorderColor]=useState("#000000"),[dragLayerId,setDragLayerId]=useState<string|null>(null),[timelineHeight,setTimelineHeight]=useState(()=>Math.min(620,Math.max(390,170+(scenes?.[0]?.layers?.length??4)*48))),[spaceHeld,setSpaceHeld]=useState(false),[loopPlayback,setLoopPlayback]=useState(campaign?.creativeDocument?.loop!==false);',"interaction state")
+s=replace_once(s,'[borderColor,setBorderColor]=useState("#000000"),[dragLayerId,setDragLayerId]=useState<string|null>(null);','[borderColor,setBorderColor]=useState("#000000"),[dragLayerId,setDragLayerId]=useState<string|null>(null),[timelineHeight,setTimelineHeight]=useState(()=>Math.min(460,Math.max(250,112+(scenes?.[0]?.layers?.length??4)*42))),[spaceHeld,setSpaceHeld]=useState(false),[loopPlayback,setLoopPlayback]=useState(campaign?.creativeDocument?.loop!==false);',"interaction state")
 s=replace_once(s,'const canvasRef=useRef<HTMLDivElement>(null),imageInput=','const canvasRef=useRef<HTMLDivElement>(null),stageRef=useRef<HTMLDivElement>(null),imageInput=',"stage ref")
 s=replace_once(s,'const beginMove=(e:ReactPointerEvent,item:ReturnType<typeof resolveSceneLayers>[number])=>{if(!editable||item.role==="background"||tool!=="select")return;','const beginMove=(e:ReactPointerEvent,item:ReturnType<typeof resolveSceneLayers>[number])=>{if(spaceHeld||tool==="hand")return;if(!editable||item.role==="background"||tool!=="select")return;',"pan bypass")
 s=replace_once(s,' const beginResize=',' const beginStagePan=(e:ReactPointerEvent)=>{if(!(spaceHeld||tool==="hand")||!stageRef.current)return;e.preventDefault();const stage=stageRef.current,sx=e.clientX,sy=e.clientY,left=stage.scrollLeft,top=stage.scrollTop;stage.classList.add("is-panning");const move=(ev:PointerEvent)=>{stage.scrollLeft=left-(ev.clientX-sx);stage.scrollTop=top-(ev.clientY-sy)},up=()=>{stage.classList.remove("is-panning");removeEventListener("pointermove",move);removeEventListener("pointerup",up)};addEventListener("pointermove",move);addEventListener("pointerup",up)};\n const beginTimelineResize=(e:ReactPointerEvent)=>{e.preventDefault();e.stopPropagation();const handle=e.currentTarget as HTMLElement,sy=e.clientY,start=timelineHeight,pid=e.pointerId;handle.setPointerCapture?.(pid);handle.classList.add("dragging");const move=(ev:PointerEvent)=>{if(ev.pointerId!==pid)return;ev.preventDefault();setTimelineHeight(clamp(start+(sy-ev.clientY),220,Math.max(320,window.innerHeight-120)))},up=(ev:PointerEvent)=>{if(ev.pointerId!==pid)return;handle.classList.remove("dragging");try{handle.releasePointerCapture?.(pid)}catch{};handle.removeEventListener("pointermove",move);handle.removeEventListener("pointerup",up);handle.removeEventListener("pointercancel",up)};handle.addEventListener("pointermove",move);handle.addEventListener("pointerup",up);handle.addEventListener("pointercancel",up)};\n const setSceneDuration=(value:number)=>{const duration=Math.max(200,Math.round(value));checkpoint();setScenes(all=>all.map(s=>s.id===scene.id?{...s,durationMs:duration,layers:s.layers.map(l=>({...l,startMs:Math.min(l.startMs,Math.max(0,duration-40)),endMs:Math.min(Math.max(l.endMs,Math.min(duration,40)),duration)}))}:s))};\n const beginResize=',"pan timeline duration")
@@ -214,5 +214,29 @@ if marker8 not in css:
 .bm-timeline{position:relative!important;grid-row:4!important;left:auto!important;right:auto!important;bottom:auto!important;height:auto!important;min-height:0!important;max-height:none!important;width:100%!important;z-index:70!important}
 .bm-canvas-frame{min-width:calc(100% + 520px)!important;min-height:calc(100% + 280px)!important}
 '''
+    css_path.write_text(css)
+# Timeline compact sizing + time ruler + playback playhead.
+src=p.read_text()
+old='<div className="bm-scene-ruler">{scenes.map(s=><button key={s.id} className={s.id===scene.id?"active":""} style={{width:`${s.durationMs/totalDuration*100}%`}} onClick={()=>{setSceneId(s.id);setLayerId(s.layers[0]?.id||"")}}>{s.name}</button>)}</div><div className="bm-track-list">'
+new='<div className="bm-time-ruler">{Array.from({length:Math.max(2,Math.ceil(scene.durationMs/500)+1)},(_,i)=>{const ms=Math.min(i*500,scene.durationMs),left=ms/scene.durationMs*100;return <span key={ms} style={{left:`${left}%`}}><i/>{ms===0?"0":`${(ms/1000).toFixed(ms%1000?1:0)}s`}</span>})}</div><div className="bm-scene-ruler">{scenes.map(s=><button key={s.id} className={s.id===scene.id?"active":""} style={{width:`${s.durationMs/totalDuration*100}%`}} onClick={()=>{setSceneId(s.id);setLayerId(s.layers[0]?.id||"")}}>{s.name}</button>)}</div><div className="bm-track-list"><i className="bm-playhead" style={{left:`calc(150px + (100% - 260px) * ${clamp(scenePlayMs/Math.max(1,scene.durationMs),0,1)})`}}/>'
+if old not in src: raise SystemExit("timeline ruler insertion point missing")
+src=src.replace(old,new,1)
+p.write_text(src)
+css=css_path.read_text()
+marker9="/* timeline-ruler-playhead-2026-09-18 */"
+if marker9 not in css:
+    css += r"""
+/* timeline-ruler-playhead-2026-09-18 */
+.bm-center{grid-template-rows:48px minmax(0,1fr) 6px var(--bm-timeline-height,286px)!important}
+.bm-timeline-resizer{height:6px!important;min-height:6px!important;background:transparent!important;border:0!important;border-top:1px solid #343b47!important}
+.bm-timeline-resizer:before{inset:-5px 0!important}
+.bm-timeline-resizer:after{top:1px!important;width:54px!important;height:3px!important;background:#5b6676!important}
+.bm-timeline{grid-template-rows:42px 24px 30px minmax(0,1fr)!important}
+.bm-time-ruler{position:relative;height:24px;min-height:24px;margin:0 110px 0 150px;border-bottom:1px solid #262d37;color:#7f8998;font-size:9px;font-variant-numeric:tabular-nums}
+.bm-time-ruler span{position:absolute;top:0;transform:translateX(-50%);height:24px;white-space:nowrap}
+.bm-time-ruler span:first-child{transform:none}.bm-time-ruler i{display:block;width:1px;height:7px;margin:0 auto 2px;background:#596373}
+.bm-track-list{position:relative!important}.bm-playhead{position:absolute;top:0;bottom:0;width:1px;background:#ff6258;z-index:20;pointer-events:none;transform:translateX(-.5px)}
+.bm-playhead:before{content:"";position:absolute;top:-1px;left:-4px;width:9px;height:6px;background:#ff6258;clip-path:polygon(0 0,100% 0,50% 100%)}
+"""
     css_path.write_text(css)
 print("EDITOR_UX_PASS_V2_OK")
