@@ -300,4 +300,42 @@ if marker11 not in css:
 @media(max-width:1250px){.bm-time-ruler{padding-left:140px!important;padding-right:116px!important}.bm-playhead{left:calc(140px + (100% - 256px) * var(--playhead-progress,0))!important}}
 """
     css_path.write_text(css)
+# Motion v2: independent IN/OUT presets with draggable duration handles on each layer track.
+src=p.read_text()
+src=src.replace('const beginTimelineEdit=(e:ReactPointerEvent,item:SceneLayer,mode:"start"|"end"|"move")=>{','const beginTimelineEdit=(e:ReactPointerEvent,item:SceneLayer,mode:"start"|"end"|"move"|"motion-in"|"motion-out")=>{')
+old='if(mode==="start")patchLayerById(item.id,{startMs:Math.min(toMs(p.clientX),end-40)},false);else if(mode==="end")patchLayerById(item.id,{endMs:Math.max(toMs(p.clientX),start+40)},false);else{'
+new='if(mode==="start")patchLayerById(item.id,{startMs:Math.min(toMs(p.clientX),end-40)},false);else if(mode==="end")patchLayerById(item.id,{endMs:Math.max(toMs(p.clientX),start+40)},false);else if(mode==="motion-in"){const d=clamp(toMs(p.clientX)-start,40,Math.max(40,end-start-(item.outMotionDurationMs??0)));patchLayerById(item.id,{motionDurationMs:Math.round(d)},false)}else if(mode==="motion-out"){const d=clamp(end-toMs(p.clientX),40,Math.max(40,end-start-item.motionDurationMs));patchLayerById(item.id,{outMotionDurationMs:Math.round(d)},false)}else{'
+if old not in src: raise SystemExit("timeline edit branch missing")
+src=src.replace(old,new,1)
+old='<b className="bm-trim-handle end" onPointerDown={e=>beginTimelineEdit(e,l,"end")}/></i>'
+new='<b className="bm-trim-handle end" onPointerDown={e=>beginTimelineEdit(e,l,"end")}/><b className="bm-motion-duration-handle in" title="IN animation duration" style={{left:`${clamp(l.motionDurationMs/Math.max(1,l.endMs-l.startMs)*100,0,100)}%`}} onPointerDown={e=>beginTimelineEdit(e,l,"motion-in")}/><b className="bm-motion-duration-handle out" title="OUT animation duration" style={{right:`${clamp((l.outMotionDurationMs??0)/Math.max(1,l.endMs-l.startMs)*100,0,100)}%`}} onPointerDown={e=>beginTimelineEdit(e,l,"motion-out")}/></i>'
+if old not in src: raise SystemExit("track handles missing")
+src=src.replace(old,new,1)
+old='<div><small>MOTION PRESET</small><h3>{layer.motion}</h3><p>Click a preset or drag it directly onto an object on the Master.</p></div><div className="bm-preset-grid">{PRESETS.map(p=><button key={p.id} draggable className={layer.motion===p.id?"active":""} onClick={()=>patchLayer({motion:p.id})} onDragStart={e=>e.dataTransfer.setData("application/x-bm-motion",p.id)}><span>{p.glyph}</span><b>{p.label}</b></button>)}</div><div className="bm-two"><label><small>DURATION · MS</small><input type="number" value={layer.motionDurationMs} onChange={e=>patchLayer({motionDurationMs:Number(e.target.value)})}/></label><label><small>EASING</small>'
+new='<div><small>IN MOTION</small><h3>{layer.motion}</h3><p>Choose how the layer enters. Drag the inner left handle on its timeline bar to set duration.</p></div><div className="bm-preset-grid">{PRESETS.map(p=><button key={p.id} draggable className={layer.motion===p.id?"active":""} onClick={()=>patchLayer({motion:p.id})} onDragStart={e=>e.dataTransfer.setData("application/x-bm-motion",p.id)}><span>{p.glyph}</span><b>{p.label}</b></button>)}</div><div className="bm-motion-out-title"><small>OUT MOTION</small><h3>{layer.outMotion??"none"}</h3><p>Choose how the layer leaves. Drag the inner right handle on its timeline bar to set duration.</p></div><div className="bm-preset-grid">{PRESETS.map(p=><button key={`out-${p.id}`} className={(layer.outMotion??"none")===p.id?"active":""} onClick={()=>patchLayer({outMotion:p.id,outMotionDurationMs:p.id==="none"?0:(layer.outMotionDurationMs||320)})}><span>{p.glyph}</span><b>{p.label}</b></button>)}</div><div className="bm-two"><label><small>IN · MS</small><input type="number" value={layer.motionDurationMs} onChange={e=>patchLayer({motionDurationMs:Number(e.target.value)})}/></label><label><small>OUT · MS</small><input type="number" value={layer.outMotionDurationMs??0} onChange={e=>patchLayer({outMotionDurationMs:Number(e.target.value)})}/></label></div><div className="bm-two"><label><small>EASING</small>'
+if old not in src: raise SystemExit("motion panel missing")
+src=src.replace(old,new,1)
+# close the now-single easing label grid by replacing its original tail
+src=src.replace('</select></label></div></div>}</aside></main>','</select></label></div></div>}</aside></main>',1)
+p.write_text(src)
+
+model=model_path.read_text() if (model_path:=Path("src/web-scene/sceneModel.ts")).exists() else ""
+model=model.replace('motion:MotionPreset;motionDurationMs:number;easing:', 'motion:MotionPreset;motionDurationMs:number;outMotion?:MotionPreset;outMotionDurationMs?:number;easing:')
+model=model.replace('motion:MotionPreset;motionDurationMs:number;easing:SceneLayer["easing"];', 'motion:MotionPreset;motionDurationMs:number;outMotion?:MotionPreset;outMotionDurationMs?:number;easing:SceneLayer["easing"];')
+model=model.replace('motionDurationMs:layer.motionDurationMs,easing:layer.easing', 'motionDurationMs:layer.motionDurationMs,outMotion:layer.outMotion,outMotionDurationMs:layer.outMotionDurationMs,easing:layer.easing')
+model_path.write_text(model)
+
+css=css_path.read_text()
+marker12="/* motion-in-out-handles-2026-09-19 */"
+if marker12 not in css:
+    css += r"""
+/* motion-in-out-handles-2026-09-19 */
+.bm-motion-duration-handle{position:absolute;top:-3px;width:9px;height:20px;border:1px solid #9aa8ff;background:#111722;border-radius:3px;cursor:ew-resize;z-index:8;transform:translateX(-50%);box-shadow:0 0 0 1px rgba(0,0,0,.35)}
+.bm-motion-duration-handle:after{content:"";position:absolute;top:5px;left:3px;width:1px;height:8px;background:#aab4c6}
+.bm-motion-duration-handle.out{transform:translateX(50%)}
+.bm-track-row:not(.active) .bm-motion-duration-handle{opacity:.7}
+.bm-track-row:hover .bm-motion-duration-handle,.bm-track-row.active .bm-motion-duration-handle{opacity:1}
+.bm-motion-out-title{margin-top:14px;padding-top:14px;border-top:1px solid #2a3039}
+"""
+    css_path.write_text(css)
 print("EDITOR_UX_PASS_V2_OK")
