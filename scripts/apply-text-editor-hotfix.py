@@ -173,4 +173,31 @@ if marker6 not in css:
 .bm-track-list{height:100%!important;min-height:0!important;overflow-y:auto!important}
 '''
     css_path.write_text(css)
+# Timeline visual polish + two-axis stage pan.
+src=p.read_text()
+src=replace_once(src,
+ 'const stage=stageRef.current,sx=e.clientX,sy=e.clientY,left=stage.scrollLeft,top=stage.scrollTop;stage.classList.add("is-panning");const move=(ev:PointerEvent)=>{stage.scrollLeft=left-(ev.clientX-sx);stage.scrollTop=top-(ev.clientY-sy)}',
+ 'const stage=stageRef.current,sx=e.clientX,sy=e.clientY,left=stage.scrollLeft,top=stage.scrollTop;stage.classList.add("is-panning");const move=(ev:PointerEvent)=>{stage.scrollLeft=left-(ev.clientX-sx);stage.scrollTop=top-(ev.clientY-sy);stage.dataset.panX=String(stage.scrollLeft);stage.dataset.panY=String(stage.scrollTop)}',
+ "two axis pan")
+p.write_text(src)
+css=css_path.read_text()
+marker7="/* timeline-polish-pan-2026-09-18 */"
+if marker7 not in css:
+    css += r'''
+/* timeline-polish-pan-2026-09-18 */
+.bm-center{padding-bottom:calc(var(--bm-timeline-height,390px) + 14px)!important}
+.bm-stage{overflow:scroll!important;scrollbar-gutter:stable both-edges;overscroll-behavior:contain}
+.bm-canvas-frame{min-width:calc(100% + 520px)!important;min-height:calc(100% + 280px)!important;padding:56px 260px!important;box-sizing:border-box}
+.bm-timeline-resizer{bottom:var(--bm-timeline-height,390px)!important}
+.bm-timeline{border-top:0!important}
+.bm-timeline-head{padding:0 8px!important}
+.bm-scene-ruler{padding:5px 110px 5px 150px!important}
+.bm-track-list{gap:2px!important;padding:4px 0 10px!important}
+.bm-track-row{height:40px!important;min-height:40px!important;flex-basis:40px!important;padding:0 8px!important;border-radius:3px!important}
+.bm-track-row:hover{background:#151a21!important}
+.bm-track{height:20px!important;border-radius:5px!important}
+.bm-track .bm-timing-bar{top:3px!important;height:14px!important;border-radius:3px!important}
+.bm-timing-handle{width:7px!important;border-radius:2px!important}
+'''
+    css_path.write_text(css)
 print("EDITOR_UX_PASS_V2_OK")
