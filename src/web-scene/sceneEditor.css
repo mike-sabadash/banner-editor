@@ -32,16 +32,18 @@
   right:280px!important;
   bottom:0!important;
   width:auto!important;
-  height:var(--bm-timeline-height,360px)!important;
-  min-height:360px!important;
-  max-height:620px!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
   z-index:55!important;
+  grid-template-rows:42px 30px auto!important;
+  align-content:start!important;
 }
 .bm-center>.bm-timeline-resizer{
   position:fixed!important;
   left:216px!important;
   right:280px!important;
-  bottom:calc(var(--bm-timeline-height,360px) - 6px)!important;
+  bottom:calc(72px + 7px + (var(--bm-visible-track-count, 4) * 36px) + 8px)!important;
   z-index:70!important;
 }
 .bm-center>.bm-stage{padding-bottom:0!important;box-sizing:border-box}
