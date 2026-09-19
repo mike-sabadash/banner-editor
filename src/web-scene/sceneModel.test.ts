@@ -1,0 +1,10 @@
+import {describe,expect,it} from "vitest";
+import {DEFAULT_SCENES,RU_CORE_10,adaptBox,familyFor,generateScene,motionVector,templateFor} from "./sceneModel";
+describe("scene responsive model",()=>{
+  it("defines the Eurasia display catalog with the core formats",()=>{expect(RU_CORE_10.length).toBeGreaterThanOrEqual(10);expect(RU_CORE_10.map(f=>f.id)).toEqual(expect.arrayContaining(["240x400","300x250","300x300","300x500","300x600","160x600","728x90","970x250","320x50","320x100"]))});
+  it("classifies representative aspect ratios",()=>{expect(familyFor(320,50)).toBe("micro-strip");expect(familyFor(728,90)).toBe("strip");expect(familyFor(970,250)).toBe("wide");expect(familyFor(300,600)).toBe("tall");expect(familyFor(240,400)).toBe("portrait");expect(familyFor(300,250)).toBe("rectangle")});
+  it("keeps hero and text in separate strip zones",()=>{const headline=templateFor("strip","headline"),hero=templateFor("strip","hero");expect(headline.x+headline.w).toBeLessThanOrEqual(hero.x)});
+  it("turns directional motion into relative vectors",()=>{expect(motionVector("from-right",{x:50,y:5,w:25,h:90}).x).toBeGreaterThan(0);expect(motionVector("from-bottom",{x:5,y:50,w:80,h:30}).y).toBeGreaterThan(0)});
+  it("maps master geometry inside the semantic target zone",()=>{const hero=DEFAULT_SCENES[0].layers.find(layer=>layer.role==="hero")!,target=templateFor("wide","hero"),mapped=adaptBox(hero,"wide");expect(mapped.x).toBeGreaterThanOrEqual(target.x);expect(mapped.y).toBeGreaterThanOrEqual(target.y);expect(mapped.x+mapped.w).toBeLessThanOrEqual(target.x+target.w+.001);expect(mapped.y+mapped.h).toBeLessThanOrEqual(target.y+target.h+.001)});
+  it("suppresses optional copy in micro strips but retains core content",()=>{const scene=DEFAULT_SCENES[0],format=RU_CORE_10.find(f=>f.id==="320x50")!,generated=generateScene(scene,format);expect(generated.layers.some(l=>l.role==="copy")).toBe(false);expect(generated.layers.some(l=>l.role==="headline")).toBe(true);expect(generated.layers.some(l=>l.role==="hero")).toBe(true)});
+});

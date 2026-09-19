@@ -1,0 +1,54 @@
+/* Bannermatic Creative Editor — interaction hierarchy layer.
+   Keep inheritance mechanics, remove implementation concepts from the primary UI. */
+
+/* Responsive/override controls are progressive disclosure, not a permanent console. */
+.bm-responsive-controls,.bm-responsive-bar,.bm-override-panel,.bm-individual-overrides{display:none!important}
+
+/* Canvas-first hierarchy. */
+.bm-workspace{grid-template-columns:224px minmax(560px,1fr) 288px!important}
+.bm-left{padding:12px 8px!important}
+.bm-right{padding-left:12px!important;padding-right:12px!important}
+.bm-center{min-width:0}
+.bm-stagebar{min-height:44px!important;padding:0 12px!important}
+.bm-stage{padding:32px!important}
+.bm-canvas-frame{padding:40px!important}
+
+/* Format selector carries state; implementation-level master actions stay secondary. */
+.bm-stagebar select{max-width:220px;font-weight:520}
+.bm-stagebar select:focus{outline:none}
+.bm-stage-controls .bm-button:not(.primary){background:transparent!important;border-color:rgba(255,255,255,.1)!important}
+
+/* The old master CTA is not a primary editing primitive. Family management remains in Formats/dialogs. */
+.bm-stage-controls>.bm-button:first-child{display:none!important}
+
+/* Remove card-on-card visual noise from navigation. */
+.bm-scene,.bm-layer{box-shadow:none!important}
+.bm-scene:not(.active),.bm-layer:not(.active){border-color:transparent!important;background:transparent!important}
+.bm-scene.active,.bm-layer.active{background:#202124!important;border-color:transparent!important}
+
+/* Figma-like contextual inspector: quiet sections and inputs. */
+.bm-inspector{gap:0!important}
+.bm-inspector>div,.bm-motion-panel>div{padding:12px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.bm-inspector input,.bm-inspector select,.bm-inspector textarea{background:#1b1c1e!important;border-color:transparent!important;border-radius:5px!important}
+.bm-inspector input:hover,.bm-inspector select:hover,.bm-inspector textarea:hover{border-color:rgba(255,255,255,.12)!important}
+.bm-inspector input:focus,.bm-inspector select:focus,.bm-inspector textarea:focus{border-color:#0d99ff!important;box-shadow:0 0 0 1px #0d99ff!important}
+
+/* Tool chrome stays out of the artwork. */
+.bm-tools{top:12px!important;padding:3px!important;border-radius:8px!important;background:#1f2023!important}
+.bm-tools button{width:28px!important;height:28px!important}
+.bm-object.selected{outline-color:#0d99ff!important}
+.bm-handle{border-color:#0d99ff!important}
+
+/* Timeline is secondary: presence/timing, not a competing editor. */
+.bm-timeline{min-height:116px!important;padding:8px 12px!important;background:#141517!important}
+.bm-track-row{height:20px!important}
+
+/* One primary accent. */
+.bm-button.primary{background:#0d99ff!important;border-color:#0d99ff!important;box-shadow:none!important}
+.bm-button.primary:hover{background:#14aeff!important}
+.bm-view-control.active{background:rgba(13,153,255,.14)!important;border-color:rgba(13,153,255,.45)!important;color:#b9e5ff!important}
+
+/* Advanced inheritance UI remains available through dialogs/drawers only. */
+.bm-master-dialog,.bm-format-drawer{z-index:80}
+
+@media(max-width:1100px){.bm-workspace{grid-template-columns:196px minmax(420px,1fr) 260px!important}.bm-stage{padding:20px!important}.bm-canvas-frame{padding:24px!important}}

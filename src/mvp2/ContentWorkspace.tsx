@@ -1,0 +1,39 @@
+import {useMemo,useState} from 'react';
+import {AlertTriangle,Check,Languages,Plus} from 'lucide-react';
+import {api} from './api';
+import type {Campaign,ContentVariant} from './domain';
+
+const missingFields=(v:ContentVariant)=>[['headline',v.headline],['cta',v.cta],['legal',v.legal]].filter(([,value])=>!String(value).trim()).map(([key])=>key);
+
+export default function ContentWorkspace({campaign,ru,canEdit,onUpdated,onError}:{campaign:Campaign;ru:boolean;canEdit:boolean;onUpdated:(c:Campaign)=>void;onError:(s:string)=>void}){
+ const [items,setItems]=useState<ContentVariant[]>(campaign.contentVariants||[]),[placements,setPlacements]=useState(campaign.placements),[selectedId,setSelectedId]=useState(campaign.contentVariants?.[0]?.id||''),[busy,setBusy]=useState(false),[saved,setSaved]=useState(false);
+ const selected=items.find(v=>v.id===selectedId)||items[0];
+ const assignmentCount=placements.reduce((sum,p)=>sum+(p.contentVariantIds?.length||0),0);
+ const unassigned=placements.filter(p=>!p.contentVariantIds?.length).length;
+ const incomplete=items.filter(v=>missingFields(v).length).length;
+ const groups=useMemo(()=>{const map=new Map<string,typeof placements>();for(const p of placements)map.set(p.platform,[...(map.get(p.platform)||[]),p]);return [...map.entries()].sort(([a],[b])=>a.localeCompare(b));},[placements]);
+ const edit=(id:string,key:keyof ContentVariant,value:string)=>{setSaved(false);setItems(items.map(v=>v.id===id?{...v,[key]:value}:v))};
+ const save=async()=>{setBusy(true);onError('');try{onUpdated(await api.updateCampaign(campaign.id,{contentVariants:items,placements}));setSaved(true)}catch(e){onError(e instanceof Error?e.message:String(e))}finally{setBusy(false)}};
+ const add=()=>{const next={id:crypto.randomUUID(),name:'Variant '+(items.length+1),language:ru?'ru':'en',headline:'',copy:'',cta:'',legal:''};setItems([...items,next]);setSelectedId(next.id);setSaved(false)};
+ const toggle=(placementId:string,variantId:string)=>{setSaved(false);setPlacements(placements.map(p=>{if(p.id!==placementId)return p;const current=p.contentVariantIds||[],assigned=current.includes(variantId);return {...p,contentVariantIds:assigned?current.filter(id=>id!==variantId):[...current,variantId]}}))};
+
+ return <section className="ne-page">
+  <div className="ne-page-head"><div><div className="ne-kicker">Content Matrix</div><h1>{ru?'Контент кампании':'Campaign content'}</h1><p>{ru?'Управляйте вариантами текста, полнотой и назначениями placements в одном workspace.':'Manage copy variants, completeness and placement assignments in one workspace.'}</p></div><button className="ne-button primary" disabled={!canEdit||busy||!items.length} onClick={()=>void save()}>{busy?'…':ru?'Сохранить изменения':'Save changes'}</button></div>
+  {saved&&<div className="ne-notice" role="status"><Check size={15}/><span>{ru?'Сохранено. Проверьте Creative и опубликуйте изменения.':'Saved. Review Creative and publish your changes.'}</span></div>}
+  <div className="ne-content-summary"><div><strong>{items.length}</strong><span>{ru?'вариантов':'variants'}</span></div><div className={incomplete?'warning':''}><strong>{incomplete}</strong><span>{ru?'неполных':'incomplete'}</span></div><div className={unassigned?'warning':''}><strong>{unassigned}</strong><span>{ru?'placements без контента':'unassigned placements'}</span></div><div><strong>{assignmentCount}</strong><span>deliverables</span></div></div>
+  <div className="ne-content-workbench">
+   <aside className="ne-variant-list"><header><div><b>{ru?'Варианты':'Variants'}</b><span>{ru?'Язык и полнота':'Language & completeness'}</span></div><button aria-label={ru?'Добавить вариант':'Add content variant'} disabled={!canEdit||busy} onClick={add}><Plus size={14}/></button></header>
+    <div>{items.map(v=>{const missing=missingFields(v);return <button key={v.id} className={v.id===selected?.id?'selected':''} onClick={()=>setSelectedId(v.id)}><span className="ne-language-tag">{v.language.toUpperCase()}</span><span><b>{v.name||(ru?'Без названия':'Untitled variant')}</b><small>{missing.length?(ru?'Нет: '+missing.join(', '):'Missing: '+missing.join(', ')):(ru?'Все поля заполнены':'Complete')}</small></span>{missing.length?<AlertTriangle size={13}/>:<Check size={13}/>}</button>})}</div>
+    {!items.length&&<div className="ne-variant-empty"><Languages size={18}/><b>{ru?'Вариантов пока нет':'No variants yet'}</b><span>{ru?'Добавьте первый текстовый вариант.':'Add the first copy variant.'}</span><button className="ne-button" disabled={!canEdit} onClick={add}><Plus size={13}/>{ru?'Добавить':'Add variant'}</button></div>}
+   </aside>
+   <div className="ne-content-inspector">{selected?<fieldset disabled={!canEdit||busy}><header><div><span className="ne-language-tag">{selected.language.toUpperCase()}</span><div><b>{selected.name||(ru?'Без названия':'Untitled variant')}</b><small>{ru?'Редактор выбранного варианта':'Selected variant inspector'}</small></div></div><span className={'ne-content-completeness '+(missingFields(selected).length?'warning':'ready')}>{missingFields(selected).length?(ru?missingFields(selected).length+' поля не заполнено':missingFields(selected).length+' fields missing'):(ru?'Готово':'Complete')}</span></header><div className="ne-inspector-fields">{(['name','language','headline','copy','cta','legal'] as const).map(key=><label className={'ne-inspector-field '+(key==='copy'||key==='legal'?'wide':'')} key={key}><span>{({name:ru?'Название':'Name',language:ru?'Язык':'Language',headline:'Headline',copy:ru?'Дополнительный текст':'Supporting copy',cta:'CTA',legal:ru?'Юридический текст':'Legal'})[key]}</span>{key==='language'?<select value={selected[key]} onChange={e=>edit(selected.id,key,e.target.value)}><option value="ru">RU</option><option value="en">EN</option></select>:<textarea rows={key==='copy'||key==='legal'?3:2} value={selected[key]} onChange={e=>edit(selected.id,key,e.target.value)}/>} {(key==='headline'||key==='cta'||key==='legal')&&!selected[key].trim()&&<small>{ru?'Нужно заполнить':'Required for completeness'}</small>}</label>)}</div></fieldset>:<div className="ne-inspector-empty">{ru?'Выберите или добавьте вариант.':'Select or add a variant.'}</div>}</div>
+  </div>
+  <section className="ne-assignment-section"><header><div><div className="ne-kicker">Assignments</div><h2>{ru?'Матрица контента':'Content assignment matrix'}</h2><p>{ru?'Строка — placement, колонка — вариант, отметка — отдельный deliverable.':'Each row is a placement, each column is a variant, each assignment is one deliverable.'}</p></div><span>{assignmentCount} {ru?'назначений':'assignments'}</span></header>
+   <div className="ne-assignment-wrap"><table className="ne-assignment-matrix"><thead><tr><th>{ru?'Размещение':'Placement'}</th>{items.map(v=><th key={v.id}><span>{v.language.toUpperCase()}</span><b>{v.name}</b></th>)}</tr></thead><tbody>{groups.map(([platform,rows])=><AssignmentGroup key={platform} platform={platform} rows={rows} items={items} canEdit={canEdit&&!busy} toggle={toggle}/>)}</tbody></table>{!placements.length&&<div className="ne-plan-no-results"><b>{ru?'Сначала добавьте медиаплан':'Add a media plan first'}</b></div>}</div>
+  </section>
+ </section>;
+}
+
+function AssignmentGroup({platform,rows,items,canEdit,toggle}:{platform:string;rows:Campaign['placements'];items:ContentVariant[];canEdit:boolean;toggle:(placementId:string,variantId:string)=>void}){
+ return <><tr className="ne-assignment-group"><th colSpan={Math.max(1,items.length+1)}>{platform}</th></tr>{rows.map(p=><tr key={p.id}><td><b>{p.placement}</b><small>{p.width}×{p.height}</small></td>{items.map(v=>{const checked=p.contentVariantIds?.includes(v.id)||false;return <td key={v.id}><button className={'ne-assignment-cell '+(checked?'assigned':'')} aria-label={p.platform+' '+p.placement+': '+v.name} aria-pressed={checked} disabled={!canEdit} onClick={()=>toggle(p.id,v.id)}>{checked?<Check size={14}/>:null}</button></td>})}</tr>)}</>;
+}

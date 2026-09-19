@@ -19,6 +19,7 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
+    server: {host: "0.0.0.0", allowedHosts: ["terminal.local"], proxy: {"/api": {target: env.BANNERMATIC_DEV_GATEWAY || process.env.BANNERMATIC_DEV_GATEWAY || "http://127.0.0.1:8791", changeOrigin: true}}},
     preview: {
       allowedHosts: ["banners.rechord.online"],
     },

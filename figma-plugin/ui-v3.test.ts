@@ -7,7 +7,7 @@ const controller=readFileSync(new URL("./code-v8.js",import.meta.url),"utf8");
 const gateway=readFileSync(new URL("../server/openrouterGateway.mjs",import.meta.url),"utf8");
 const kb=readFileSync(new URL("../server/ttKnowledgeBase.mjs",import.meta.url),"utf8");
 const service=readFileSync(new URL("../server/ttKnowledgeService.mjs",import.meta.url),"utf8");
-const manifest=JSON.parse(readFileSync(new URL("./manifest.json",import.meta.url),"utf8"));
+const manifest=JSON.parse(readFileSync(new URL("./manifest-legacy.json",import.meta.url),"utf8"));
 
 function compile(source:string,filename:string){try{new vm.Script(source,{filename});}catch(error){const detail=error instanceof Error?(error.stack||error.message):String(error);throw new Error(`Syntax check failed for ${filename}\n${detail}`)}}
 
@@ -27,5 +27,5 @@ describe("Figma campaign + TT Knowledge contract",()=>{
   it("keeps local XLSX parsing and explicit PDF AI path",()=>{for(const x of ["async function parseXlsx(file)","readAsDataURL(d.file)","DecompressionStream('deflate-raw')"])expect(ui).toContain(x)});
   it("does not expose OpenRouter key in UI",()=>{expect(ui).not.toContain("OPENROUTER_API_KEY");expect(gateway).toContain("OPENROUTER_API_KEY")});
   it("keeps linked-format controls",()=>{for(const part of ["content","appearance","motionType","timing","easing","geometry","layout"])expect(ui).toContain(`data-part=\"${part}\"`);expect(controller).toContain("syncSlot")});
-  it("uses unified v14 UI in manifest",()=>{expect(manifest.ui).toBe("ui-v14.html");expect(manifest.main).toBe("code-v8.js");expect(manifest.documentAccess).toBe("dynamic-page");expect(manifest.networkAccess.allowedDomains).toEqual(["https://banners.rechord.online","https://ads.rechord.online"])});
+  it("keeps the former unified v14 build in the explicit legacy manifest",()=>{expect(manifest.ui).toBe("ui-v14.html");expect(manifest.main).toBe("code-v8.js");expect(manifest.documentAccess).toBe("dynamic-page");expect(manifest.networkAccess.allowedDomains).toEqual(["https://banners.rechord.online","https://ads.rechord.online"])});
 });
