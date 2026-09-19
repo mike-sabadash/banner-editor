@@ -31,7 +31,7 @@ checks={
  "timeline scrub":"beginScrub",
  "timeline panel":"bm-timeline-resizer",
  "timeline height":"timelineHeight",
- "time ruler":"bm-time-ruler",
+ "time ruler":"bm-time-ruler",\n "scene timeline tabs":"bm-scene-tabs",\n "scene scoped playhead":"scenePlayMs/Math.max(1,scene.durationMs)",
  "global playhead":"bm-global-playhead",
  "space playback":'e.code==="Space"',
  "play from cursor":"const start=playMs>=totalDuration-1?0:playMs",
