@@ -346,8 +346,8 @@ repl='const playbackMotionStyle=(item:ReturnType<typeof resolveSceneLayers>[numb
 if needle not in src: raise SystemExit("togglePlay anchor missing")
 src=src.replace(needle,repl,1)
 # Apply runtime motion style to each object.
-needle='"--motion-duration":\`\${item.motionDurationMs}ms\`} as React.CSSProperties}'
-repl='"--motion-duration":\`\${item.motionDurationMs}ms\`,...playbackMotionStyle(item)} as React.CSSProperties}'
+needle='"--motion-duration":`${item.motionDurationMs}ms`} as React.CSSProperties}'
+repl='"--motion-duration":`${item.motionDurationMs}ms`,...playbackMotionStyle(item)} as React.CSSProperties}'
 if needle not in src: raise SystemExit("object style anchor missing")
 src=src.replace(needle,repl,1)
 # Ruler supports click/drag scrubbing.
