@@ -33,7 +33,7 @@ checks={
  "space playback":'e.code==="Space"',
  "play from cursor":"const start=playMs>=totalDuration-1?0:playMs",
  "motion inspector":"MotionInspector",
- "bezier handles":"className="handle"",
+ "bezier handles":'className="handle"',
 }
 missing=[name for name,needle in checks.items() if needle not in (motion if name=="bezier handles" else src)]
 if missing:
