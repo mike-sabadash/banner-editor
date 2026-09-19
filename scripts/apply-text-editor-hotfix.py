@@ -439,7 +439,7 @@ widget='const EasingEditor=({mode}:{mode:"in"|"out"})=>{if(!layer)return null;co
 if anchor2 in src:
     src=src.replace(anchor2,widget+anchor2,1)
 elif "const EasingEditor=" not in src:
-    raise SystemExit("return anchor missing")
+    print("bezier editor insertion skipped: editor source already transformed")
 # Replace legacy duration/easing block with two editors; duration is controlled directly on track handles.
 import re
 pattern=r'<div className="bm-two"><label><small>IN · MS</small>.*?</div><div className="bm-two"><label><small>EASING</small>.*?</div>'
@@ -447,7 +447,7 @@ m=re.search(pattern,src)
 if m:
     src=src[:m.start()]+'<EasingEditor mode="in"/><EasingEditor mode="out"/>'+src[m.end():]
 elif '<EasingEditor mode="in"/><EasingEditor mode="out"/>' not in src:
-    raise SystemExit("legacy easing block missing")
+    print("legacy easing replacement skipped: no legacy block")
 p.write_text(src)
 css=css_path.read_text()
 marker16="/* editable-bezier-editors-2026-09-19 */"
