@@ -40,6 +40,8 @@ checks={
  "motion inspector":"MotionInspector",
  "bezier handles":'className="handle"',
  "timeline in out handles":"bm-motion-handle",
+ "quick in out selectors":"bm-motion-quick",
+ "shared motion runtime":"motionFrame(item,scenePlayMs)",
 }
 missing=[name for name,needle in checks.items() if needle not in (motion if name=="bezier handles" else src)]
 if missing:
