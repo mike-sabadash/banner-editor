@@ -322,8 +322,9 @@ src=src.replace('</select></label></div></div>}</aside></main>','</select></labe
 p.write_text(src)
 
 model=model_path.read_text() if (model_path:=Path("src/web-scene/sceneModel.ts")).exists() else ""
-model=model.replace('motion:MotionPreset;motionDurationMs:number;easing:', 'motion:MotionPreset;motionDurationMs:number;outMotion?:MotionPreset;outMotionDurationMs?:number;easing:')
-model=model.replace('motion:MotionPreset;motionDurationMs:number;easing:SceneLayer["easing"];', 'motion:MotionPreset;motionDurationMs:number;outMotion?:MotionPreset;outMotionDurationMs?:number;easing:SceneLayer["easing"];')
+if 'outMotion?:MotionPreset' not in model:
+    model=model.replace('motion:MotionPreset;motionDurationMs:number;easing:', 'motion:MotionPreset;motionDurationMs:number;outMotion?:MotionPreset;outMotionDurationMs?:number;easing:')
+    model=model.replace('motion:MotionPreset;motionDurationMs:number;easing:SceneLayer["easing"];', 'motion:MotionPreset;motionDurationMs:number;outMotion?:MotionPreset;outMotionDurationMs?:number;easing:SceneLayer["easing"];')
 model=model.replace('motionDurationMs:layer.motionDurationMs,easing:layer.easing', 'motionDurationMs:layer.motionDurationMs,outMotion:layer.outMotion,outMotionDurationMs:layer.outMotionDurationMs,easing:layer.easing')
 model_path.write_text(model)
 
