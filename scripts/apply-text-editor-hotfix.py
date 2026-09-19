@@ -436,14 +436,18 @@ src=src.replace('p=easingFn(item.easing)(rawP),v=motionVector', 'p=outP<1?easing
 # Insert reusable interactive editor before return.
 anchor2='return <div className="bm-app">'
 widget='const EasingEditor=({mode}:{mode:"in"|"out"})=>{if(!layer)return null;const name=mode==="in"?layer.easing:(layer.outEasing??layer.easing),curve=mode==="in"?(layer.easingBezier??easingCurve(name)):(layer.outEasingBezier??easingCurve(name)),setCurve=(next:[number,number,number,number])=>patchLayer(mode==="in"?{easing:"cubic-bezier",easingBezier:next}:{outEasing:"cubic-bezier",outEasingBezier:next});const dragPoint=(index:0|1,e:ReactPointerEvent<SVGCircleElement>)=>{e.preventDefault();const svg=e.currentTarget.ownerSVGElement;if(!svg)return;const move=(ev:PointerEvent)=>{const r=svg.getBoundingClientRect(),x=clamp((ev.clientX-r.left)/r.width,0,1),y=clamp(1-(ev.clientY-r.top)/r.height,-.5,1.5),n:[number,number,number,number]=[...curve] as [number,number,number,number];n[index*2]=x;n[index*2+1]=y;setCurve(n)},up=()=>{removeEventListener("pointermove",move);removeEventListener("pointerup",up)};addEventListener("pointermove",move);addEventListener("pointerup",up)};const path="M 0 100 C "+curve[0]*100+" "+(100-curve[1]*100)+", "+curve[2]*100+" "+(100-curve[3]*100)+", 100 0";return <div className="bm-bezier-editor"><div className="bm-bezier-head"><small>{mode.toUpperCase()} EASING</small><select value={name} onChange={e=>patchLayer(mode==="in"?{easing:e.target.value as SceneLayer["easing"]}:{outEasing:e.target.value as SceneLayer["easing"]})}><option value="ease-out">Ease out</option><option value="ease-in">Ease in</option><option value="ease-in-out">Ease in-out</option><option value="linear">Linear</option><option value="cubic-bezier">Custom Bézier</option></select></div><svg viewBox="0 0 100 100" preserveAspectRatio="none"><path className="grid" d="M0 25H100 M0 50H100 M0 75H100 M25 0V100 M50 0V100 M75 0V100"/><path className="guide" d={"M0 100 L"+curve[0]*100+" "+(100-curve[1]*100)+" M100 0 L"+curve[2]*100+" "+(100-curve[3]*100)}/><path className="curve" d={path}/><circle className="point" cx={curve[0]*100} cy={100-curve[1]*100} r="4" onPointerDown={e=>dragPoint(0,e)}/><circle className="point" cx={curve[2]*100} cy={100-curve[3]*100} r="4" onPointerDown={e=>dragPoint(1,e)}/></svg><code>cubic-bezier({curve.map(v=>Number(v.toFixed(2))).join(", ")})</code></div>};'
-if anchor2 not in src: raise SystemExit("return anchor missing")
-src=src.replace(anchor2,widget+anchor2,1)
+if anchor2 in src:
+    src=src.replace(anchor2,widget+anchor2,1)
+elif "const EasingEditor=" not in src:
+    raise SystemExit("return anchor missing")
 # Replace legacy duration/easing block with two editors; duration is controlled directly on track handles.
 import re
 pattern=r'<div className="bm-two"><label><small>IN · MS</small>.*?</div><div className="bm-two"><label><small>EASING</small>.*?</div>'
 m=re.search(pattern,src)
-if not m: raise SystemExit("legacy easing block missing")
-src=src[:m.start()]+'<EasingEditor mode="in"/><EasingEditor mode="out"/>'+src[m.end():]
+if m:
+    src=src[:m.start()]+'<EasingEditor mode="in"/><EasingEditor mode="out"/>'+src[m.end():]
+elif '<EasingEditor mode="in"/><EasingEditor mode="out"/>' not in src:
+    raise SystemExit("legacy easing block missing")
 p.write_text(src)
 css=css_path.read_text()
 marker16="/* editable-bezier-editors-2026-09-19 */"
