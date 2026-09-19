@@ -1,0 +1,11 @@
+import {describe,expect,it} from "vitest";
+import {cubicBezierProgress,layerVisibleAt,motionFrame} from "./motionRuntime";
+const base={motion:"from-left" as const,motionDurationMs:400,outMotion:"from-right" as const,outMotionDurationMs:300,startMs:100,endMs:2100,motionVector:{x:-100,y:0},easing:"linear" as const,outEasing:"linear" as const,inOpacity:true,outOpacity:true};
+describe("motion runtime acceptance",()=>{
+ it("combines IN transform and fade",()=>{const a=motionFrame(base,100),b=motionFrame(base,300),c=motionFrame(base,500);expect(a.opacity).toBe(0);expect(String(a.transform)).toContain("-100%");expect(b.opacity).toBeCloseTo(.5,3);expect(c.opacity).toBe(1)});
+ it("combines OUT transform and fade without a final jump",()=>{const a=motionFrame(base,1800),b=motionFrame(base,1950),c=motionFrame(base,2100);expect(a.opacity).toBe(1);expect(b.opacity).toBeCloseTo(.5,3);expect(c.opacity).toBe(0);expect(String(c.transform)).toContain("-100%")});
+ it("supports scale plus fade",()=>{const l={...base,motion:"scale-in" as const};const f=motionFrame(l,300);expect(f.opacity).toBeCloseTo(.5,3);expect(String(f.transform)).toContain("scale(0.91)")});
+ it("keeps IN and OUT easing independent",()=>{const l={...base,easing:"ease-in" as const,outEasing:"ease-out" as const};expect(motionFrame(l,300).opacity).not.toBe(motionFrame(l,1950).opacity)});
+ it("evaluates custom bezier endpoints",()=>{expect(cubicBezierProgress(0,[.2,.8,.2,1])).toBe(0);expect(cubicBezierProgress(1,[.2,.8,.2,1])).toBe(1)});
+ it("uses inclusive visibility bounds",()=>{expect(layerVisibleAt(base,99)).toBe(false);expect(layerVisibleAt(base,100)).toBe(true);expect(layerVisibleAt(base,2100)).toBe(true);expect(layerVisibleAt(base,2101)).toBe(false)});
+});
