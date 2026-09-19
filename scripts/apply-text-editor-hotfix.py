@@ -471,3 +471,31 @@ if marker16 not in css:
 """
     css_path.write_text(css)
 print("EDITOR_UX_PASS_V2_OK")
+
+# Composite opacity channel v1.
+src=p.read_text()
+model_path=Path("src/web-scene/sceneModel.ts")
+model=model_path.read_text().replace('outEasingBezier?:[number,number,number,number];startMs','outEasingBezier?:[number,number,number,number];inOpacity?:boolean;outOpacity?:boolean;startMs')
+model_path.write_text(model)
+old='preset=outP<1?(item.outMotion??"none"):item.motion,rawP=outP<1?outP:inP,p=outP<1?easingFn(item.outEasing??item.easing,item.outEasingBezier)(rawP):easingFn(item.easing,item.easingBezier)(rawP),v=motionVector(preset,item.box),tx=(1-p)*v.x,ty=(1-p)*v.y,scale=preset==="scale-in"?.72+.28*p:1,opacity=preset==="none"?1:p;'
+new='preset=outP<1?((item.outMotion??"none")==="fade"?"none":(item.outMotion??"none")):(item.motion==="fade"?"none":item.motion),rawP=outP<1?outP:inP,p=outP<1?easingFn(item.outEasing??item.easing,item.outEasingBezier)(rawP):easingFn(item.easing,item.easingBezier)(rawP),v=motionVector(preset,item.box),tx=(1-p)*v.x,ty=(1-p)*v.y,scale=preset==="scale-in"?.72+.28*p:1,opacity=(outP<1?(item.outOpacity||(item.outMotion??"none")==="fade"):(item.inOpacity||item.motion==="fade"))?p:1;'
+if old not in src: raise SystemExit("composite runtime anchor missing")
+src=src.replace(old,new,1)
+in_grid='<div className="bm-preset-grid">{PRESETS.map(p=><button key={p.id} draggable className={layer.motion===p.id?"active":""}'
+if in_grid in src:
+    src=src.replace(in_grid,'<div className="bm-channel-head"><span>Transform</span><label className="bm-opacity-toggle"><input type="checkbox" checked={!!(layer.inOpacity||layer.motion==="fade")} onChange={e=>patchLayer({inOpacity:e.target.checked,motion:layer.motion==="fade"?"none":layer.motion})}/><span>Opacity</span></label></div>'+in_grid,1)
+out_grid='<div className="bm-preset-grid">{PRESETS.map(p=><button key={`out-${p.id}`} className={(layer.outMotion??"none")===p.id?"active":""}'
+if out_grid in src:
+    src=src.replace(out_grid,'<div className="bm-channel-head"><span>Transform</span><label className="bm-opacity-toggle"><input type="checkbox" checked={!!(layer.outOpacity||(layer.outMotion??"none")==="fade")} onChange={e=>patchLayer({outOpacity:e.target.checked,outMotion:(layer.outMotion??"none")==="fade"?"none":layer.outMotion})}/><span>Opacity</span></label></div>'+out_grid,1)
+p.write_text(src)
+css=css_path.read_text()
+if "/* composite-opacity-channel-v1 */" not in css:
+    css += '''
+/* composite-opacity-channel-v1 */
+.bm-channel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 0 8px;color:#9ca7b8;font-size:12px}
+.bm-opacity-toggle{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 10px;border:1px solid #303846;border-radius:6px;background:#151b24;color:#dce2ec;cursor:pointer;user-select:none}
+.bm-opacity-toggle input{width:14px;height:14px;margin:0;accent-color:#7567ff}
+.bm-opacity-toggle:has(input:checked){border-color:#675ee8;background:#211e3c;color:#fff}
+'''
+    css_path.write_text(css)
+print("COMPOSITE_OPACITY_CHANNEL_OK")
