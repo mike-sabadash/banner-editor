@@ -36,9 +36,10 @@ checks={
  "scene scoped playhead":"scenePlayMs/Math.max(1,scene.durationMs)",
  "global playhead":"bm-global-playhead",
  "space playback":'e.code==="Space"',
- "play from cursor":"const start=playMs>=totalDuration-1?0:playMs",
+ "play from cursor":"current>=totalDuration-1?0:current",
  "motion inspector":"MotionInspector",
  "bezier handles":'className="handle"',
+ "timeline in out handles":"bm-motion-handle",
 }
 missing=[name for name,needle in checks.items() if needle not in (motion if name=="bezier handles" else src)]
 if missing:
