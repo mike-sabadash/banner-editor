@@ -160,7 +160,13 @@ src = replace_once(src,
     '<section className="bm-center" style={{"--bm-timeline-height":`${timelineHeight}px`} as React.CSSProperties}>',
     '<section className="bm-center" style={{"--bm-timeline-height":`${timelineHeight}px`} as React.CSSProperties}>',
     "timeline center marker")
-p.write_text(src)
+p.write_text(src)\n\n# Canonical WebSceneEditor now owns motion inspector/playback/timeline. Legacy hotfixes below are obsolete.
+if "import MotionInspector from \"./MotionInspector\";" in src:
+    print("CANONICAL_WEB_SCENE_EDITOR_OK")
+    p.write_text(src)
+    raise SystemExit(0)
+
+
 css = css_path.read_text()
 marker6 = "/* timeline-overlay-layout-2026-09-18 */"
 if marker6 not in css:
