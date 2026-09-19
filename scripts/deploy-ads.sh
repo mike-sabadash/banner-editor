@@ -22,23 +22,23 @@ git reset --hard "origin/$BRANCH"
 
 python3 scripts/apply-text-editor-hotfix.py
 
-# Regression guard: the deployed source must actually contain the resizable
-# timeline implementation produced by the deploy transform.
+# Regression guard: canonical editor must expose scrub/playback and motion inspector.
 python3 - <<'PY'
 from pathlib import Path
 src=Path("src/web-scene/WebSceneEditor.tsx").read_text()
-css=Path("src/web-scene/editorInteraction.css").read_text()
+motion=Path("src/web-scene/MotionInspector.tsx").read_text()
 checks={
- "timeline state":"timelineHeight,setTimelineHeight",
- "timeline pointer capture":"setPointerCapture",
- "timeline css variable":"--bm-timeline-height",
- "timeline splitter":"bm-timeline-resizer",
- "timeline splitter css":"timeline-splitter-pointercapture-2026-09-18",
+ "timeline scrub":"beginScrub",
+ "global playhead":"bm-global-playhead",
+ "space playback":'e.code==="Space"',
+ "play from cursor":"const start=playMs>=totalDuration-1?0:playMs",
+ "motion inspector":"MotionInspector",
+ "bezier handles":"className="handle"",
 }
-missing=[name for name,needle in checks.items() if needle not in (src if name not in {"timeline splitter css"} else css)]
+missing=[name for name,needle in checks.items() if needle not in (motion if name=="bezier handles" else src)]
 if missing:
-    raise SystemExit("TIMELINE_REGRESSION_GUARD_FAILED: "+", ".join(missing))
-print("TIMELINE_REGRESSION_GUARD_OK")
+    raise SystemExit("EDITOR_REGRESSION_GUARD_FAILED: "+", ".join(missing))
+print("EDITOR_REGRESSION_GUARD_OK")
 PY
 npm ci
 npm test
