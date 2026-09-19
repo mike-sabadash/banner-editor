@@ -313,8 +313,10 @@ if old not in src: raise SystemExit("track handles missing")
 src=src.replace(old,new,1)
 old='<div><small>MOTION PRESET</small><h3>{layer.motion}</h3><p>Click a preset or drag it directly onto an object on the Master.</p></div><div className="bm-preset-grid">{PRESETS.map(p=><button key={p.id} draggable className={layer.motion===p.id?"active":""} onClick={()=>patchLayer({motion:p.id})} onDragStart={e=>e.dataTransfer.setData("application/x-bm-motion",p.id)}><span>{p.glyph}</span><b>{p.label}</b></button>)}</div><div className="bm-two"><label><small>DURATION · MS</small><input type="number" value={layer.motionDurationMs} onChange={e=>patchLayer({motionDurationMs:Number(e.target.value)})}/></label><label><small>EASING</small>'
 new='<div><small>IN MOTION</small><h3>{layer.motion}</h3><p>Choose how the layer enters. Drag the inner left handle on its timeline bar to set duration.</p></div><div className="bm-preset-grid">{PRESETS.map(p=><button key={p.id} draggable className={layer.motion===p.id?"active":""} onClick={()=>patchLayer({motion:p.id})} onDragStart={e=>e.dataTransfer.setData("application/x-bm-motion",p.id)}><span>{p.glyph}</span><b>{p.label}</b></button>)}</div><div className="bm-motion-out-title"><small>OUT MOTION</small><h3>{layer.outMotion??"none"}</h3><p>Choose how the layer leaves. Drag the inner right handle on its timeline bar to set duration.</p></div><div className="bm-preset-grid">{PRESETS.map(p=><button key={`out-${p.id}`} className={(layer.outMotion??"none")===p.id?"active":""} onClick={()=>patchLayer({outMotion:p.id,outMotionDurationMs:p.id==="none"?0:(layer.outMotionDurationMs||320)})}><span>{p.glyph}</span><b>{p.label}</b></button>)}</div><div className="bm-two"><label><small>IN · MS</small><input type="number" value={layer.motionDurationMs} onChange={e=>patchLayer({motionDurationMs:Number(e.target.value)})}/></label><label><small>OUT · MS</small><input type="number" value={layer.outMotionDurationMs??0} onChange={e=>patchLayer({outMotionDurationMs:Number(e.target.value)})}/></label></div><div className="bm-two"><label><small>EASING</small>'
-if old not in src: raise SystemExit("motion panel missing")
-src=src.replace(old,new,1)
+if old in src:
+    src=src.replace(old,new,1)
+elif "MotionInspector" not in src:
+    raise SystemExit("motion panel missing")
 # close the now-single easing label grid by replacing its original tail
 src=src.replace('</select></label></div></div>}</aside></main>','</select></label></div></div>}</aside></main>',1)
 p.write_text(src)
@@ -402,8 +404,10 @@ src=src.replace('const playbackMotionStyle=(item:ReturnType<typeof resolveSceneL
 src=src.replace('preset=outP<1?(item.outMotion??"none"):item.motion,p=outP<1?outP:inP,v=motionVector', 'preset=outP<1?(item.outMotion??"none"):item.motion,rawP=outP<1?outP:inP,p=easingFn(item.easing)(rawP),v=motionVector',1)
 old='<label><small>EASING</small><select value={layer.easing} onChange={e=>patchLayer({easing:e.target.value as SceneLayer["easing"]})}><option>ease-out</option><option>ease-in-out</option><option>linear</option></select></label>'
 new='<label className="bm-easing-control"><small>EASING</small><div className="bm-easing-preview"><svg viewBox="0 0 100 56" aria-hidden="true"><path d={layer.easing==="linear"?"M4 52 L96 4":layer.easing==="ease-in"?"M4 52 C42 52 70 36 96 4":layer.easing==="ease-in-out"?"M4 52 C25 52 25 4 96 4":layer.easing==="cubic-bezier"?"M4 52 C28 52 72 4 96 4":"M4 52 C58 52 82 18 96 4"}/></svg><select value={layer.easing} onChange={e=>patchLayer({easing:e.target.value as SceneLayer["easing"]})}><option value="ease-out">Ease out</option><option value="ease-in">Ease in</option><option value="ease-in-out">Ease in-out</option><option value="linear">Linear</option><option value="cubic-bezier">Cubic Bézier</option></select></div></label>'
-if old not in src: raise SystemExit("easing UI anchor missing")
-src=src.replace(old,new,1)
+if old in src:
+    src=src.replace(old,new,1)
+elif "MotionInspector" not in src:
+    raise SystemExit("easing UI anchor missing")
 p.write_text(src)
 model_path=Path("src/web-scene/sceneModel.ts")
 model=model_path.read_text().replace('easing:"ease-out"|"ease-in-out"|"linear"', 'easing:"ease-out"|"ease-in"|"ease-in-out"|"linear"|"cubic-bezier"')
