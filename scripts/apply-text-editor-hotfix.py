@@ -338,4 +338,45 @@ if marker12 not in css:
 .bm-motion-out-title{margin-top:14px;padding-top:14px;border-top:1px solid #2a3039}
 """
     css_path.write_text(css)
+# Playback/crop/seek/shortcut production pass 2026-09-19.
+src=p.read_text()
+# Add deterministic IN/OUT playback transform/opacity, so OUT is driven by timeline time rather than mount-only CSS animation.
+needle='const togglePlay=()=>{if(!playing){setPlayMs(sceneStart);startedAt.current=performance.now()-sceneStart}setPlaying(v=>!v)},openCampaignPreview='
+repl='const playbackMotionStyle=(item:ReturnType<typeof resolveSceneLayers>[number])=>{if(!playing)return{};const span=Math.max(1,item.endMs-item.startMs),inDur=Math.min(item.motionDurationMs||0,span),outDur=Math.min(item.outMotionDurationMs||0,Math.max(0,span-inDur)),inP=inDur?clamp((scenePlayMs-item.startMs)/inDur,0,1):1,outP=outDur?clamp((item.endMs-scenePlayMs)/outDur,0,1):1,preset=outP<1?(item.outMotion??"none"):item.motion,p=outP<1?outP:inP,v=motionVector(preset,item.box),tx=(1-p)*v.x,ty=(1-p)*v.y,scale=preset==="scale-in"?.72+.28*p:1,opacity=preset==="none"?1:p;return{opacity,transform:\`translate(\${tx}%,\${ty}%) scale(\${scale})\`,animation:"none"} as React.CSSProperties};const seekTimeline=(e:ReactPointerEvent)=>{const el=e.currentTarget as HTMLElement,r=el.getBoundingClientRect(),seek=(x:number)=>{const local=clamp((x-r.left)/r.width,0,1)*scene.durationMs;setPlayMs(sceneStart+local);startedAt.current=performance.now()-(sceneStart+local)};seek(e.clientX);const move=(ev:PointerEvent)=>seek(ev.clientX),up=()=>{removeEventListener("pointermove",move);removeEventListener("pointerup",up)};addEventListener("pointermove",move);addEventListener("pointerup",up)};const togglePlay=()=>{if(!playing){const current=playMs>=sceneStart&&playMs<sceneStart+scene.durationMs?playMs:sceneStart;setPlayMs(current);startedAt.current=performance.now()-current}setPlaying(v=>!v)},openCampaignPreview='
+if needle not in src: raise SystemExit("togglePlay anchor missing")
+src=src.replace(needle,repl,1)
+# Apply runtime motion style to each object.
+needle='"--motion-duration":\`\${item.motionDurationMs}ms\`} as React.CSSProperties}'
+repl='"--motion-duration":\`\${item.motionDurationMs}ms\`,...playbackMotionStyle(item)} as React.CSSProperties}'
+if needle not in src: raise SystemExit("object style anchor missing")
+src=src.replace(needle,repl,1)
+# Ruler supports click/drag scrubbing.
+needle='<div className="bm-time-ruler"><div className="bm-time-ruler-scale">'
+repl='<div className="bm-time-ruler" onPointerDown={seekTimeline}><div className="bm-time-ruler-scale">'
+if needle not in src: raise SystemExit("time ruler anchor missing")
+src=src.replace(needle,repl,1)
+# Space toggles playback; native text/form controls remain untouched. Cmd/Ctrl-Z is already handled above this insertion.
+needle='const mod=e.metaKey||e.ctrlKey;if(mod&&e.key.toLowerCase()==="z")'
+repl='const mod=e.metaKey||e.ctrlKey;if(e.code==="Space"&&!mod){e.preventDefault();togglePlay();return}if(mod&&e.key.toLowerCase()==="z")'
+if needle not in src: raise SystemExit("keyboard anchor missing")
+src=src.replace(needle,repl,1)
+p.write_text(src)
+
+# Ensure motionVector is available in the editor runtime.
+src=p.read_text()
+src=src.replace('generateScene,normalizeResponsiveState,', 'generateScene,motionVector,normalizeResponsiveState,',1)
+p.write_text(src)
+
+css=css_path.read_text()
+marker13="/* playback-crop-ruler-fixes-2026-09-19 */"
+if marker13 not in css:
+    css += r"""
+/* playback-crop-ruler-fixes-2026-09-19 */
+.bm-object.kind-image.selected:not(.crop-editing){overflow:hidden!important}
+.bm-time-ruler{padding-left:110px!important;padding-right:90px!important;cursor:crosshair!important;user-select:none!important}
+.bm-playhead{left:calc(110px + (100% - 200px) * var(--playhead-progress,0))!important}
+.bm-playhead:before{width:9px!important;height:7px!important;left:-4px!important;top:0!important}
+@media(max-width:1250px){.bm-time-ruler{padding-left:110px!important;padding-right:90px!important}.bm-playhead{left:calc(110px + (100% - 200px) * var(--playhead-progress,0))!important}}
+"""
+    css_path.write_text(css)
 print("EDITOR_UX_PASS_V2_OK")
