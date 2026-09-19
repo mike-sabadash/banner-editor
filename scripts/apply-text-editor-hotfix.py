@@ -396,4 +396,28 @@ if marker14 not in css:
 .bm-scene-ruler button{border:1px solid #303846!important;border-radius:6px!important;padding:0 10px!important;min-width:72px}
 """
     css_path.write_text(css)
+# Functional easing + cubic-bezier UX.
+src=p.read_text()
+src=src.replace('const playbackMotionStyle=(item:ReturnType<typeof resolveSceneLayers>[number])=>{if(!playing)return{};', 'const easingFn=(name:string)=>{if(name==="linear")return(t:number)=>t;if(name==="ease-in-out")return(t:number)=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;if(name==="ease-in")return(t:number)=>t*t;if(name==="cubic-bezier")return(t:number)=>t*t*(3-2*t);return(t:number)=>1-Math.pow(1-t,3)};const playbackMotionStyle=(item:ReturnType<typeof resolveSceneLayers>[number])=>{if(!playing)return{};',1)
+src=src.replace('preset=outP<1?(item.outMotion??"none"):item.motion,p=outP<1?outP:inP,v=motionVector', 'preset=outP<1?(item.outMotion??"none"):item.motion,rawP=outP<1?outP:inP,p=easingFn(item.easing)(rawP),v=motionVector',1)
+old='<label><small>EASING</small><select value={layer.easing} onChange={e=>patchLayer({easing:e.target.value as SceneLayer["easing"]})}><option>ease-out</option><option>ease-in-out</option><option>linear</option></select></label>'
+new='<label className="bm-easing-control"><small>EASING</small><div className="bm-easing-preview"><svg viewBox="0 0 100 56" aria-hidden="true"><path d={layer.easing==="linear"?"M4 52 L96 4":layer.easing==="ease-in"?"M4 52 C42 52 70 36 96 4":layer.easing==="ease-in-out"?"M4 52 C25 52 25 4 96 4":layer.easing==="cubic-bezier"?"M4 52 C28 52 72 4 96 4":"M4 52 C58 52 82 18 96 4"}/></svg><select value={layer.easing} onChange={e=>patchLayer({easing:e.target.value as SceneLayer["easing"]})}><option value="ease-out">Ease out</option><option value="ease-in">Ease in</option><option value="ease-in-out">Ease in-out</option><option value="linear">Linear</option><option value="cubic-bezier">Cubic Bézier</option></select></div></label>'
+if old not in src: raise SystemExit("easing UI anchor missing")
+src=src.replace(old,new,1)
+p.write_text(src)
+model_path=Path("src/web-scene/sceneModel.ts")
+model=model_path.read_text().replace('easing:"ease-out"|"ease-in-out"|"linear"', 'easing:"ease-out"|"ease-in"|"ease-in-out"|"linear"|"cubic-bezier"')
+model_path.write_text(model)
+css=css_path.read_text()
+marker15="/* easing-ux-functional-2026-09-19 */"
+if marker15 not in css:
+    css += r"""
+/* easing-ux-functional-2026-09-19 */
+.bm-easing-control{grid-column:1/-1}
+.bm-easing-preview{display:grid;grid-template-columns:72px minmax(0,1fr);gap:8px;align-items:center}
+.bm-easing-preview svg{width:72px;height:44px;border:1px solid #2b3340;border-radius:6px;background:#11161d;padding:5px;overflow:visible}
+.bm-easing-preview path{fill:none;stroke:#8b82ff;stroke-width:2}
+.bm-easing-preview select{min-width:0}
+"""
+    css_path.write_text(css)
 print("EDITOR_UX_PASS_V2_OK")
