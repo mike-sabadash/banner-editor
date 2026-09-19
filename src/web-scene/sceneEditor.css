@@ -24,3 +24,27 @@
 .bm-motion-handle{position:absolute;z-index:7;top:-3px;width:2px;height:22px;background:#ff6b55;cursor:ew-resize;transform:translateX(-1px)}.bm-motion-handle:before{content:"";position:absolute;inset:0 -5px}.bm-motion-handle:after{content:"";position:absolute;top:-3px;left:-3px;width:8px;height:5px;border-radius:2px;background:#ff6b55}
 .bm-layer-row{display:flex;align-items:center;min-width:0}.bm-layer-row .bm-layer{grid-template-columns:16px 18px minmax(0,1fr);gap:6px;min-width:0;flex:1}.bm-layer-row .bm-layer>span:last-child{min-width:0}.bm-layer-row .bm-layer small{display:none}.bm-layer-row .bm-row-actions{display:flex;flex:0 0 auto;opacity:0;transition:opacity .12s}.bm-layer-row:hover .bm-row-actions,.bm-layer-row.active .bm-row-actions{opacity:1}
 .bm-stage.is-panning{cursor:grab}.bm-stage.is-panning:active{cursor:grabbing}.bm-stage.is-panning .bm-canvas-frame{transition:none;user-select:none}.bm-canvas-frame{will-change:transform}
+
+/* objective viewport guarantee: timeline is pinned to the visible editor viewport */
+.bm-center>.bm-timeline{
+  position:fixed!important;
+  left:216px!important;
+  right:280px!important;
+  bottom:0!important;
+  width:auto!important;
+  height:var(--bm-timeline-height,360px)!important;
+  min-height:360px!important;
+  max-height:620px!important;
+  z-index:55!important;
+}
+.bm-center>.bm-timeline-resizer{
+  position:fixed!important;
+  left:216px!important;
+  right:280px!important;
+  bottom:calc(var(--bm-timeline-height,360px) - 6px)!important;
+  z-index:70!important;
+}
+.bm-center>.bm-stage{padding-bottom:var(--bm-timeline-height,360px);box-sizing:border-box}
+@media(max-width:1180px){
+  .bm-center>.bm-timeline,.bm-center>.bm-timeline-resizer{left:190px!important;right:250px!important}
+}
