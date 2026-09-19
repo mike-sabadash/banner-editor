@@ -35,4 +35,14 @@ jobs:
       - name: Verify public Bannermatic entry
         run: |
           curl -fsS --max-time 30 https://ads.rechord.online/healthz
-          curl -fsS --max-time 30 https://ads.rechord.online/ | grep -q '<div id="root"></div>'
+          html="$(curl -fsS --max-time 30 https://ads.rechord.online/)"
+          printf '%s' "$html" | grep -q '<div id="root"></div>'
+          asset="$(printf '%s' "$html" | grep -oE 'src="/assets/[^"]+\.js"' | head -1 | cut -d'"' -f2)"
+          test -n "$asset"
+          bundle="$(curl -fsS --max-time 30 "https://ads.rechord.online$asset")"
+          printf '%s' "$bundle" | grep -q 'Custom Bézier'
+          printf '%s' "$bundle" | grep -q 'Duration '
+          printf '%s' "$bundle" | grep -q 'From left'
+          printf '%s' "$bundle" | grep -q 'Fade'
+          if printf '%s' "$bundle" | grep -q 'IN · MS'; then echo 'Legacy IN · MS control still present in production bundle' >&2; exit 1; fi
+          echo 'PRODUCTION_MOTION_UI_BUNDLE_OK'
