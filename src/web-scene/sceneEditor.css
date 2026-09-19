@@ -44,7 +44,7 @@
   bottom:calc(var(--bm-timeline-height,360px) - 6px)!important;
   z-index:70!important;
 }
-.bm-center>.bm-stage{padding-bottom:var(--bm-timeline-height,360px);box-sizing:border-box}
+.bm-center>.bm-stage{padding-bottom:0!important;box-sizing:border-box}
 @media(max-width:1180px){
   .bm-center>.bm-timeline,.bm-center>.bm-timeline-resizer{left:190px!important;right:250px!important}
 }
