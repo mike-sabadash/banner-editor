@@ -499,3 +499,37 @@ if "/* composite-opacity-channel-v1 */" not in css:
 '''
     css_path.write_text(css)
 print("COMPOSITE_OPACITY_CHANNEL_OK")
+
+# Motion FX stack + production bezier editor v2.
+src=p.read_text()
+# Motion tiles become multi-select FX: transform and fade can be active together.
+src=src.replace('className={(layer.motion==="fade"?"none":layer.motion)===p.id?"active":""}', 'className={(p.id==="fade"?!!(layer.inOpacity||layer.motion==="fade"):(layer.motion==="fade"?"none":layer.motion)===p.id)?"active":""}',1)
+src=src.replace('onClick={()=>patchLayer({motion:p.id})}', 'onClick={()=>p.id==="fade"?patchLayer({inOpacity:!(layer.inOpacity||layer.motion==="fade"),motion:layer.motion==="fade"?"none":layer.motion}):patchLayer({motion:p.id})}',1)
+src=src.replace('className={((layer.outMotion??"none")==="fade"?"none":(layer.outMotion??"none"))===p.id?"active":""}', 'className={(p.id==="fade"?!!(layer.outOpacity||(layer.outMotion??"none")==="fade"):((layer.outMotion??"none")==="fade"?"none":(layer.outMotion??"none"))===p.id)?"active":""}',1)
+src=src.replace('onClick={()=>patchLayer({outMotion:p.id,outMotionDurationMs:p.id==="none"?0:(layer.outMotionDurationMs||320)})}', 'onClick={()=>p.id==="fade"?patchLayer({outOpacity:!(layer.outOpacity||(layer.outMotion??"none")==="fade"),outMotion:(layer.outMotion??"none")==="fade"?"none":layer.outMotion,outMotionDurationMs:layer.outMotionDurationMs||320}):patchLayer({outMotion:p.id,outMotionDurationMs:p.id==="none"?0:(layer.outMotionDurationMs||320)})}',1)
+# Remove the redundant opacity checkbox row: Fade itself is the additive FX tile.
+src=re.sub(r'<div className="bm-channel-head"><span>Transform</span><label className="bm-opacity-toggle">.*?</label></div>','',src)
+# Replace previous bezier widget with a large square editor, draggable handles, editable numeric control points and presets.
+start=src.find('const EasingEditor=({mode}:{mode:"in"|"out"})=>')
+end=src.find(';return <div className="bm-app">',start)
+if start<0 or end<0: raise SystemExit("bezier component anchor missing")
+widget='''const EasingEditor=({mode}:{mode:"in"|"out"})=>{if(!layer)return null;const name=mode==="in"?layer.easing:(layer.outEasing??layer.easing),curve=mode==="in"?(layer.easingBezier??easingCurve(name)):(layer.outEasingBezier??easingCurve(name)),apply=(next:[number,number,number,number])=>patchLayer(mode==="in"?{easing:"cubic-bezier",easingBezier:next}:{outEasing:"cubic-bezier",outEasingBezier:next}),setPreset=(v:SceneLayer["easing"])=>patchLayer(mode==="in"?{easing:v}:{outEasing:v}),drag=(index:0|1,e:ReactPointerEvent<SVGCircleElement>)=>{e.preventDefault();e.currentTarget.setPointerCapture?.(e.pointerId);const svg=e.currentTarget.ownerSVGElement;if(!svg)return;const move=(ev:PointerEvent)=>{const r=svg.getBoundingClientRect(),x=clamp((ev.clientX-r.left)/r.width,0,1),y=clamp(1-(ev.clientY-r.top)/r.height,-.75,1.75),n:[number,number,number,number]=[...curve] as [number,number,number,number];n[index*2]=x;n[index*2+1]=y;apply(n)},up=()=>{removeEventListener("pointermove",move);removeEventListener("pointerup",up)};addEventListener("pointermove",move);addEventListener("pointerup",up)};const path="M 0 100 C "+curve[0]*100+" "+(100-curve[1]*100)+", "+curve[2]*100+" "+(100-curve[3]*100)+", 100 0",num=(i:number,v:string)=>{const n=[...curve] as [number,number,number,number];n[i]=Number(v)||0;apply(n)};return <section className="bm-bezier-editor"><div className="bm-bezier-head"><div><small>{mode.toUpperCase()} EASING</small><b>{name==="cubic-bezier"?"Custom Bézier":name.replaceAll("-"," ")}</b></div><select value={name} onChange={e=>setPreset(e.target.value as SceneLayer["easing"])}><option value="ease-out">Ease out</option><option value="ease-in">Ease in</option><option value="ease-in-out">Ease in & out</option><option value="linear">Linear</option><option value="cubic-bezier">Custom Bézier</option></select></div><div className="bm-bezier-stage"><svg viewBox="0 0 100 100" preserveAspectRatio="none"><path className="grid" d="M0 25H100 M0 50H100 M0 75H100 M25 0V100 M50 0V100 M75 0V100"/><path className="axis" d="M0 100H100 M0 100V0"/><path className="guide" d={"M0 100 L"+curve[0]*100+" "+(100-curve[1]*100)+" M100 0 L"+curve[2]*100+" "+(100-curve[3]*100)}/><path className="curve" d={path}/><circle className="endpoint" cx="0" cy="100" r="2.5"/><circle className="endpoint" cx="100" cy="0" r="2.5"/><circle className="point" cx={curve[0]*100} cy={100-curve[1]*100} r="4.5" onPointerDown={e=>drag(0,e)}/><circle className="point" cx={curve[2]*100} cy={100-curve[3]*100} r="4.5" onPointerDown={e=>drag(1,e)}/></svg></div><div className="bm-bezier-values">{curve.map((v,i)=><label key={i}><span>{i<2?"P1":"P2"} · {i%2?"Y":"X"}</span><input type="number" min={i%2?-0.75:0} max={i%2?1.75:1} step=".01" value={Number(v.toFixed(2))} onChange={e=>num(i,e.target.value)}/></label>)}</div><code>cubic-bezier({curve.map(v=>Number(v.toFixed(2))).join(", ")})</code></section>}'''
+src=src[:start]+widget+src[end+1:]
+p.write_text(src)
+css=css_path.read_text()
+css += r"""
+/* motion-fx-bezier-editor-v2 */
+.bm-bezier-editor{margin-top:18px;padding-top:18px;border-top:1px solid #252d38}
+.bm-bezier-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:12px}
+.bm-bezier-head>div{display:flex;flex-direction:column;gap:4px}.bm-bezier-head small{font-size:10px;letter-spacing:.08em;color:#7f8a9b}.bm-bezier-head b{font-size:13px;font-weight:600;text-transform:capitalize}
+.bm-bezier-head select{width:148px;height:32px;border:1px solid #303846;border-radius:6px;background:#151b24;color:#e7ebf2;padding:0 28px 0 10px}
+.bm-bezier-stage{width:100%;aspect-ratio:1.45/1;border:1px solid #303846;border-radius:8px;background:#11161d;overflow:hidden}
+.bm-bezier-stage svg{display:block;width:100%;height:100%;border:0!important;border-radius:0!important;background:transparent!important;overflow:visible;touch-action:none}
+.bm-bezier-editor .grid{fill:none;stroke:#202833;stroke-width:.55}.bm-bezier-editor .axis{fill:none;stroke:#343e4d;stroke-width:.7}
+.bm-bezier-editor .guide{fill:none;stroke:#657086;stroke-width:.8;stroke-dasharray:2 2}.bm-bezier-editor .curve{fill:none;stroke:#8174ff;stroke-width:2.2}
+.bm-bezier-editor .endpoint{fill:#8174ff}.bm-bezier-editor .point{fill:#121821;stroke:#9b93ff;stroke-width:2;cursor:grab;vector-effect:non-scaling-stroke}.bm-bezier-editor .point:active{cursor:grabbing}
+.bm-bezier-values{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:9px}.bm-bezier-values label{min-width:0}.bm-bezier-values span{display:block;margin-bottom:4px;font-size:9px;color:#727e90}.bm-bezier-values input{width:100%;height:29px;padding:0 6px;border:1px solid #2d3541;border-radius:5px;background:#151b24;color:#dfe5ee;font-size:11px}
+.bm-bezier-editor code{display:block;margin-top:8px;color:#717d8e;font-size:10px}
+"""
+css_path.write_text(css)
+print("MOTION_FX_BEZIER_V2_OK")
