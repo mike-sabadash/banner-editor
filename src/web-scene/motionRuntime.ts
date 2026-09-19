@@ -4,7 +4,7 @@ import type {BezierCurve,EasingPreset,MotionPreset} from "./sceneModel";
 type MotionLayer={motion:MotionPreset;motionDurationMs:number;outMotion?:MotionPreset;outMotionDurationMs?:number;startMs:number;endMs:number;motionVector:{x:number;y:number};easing:EasingPreset;easingBezier?:BezierCurve;outEasing?:EasingPreset;outEasingBezier?:BezierCurve;inOpacity?:boolean;outOpacity?:boolean};
 const clamp01=(v:number)=>Math.max(0,Math.min(1,v));
 const curveFor=(name:EasingPreset,custom?:BezierCurve):BezierCurve=>name==="linear"?[0,0,1,1]:name==="ease-in"?[.42,0,1,1]:name==="ease-in-out"?[.42,0,.58,1]:name==="cubic-bezier"?(custom??[.25,.1,.25,1]):[0,0,.58,1];
-export const cubicBezierProgress=(t:number,curve:BezierCurve)=>{const[x1,y1,x2,y2]=curve,cx=3*x1,bx=3*(x2-x1)-cx,ax=1-cx,cy=3*y1,by=3*(y2-y1)-cy,ay=1-cy;let u=clamp01(t);for(let i=0;i<7;i++){const x=((ax*u+bx)*u+cx)*u-t,dx=(3*ax*u+2*bx)*u+cx;if(Math.abs(dx)<1e-6)break;u=clamp01(u-x/dx)}return clamp01(((ay*u+by)*u+cy)*u)};
+export const cubicBezierProgress=(t:number,curve:BezierCurve)=>{if(t<=0)return 0;if(t>=1)return 1;const[x1,y1,x2,y2]=curve,cx=3*x1,bx=3*(x2-x1)-cx,ax=1-cx,cy=3*y1,by=3*(y2-y1)-cy,ay=1-cy;let u=clamp01(t);for(let i=0;i<7;i++){const x=((ax*u+bx)*u+cx)*u-t,dx=(3*ax*u+2*bx)*u+cx;if(Math.abs(dx)<1e-6)break;u=clamp01(u-x/dx)}return clamp01(((ay*u+by)*u+cy)*u)};
 const eased=(t:number,name:EasingPreset,curve?:BezierCurve)=>cubicBezierProgress(clamp01(t),curveFor(name,curve));
 export function motionFrame(layer:MotionLayer,localMs:number):CSSProperties{
  const inDuration=Math.max(1,layer.motionDurationMs||1),outDuration=Math.max(1,layer.outMotionDurationMs||1);
@@ -13,7 +13,7 @@ export function motionFrame(layer:MotionLayer,localMs:number):CSSProperties{
  const legacyFade=isOut?(layer.outMotion==="fade"):(layer.motion==="fade"),fade=isOut?(!!layer.outOpacity||legacyFade):(!!layer.inOpacity||legacyFade);
  const preset:MotionPreset=isOut?(layer.outMotion==="fade"?"none":layer.outMotion??"none"):(layer.motion==="fade"?"none":layer.motion);
  const inverse=1-p;let transform="translate3d(0,0,0) scale(1)";
- if(preset==="scale-in")transform=`translate3d(0,0,0) scale(${.82+.18*p})`;
+ if(preset==="scale-in")transform=`translate3d(0,0,0) scale(${Number((.82+.18*p).toFixed(4))})`;
  else if(["from-left","from-right","from-top","from-bottom"].includes(preset))transform=`translate3d(${layer.motionVector.x*inverse}%,${layer.motionVector.y*inverse}%,0) scale(1)`;
  return {opacity:fade?p:1,transform,transformOrigin:"center",willChange:"transform, opacity"};
 }
