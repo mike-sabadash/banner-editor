@@ -28,7 +28,7 @@ from pathlib import Path
 src=Path("src/web-scene/WebSceneEditor.tsx").read_text()
 motion=Path("src/web-scene/MotionInspector.tsx").read_text()
 checks={
- "timeline scrub":"beginScrub",
+ "timeline scrub":"beginScrub",\n "timeline panel":"bm-timeline-resizer",\n "timeline height":"timelineHeight",\n "time ruler":"bm-time-ruler",
  "global playhead":"bm-global-playhead",
  "space playback":'e.code==="Space"',
  "play from cursor":"const start=playMs>=totalDuration-1?0:playMs",
