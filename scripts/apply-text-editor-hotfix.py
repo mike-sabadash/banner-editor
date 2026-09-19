@@ -10,6 +10,11 @@ def replace_once(s, old, new, label):
 p = Path("src/web-scene/WebSceneEditor.tsx")
 s = p.read_text()
 
+# Canonical editor source supersedes the historical string-patch pipeline.
+if 'import MotionInspector from "./MotionInspector";' in s:
+    print("CANONICAL_WEB_SCENE_EDITOR_OK")
+    raise SystemExit(0)
+
 # Text editing: stable caret/selection and sane defaults.
 s=replace_once(s,'fontSize:30,fontWeight:600,fontFamily:"Inter"','fontSize:16,fontWeight:400,fontFamily:"Inter"',"text defaults")
 s=replace_once(s,'onDoubleClick={e=>{e.stopPropagation();if(item.kind==="text")setEditingTextId(item.id);else if(item.kind==="image"){setLayerId(item.id);startCrop()}}}','onDoubleClick={e=>{e.stopPropagation();if(item.kind==="text"){const host=e.currentTarget;setEditingTextId(item.id);requestAnimationFrame(()=>{const el=host.querySelector("[contenteditable=true]") as HTMLElement|null;if(!el)return;el.focus();const range=document.createRange(),selection=window.getSelection();range.selectNodeContents(el);range.collapse(false);selection?.removeAllRanges();selection?.addRange(range)})}else if(item.kind==="image"){setLayerId(item.id);startCrop()}}}',"text caret")
