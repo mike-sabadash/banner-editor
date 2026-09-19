@@ -535,3 +535,23 @@ css += r"""
 """
 css_path.write_text(css)
 print("MOTION_FX_BEZIER_V2_OK")
+
+# Force final Motion inspector composition after all legacy transforms.
+src=p.read_text()
+# Reinsert Fade tile if an earlier migration removed it.
+if '{id:"fade",label:"Fade",glyph:"◌"}' not in src:
+    src=src.replace('{id:"none",label:"None",glyph:"•"},','{id:"none",label:"None",glyph:"•"},{id:"fade",label:"Fade",glyph:"◌"},',1)
+# Force additive active/click behavior against the actual final JSX.
+src=src.replace('className={layer.motion===p.id?"active":""}', 'className={(p.id==="fade"?!!(layer.inOpacity||layer.motion==="fade"):(layer.motion==="fade"?"none":layer.motion)===p.id)?"active":""}')
+src=src.replace('onClick={()=>patchLayer({motion:p.id})}', 'onClick={()=>p.id==="fade"?patchLayer({inOpacity:!(layer.inOpacity||layer.motion==="fade"),motion:layer.motion==="fade"?"none":layer.motion}):patchLayer({motion:p.id})}')
+src=src.replace('className={(layer.outMotion??"none")===p.id?"active":""}', 'className={(p.id==="fade"?!!(layer.outOpacity||(layer.outMotion??"none")==="fade"):((layer.outMotion??"none")==="fade"?"none":(layer.outMotion??"none"))===p.id)?"active":""}')
+src=src.replace('onClick={()=>patchLayer({outMotion:p.id,outMotionDurationMs:p.id==="none"?0:(layer.outMotionDurationMs||320)})}', 'onClick={()=>p.id==="fade"?patchLayer({outOpacity:!(layer.outOpacity||(layer.outMotion??"none")==="fade"),outMotion:(layer.outMotion??"none")==="fade"?"none":layer.outMotion,outMotionDurationMs:layer.outMotionDurationMs||320}):patchLayer({outMotion:p.id,outMotionDurationMs:p.id==="none"?0:(layer.outMotionDurationMs||320)})}')
+# Replace whatever legacy controls remain after OUT tiles with the two final bezier editors.
+legacy=re.compile(r'<div className="bm-two"><label><small>IN · MS</small>.*?(?=<EasingEditor mode="in"/>|</div></div></aside>)')
+m=legacy.search(src)
+if m:
+    src=src[:m.start()]+'<EasingEditor mode="in"/><EasingEditor mode="out"/>'+src[m.end():]
+# Remove duplicated old compact easing block if still present.
+src=re.sub(r'<div className="bm-two"><label><small>EASING</small>.*?</div>','',src)
+p.write_text(src)
+print("FORCE_FINAL_MOTION_UI_OK")
