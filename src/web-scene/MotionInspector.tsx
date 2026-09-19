@@ -22,15 +22,15 @@ function BezierEditor({mode,layer,patch}:{mode:Mode;layer:SceneLayer;patch:Props
  const choose=(next:EasingPreset)=>patch(mode==="in"?{easing:next,easingBezier:next==="cubic-bezier"?curve:undefined}:{outEasing:next,outEasingBezier:next==="cubic-bezier"?curve:undefined});
  const drag=(index:0|1,e:ReactPointerEvent<SVGCircleElement>)=>{e.preventDefault();const svg=e.currentTarget.ownerSVGElement;if(!svg)return;e.currentTarget.setPointerCapture?.(e.pointerId);const move=(ev:PointerEvent)=>{const r=svg.getBoundingClientRect(),padX=r.width*.05,padY=r.height*.05,w=r.width*.9,h=r.height*.9;const next=[...curve] as BezierCurve;next[index*2]=clamp((ev.clientX-r.left-padX)/w,0,1);next[index*2+1]=clamp(1-(ev.clientY-r.top-padY)/h,-.75,1.75);apply(next)};const up=()=>{removeEventListener("pointermove",move);removeEventListener("pointerup",up)};addEventListener("pointermove",move);addEventListener("pointerup",up)};
  const setNumber=(index:number,value:string)=>{const next=[...curve] as BezierCurve;next[index]=clamp(Number(value)||0,index%2?-.75:0,index%2?1.75:1);apply(next)};
- const pad=5,span=90,px=(v:number)=>pad+v*span,py=(v:number)=>pad+(1-v)*span;
- const path=`M ${pad} ${pad+span} C ${px(curve[0])} ${py(curve[1])}, ${px(curve[2])} ${py(curve[3])}, ${pad+span} ${pad}`;
+ const padX=8,padY=7,spanX=159,spanY=86,px=(v:number)=>padX+v*spanX,py=(v:number)=>padY+(1-v)*spanY;
+ const path=`M ${padX} ${padY+spanY} C ${px(curve[0])} ${py(curve[1])}, ${px(curve[2])} ${py(curve[3])}, ${padX+spanX} ${padY}`;
  return <div className="bm-bezier">
   <div className="bm-bezier-top"><div><small>{mode.toUpperCase()} EASING</small><strong>{preset==="cubic-bezier"?"Custom Bézier":preset.replaceAll("-"," ")}</strong></div>
    <select value={preset} onChange={e=>choose(e.target.value as EasingPreset)}><option value="ease-out">Ease out</option><option value="ease-in">Ease in</option><option value="ease-in-out">Ease in & out</option><option value="linear">Linear</option><option value="cubic-bezier">Custom Bézier</option></select></div>
-  <div className="bm-bezier-canvas"><svg viewBox="0 0 100 100" preserveAspectRatio="none">
-   <path className="grid" d="M5 27.5H95 M5 50H95 M5 72.5H95 M27.5 5V95 M50 5V95 M72.5 5V95"/>
-   <path className="guide" d={`M${pad} ${pad+span} L${px(curve[0])} ${py(curve[1])} M${pad+span} ${pad} L${px(curve[2])} ${py(curve[3])}`}/>
-   <path className="curve" d={path}/><circle className="end" cx={pad} cy={pad+span} r="1.5"/><circle className="end" cx={pad+span} cy={pad} r="1.5"/>
+  <div className="bm-bezier-canvas"><svg viewBox="0 0 175 100" preserveAspectRatio="xMidYMid meet">
+   <path className="grid" d="M8 28.5H167 M8 50H167 M8 71.5H167 M47.75 7V93 M87.5 7V93 M127.25 7V93"/>
+   <path className="guide" d={`M${padX} ${padY+spanY} L${px(curve[0])} ${py(curve[1])} M${padX+spanX} ${padY} L${px(curve[2])} ${py(curve[3])}`}/>
+   <path className="curve" d={path}/><circle className="end" cx={padX} cy={padY+spanY} r="1.5"/><circle className="end" cx={padX+spanX} cy={padY} r="1.5"/>
    <circle className="handle" cx={px(curve[0])} cy={py(curve[1])} r="2.8" onPointerDown={e=>drag(0,e)}/><circle className="handle" cx={px(curve[2])} cy={py(curve[3])} r="2.8" onPointerDown={e=>drag(1,e)}/>
   </svg></div>
   <div className="bm-bezier-values">{curve.map((v,i)=><label key={i}><span>{i<2?"P1":"P2"} {i%2?"Y":"X"}</span><input type="number" step=".01" value={Number(v.toFixed(2))} onChange={e=>setNumber(i,e.target.value)}/></label>)}</div>
