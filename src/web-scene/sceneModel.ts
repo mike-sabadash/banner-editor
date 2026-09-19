@@ -4,12 +4,12 @@ export type MotionPreset = "none" | "fade" | "from-left" | "from-right" | "from-
 export type LayoutFamily = "portrait" | "tall" | "rectangle" | "wide" | "strip" | "micro-strip";
 export type Box = {x:number;y:number;w:number;h:number};
 export type CropState = {x:number;y:number;scale:number};
-export type SceneLayer = {id:string;name:string;kind:LayerKind;role:LayerRole;text?:string;color?:string;assetUrl?:string;fit?:"cover"|"contain";crop?:CropState;masterBox:Box;fontSize?:number;fontWeight?:number;fontFamily?:string;motion:MotionPreset;motionDurationMs:number;easing:"ease-out"|"ease-in-out"|"linear";startMs:number;endMs:number;visible:boolean};
+export type EasingPreset="ease-out"|"ease-in"|"ease-in-out"|"linear"|"cubic-bezier"; export type BezierCurve=[number,number,number,number];\nexport type SceneLayer = {id:string;name:string;kind:LayerKind;role:LayerRole;text?:string;color?:string;assetUrl?:string;fit?:"cover"|"contain";crop?:CropState;masterBox:Box;fontSize?:number;fontWeight?:number;fontFamily?:string;motion:MotionPreset;motionDurationMs:number;easing:EasingPreset;easingBezier?:BezierCurve;outMotion?:MotionPreset;outMotionDurationMs?:number;outEasing?:EasingPreset;outEasingBezier?:BezierCurve;inOpacity?:boolean;outOpacity?:boolean;startMs:number;endMs:number;visible:boolean};
 export type Scene = {id:string;name:string;durationMs:number;layers:SceneLayer[]};
 export type OutputFormat = {id:string;width:number;height:number;label:string;family:LayoutFamily};
 export type GeneratedLayer = SceneLayer & {box:Box;fontSize?:number;motionVector:{x:number;y:number}};
 export type GeneratedScene = {sceneId:string;formatId:string;family:LayoutFamily;layers:GeneratedLayer[]};
-export type ResponsiveLayerState = {id:string;role:LayerRole;box:Box;name:string;kind:LayerKind;text?:string;color?:string;assetUrl?:string;fit?:"cover"|"contain";crop?:CropState;fontSize?:number;fontWeight?:number;fontFamily?:string;motion:MotionPreset;motionDurationMs:number;easing:SceneLayer["easing"];startMs:number;endMs:number;visible:boolean};
+export type ResponsiveLayerState = {id:string;role:LayerRole;box:Box;name:string;kind:LayerKind;text?:string;color?:string;assetUrl?:string;fit?:"cover"|"contain";crop?:CropState;fontSize?:number;fontWeight?:number;fontFamily?:string;motion:MotionPreset;motionDurationMs:number;easing:SceneLayer["easing"];easingBezier?:BezierCurve;outMotion?:MotionPreset;outMotionDurationMs?:number;outEasing?:EasingPreset;outEasingBezier?:BezierCurve;inOpacity?:boolean;outOpacity?:boolean;startMs:number;endMs:number;visible:boolean};
 export type ResponsiveSceneState = {sceneId:string;layers:Record<string,ResponsiveLayerState>};
 export type ResponsiveMaster = {id:string;family:LayoutFamily;sourceFormatId:string;width:number;height:number;label:string;scenes:Record<string,ResponsiveSceneState>;updatedAt:string};
 export type LayerOverride = Partial<Omit<ResponsiveLayerState,"id">>;
