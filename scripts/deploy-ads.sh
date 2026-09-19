@@ -32,7 +32,7 @@ checks={
  "timeline panel":"bm-timeline-resizer",
  "timeline height":"timelineHeight",
  "time ruler":"bm-time-ruler",
- "scene timeline tabs":"bm-scene-tabs",
+ "scene title timeline":"<b>{scene.name}</b>",
  "scene scoped playhead":"scenePlayMs/Math.max(1,scene.durationMs)",
  "global playhead":"bm-global-playhead",
  "space playback":'e.code==="Space"',
