@@ -14,6 +14,8 @@ type Tool="select"|"text"|"image"|"shape";type SaveState="saved"|"saving"|"error
 type MasterDialog={mode:"create"|"update";family:LayoutFamily}|null;
 type EditorSnapshot={scenes:Scene[];responsive:ResponsiveState};
 const clamp=(v:number,min:number,max:number)=>Math.min(max,Math.max(min,v));
+const quickMotionValue=(l:SceneLayer,mode:"in"|"out")=>{const raw=mode==="in"?l.motion:(l.outMotion??"none"),fade=mode==="in"?!!(l.inOpacity||l.motion==="fade"):!!(l.outOpacity||l.outMotion==="fade"),base=raw==="fade"?"none":raw;return base==="none"?(fade?"fade":"none"):base+(fade?"+fade":"")};
+
 export default function WebSceneEditor({campaign}:{campaign?:Campaign}={}){
  const seeded=(campaign?.creativeDocument?.scenes as Scene[]|undefined)?.length?(campaign!.creativeDocument!.scenes as Scene[]):DEFAULT_SCENES;
  const [scenes,setScenes]=useState<Scene[]>(seeded),[sceneId,setSceneId]=useState(seeded[0].id),[layerId,setLayerId]=useState(seeded[0].layers[1]?.id||seeded[0].layers[0]?.id||""),[formatId,setFormatId]=useState("master"),[tool,setTool]=useState<Tool>("select"),[playing,setPlaying]=useState(false),[playMs,setPlayMs]=useState(0),[generated,setGenerated]=useState(false),[inspectorTab,setInspectorTab]=useState<"design"|"motion">("design"),[saveState,setSaveState]=useState<SaveState>("saved"),[snapEnabled,setSnapEnabled]=useState(true),[snapPx,setSnapPx]=useState(4),[guides,setGuides]=useState<Guides>({}),[editingTextId,setEditingTextId]=useState<string|null>(null),[cropEdit,setCropEdit]=useState<CropSnapshot|null>(null),[ttOpen,setTtOpen]=useState(false),[borderOn,setBorderOn]=useState(false),[borderColor,setBorderColor]=useState("#000000"),[dragLayerId,setDragLayerId]=useState<string|null>(null);
