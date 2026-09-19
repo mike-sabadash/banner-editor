@@ -379,4 +379,21 @@ if marker13 not in css:
 @media(max-width:1250px){.bm-time-ruler{padding-left:110px!important;padding-right:90px!important}.bm-playhead{left:calc(110px + (100% - 200px) * var(--playhead-progress,0))!important}}
 """
     css_path.write_text(css)
+# Compact layout polish: remove inspector horizontal overflow, space scene tabs, restore square play control.
+css=css_path.read_text()
+marker14="/* compact-layout-polish-2026-09-19 */"
+if marker14 not in css:
+    css += r"""
+/* compact-layout-polish-2026-09-19 */
+.bm-right{overflow-x:hidden!important}
+.bm-right>*{max-width:100%;min-width:0}
+.bm-motion-panel,.bm-preset-grid{min-width:0}
+.bm-preset-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.bm-timeline-head{gap:14px}
+.bm-timeline-head>div:last-child{gap:8px!important}
+.bm-timeline-head .bm-icon{width:34px!important;height:34px!important;min-width:34px!important;min-height:34px!important;flex:0 0 34px!important;padding:0!important;aspect-ratio:1/1}
+.bm-scene-ruler{gap:7px}
+.bm-scene-ruler button{border:1px solid #303846!important;border-radius:6px!important;padding:0 10px!important;min-width:72px}
+"""
+    css_path.write_text(css)
 print("EDITOR_UX_PASS_V2_OK")
