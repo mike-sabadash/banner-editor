@@ -420,4 +420,47 @@ if marker15 not in css:
 .bm-easing-preview select{min-width:0}
 """
     css_path.write_text(css)
+# Separate editable cubic-bezier editors for IN and OUT; duration stays on timeline handles.
+src=p.read_text()
+# Persist custom curves on layer objects without breaking old campaigns.
+model_path=Path("src/web-scene/sceneModel.ts")
+model=model_path.read_text()
+model=model.replace('easing:"ease-out"|"ease-in"|"ease-in-out"|"linear"|"cubic-bezier";startMs', 'easing:"ease-out"|"ease-in"|"ease-in-out"|"linear"|"cubic-bezier";easingBezier?:[number,number,number,number];outEasing?:SceneLayer["easing"];outEasingBezier?:[number,number,number,number];startMs')
+model_path.write_text(model)
+# Runtime cubic bezier evaluator and independent IN/OUT easing.
+old='const easingFn=(name:string)=>{if(name==="linear")return(t:number)=>t;if(name==="ease-in-out")return(t:number)=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;if(name==="ease-in")return(t:number)=>t*t;if(name==="cubic-bezier")return(t:number)=>t*t*(3-2*t);return(t:number)=>1-Math.pow(1-t,3)};'
+new='const cubicBezier=(curve:[number,number,number,number])=>(t:number)=>{const [x1,y1,x2,y2]=curve,cx=3*x1,bx=3*(x2-x1)-cx,ax=1-cx,cy=3*y1,by=3*(y2-y1)-cy,ay=1-cy;let u=t;for(let i=0;i<6;i++){const x=((ax*u+bx)*u+cx)*u-t,dx=(3*ax*u+2*bx)*u+cx;if(Math.abs(dx)<1e-5)break;u=clamp(u-x/dx,0,1)}return clamp(((ay*u+by)*u+cy)*u,0,1)};const easingCurve=(name:string,custom?:[number,number,number,number])=>name==="linear"?[0,0,1,1] as [number,number,number,number]:name==="ease-in"?[.42,0,1,1]:name==="ease-in-out"?[.42,0,.58,1]:name==="cubic-bezier"?(custom??[.25,.1,.25,1]):[0,0,.58,1] as [number,number,number,number];const easingFn=(name:string,custom?:[number,number,number,number])=>cubicBezier(easingCurve(name,custom));'
+if old not in src: raise SystemExit("easingFn anchor missing")
+src=src.replace(old,new,1)
+src=src.replace('p=easingFn(item.easing)(rawP),v=motionVector', 'p=outP<1?easingFn(item.outEasing??item.easing,item.outEasingBezier)(rawP):easingFn(item.easing,item.easingBezier)(rawP),v=motionVector',1)
+# Insert reusable interactive editor before return.
+anchor2='return <div className="bm-app">'
+widget='const EasingEditor=({mode}:{mode:"in"|"out"})=>{if(!layer)return null;const name=mode==="in"?layer.easing:(layer.outEasing??layer.easing),curve=mode==="in"?(layer.easingBezier??easingCurve(name)):(layer.outEasingBezier??easingCurve(name)),setCurve=(next:[number,number,number,number])=>patchLayer(mode==="in"?{easing:"cubic-bezier",easingBezier:next}:{outEasing:"cubic-bezier",outEasingBezier:next});const dragPoint=(index:0|1,e:ReactPointerEvent<SVGCircleElement>)=>{e.preventDefault();const svg=e.currentTarget.ownerSVGElement;if(!svg)return;const move=(ev:PointerEvent)=>{const r=svg.getBoundingClientRect(),x=clamp((ev.clientX-r.left)/r.width,0,1),y=clamp(1-(ev.clientY-r.top)/r.height,-.5,1.5),n:[number,number,number,number]=[...curve] as [number,number,number,number];n[index*2]=x;n[index*2+1]=y;setCurve(n)},up=()=>{removeEventListener("pointermove",move);removeEventListener("pointerup",up)};addEventListener("pointermove",move);addEventListener("pointerup",up)};const path="M 0 100 C "+curve[0]*100+" "+(100-curve[1]*100)+", "+curve[2]*100+" "+(100-curve[3]*100)+", 100 0";return <div className="bm-bezier-editor"><div className="bm-bezier-head"><small>{mode.toUpperCase()} EASING</small><select value={name} onChange={e=>patchLayer(mode==="in"?{easing:e.target.value as SceneLayer["easing"]}:{outEasing:e.target.value as SceneLayer["easing"]})}><option value="ease-out">Ease out</option><option value="ease-in">Ease in</option><option value="ease-in-out">Ease in-out</option><option value="linear">Linear</option><option value="cubic-bezier">Custom Bézier</option></select></div><svg viewBox="0 0 100 100" preserveAspectRatio="none"><path className="grid" d="M0 25H100 M0 50H100 M0 75H100 M25 0V100 M50 0V100 M75 0V100"/><path className="guide" d={"M0 100 L"+curve[0]*100+" "+(100-curve[1]*100)+" M100 0 L"+curve[2]*100+" "+(100-curve[3]*100)}/><path className="curve" d={path}/><circle className="point" cx={curve[0]*100} cy={100-curve[1]*100} r="4" onPointerDown={e=>dragPoint(0,e)}/><circle className="point" cx={curve[2]*100} cy={100-curve[3]*100} r="4" onPointerDown={e=>dragPoint(1,e)}/></svg><code>cubic-bezier({curve.map(v=>Number(v.toFixed(2))).join(", ")})</code></div>};'
+if anchor2 not in src: raise SystemExit("return anchor missing")
+src=src.replace(anchor2,widget+anchor2,1)
+# Replace legacy duration/easing block with two editors; duration is controlled directly on track handles.
+import re
+pattern=r'<div className="bm-two"><label><small>IN · MS</small>.*?</div><div className="bm-two"><label><small>EASING</small>.*?</div>'
+m=re.search(pattern,src)
+if not m: raise SystemExit("legacy easing block missing")
+src=src[:m.start()]+'<EasingEditor mode="in"/><EasingEditor mode="out"/>'+src[m.end():]
+p.write_text(src)
+css=css_path.read_text()
+marker16="/* editable-bezier-editors-2026-09-19 */"
+if marker16 not in css:
+    css += r"""
+/* editable-bezier-editors-2026-09-19 */
+.bm-bezier-editor{margin-top:16px;padding-top:16px;border-top:1px solid #262d37}
+.bm-bezier-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.bm-bezier-head small{letter-spacing:.08em;color:#aeb7c6}
+.bm-bezier-head select{width:auto;min-width:132px;height:32px;border:1px solid #303846;border-radius:6px;background:#151b24;color:#e7ebf2;padding:0 28px 0 10px}
+.bm-bezier-editor svg{display:block;width:100%;height:156px;border:1px solid #303846;border-radius:8px;background:#11161d;overflow:visible;touch-action:none}
+.bm-bezier-editor .grid{fill:none;stroke:#202833;stroke-width:.65}
+.bm-bezier-editor .guide{fill:none;stroke:#667085;stroke-width:.8;stroke-dasharray:2 2}
+.bm-bezier-editor .curve{fill:none;stroke:#8b82ff;stroke-width:2}
+.bm-bezier-editor .point{fill:#11161d;stroke:#9a92ff;stroke-width:2;cursor:grab;vector-effect:non-scaling-stroke}
+.bm-bezier-editor .point:active{cursor:grabbing}
+.bm-bezier-editor code{display:block;margin-top:8px;color:#7f8999;font-size:11px;white-space:normal}
+"""
+    css_path.write_text(css)
 print("EDITOR_UX_PASS_V2_OK")
