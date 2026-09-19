@@ -443,9 +443,12 @@ elif "const EasingEditor=" not in src:
 # Replace legacy duration/easing block with two editors; duration is controlled directly on track handles.
 import re
 pattern=r'<div className="bm-two"><label><small>IN · MS</small>.*?</div><div className="bm-two"><label><small>EASING</small>.*?</div>'
-m=re.search(pattern,src)
+motion_panel_start=src.find('<div className="bm-motion-out-title"')
+m=re.search(pattern,src[motion_panel_start:]) if motion_panel_start>=0 else None
 if m:
-    src=src[:m.start()]+'<EasingEditor mode="in"/><EasingEditor mode="out"/>'+src[m.end():]
+    a=motion_panel_start+m.start()
+    b=motion_panel_start+m.end()
+    src=src[:a]+'<EasingEditor mode="in"/><EasingEditor mode="out"/>'+src[b:]
 elif '<EasingEditor mode="in"/><EasingEditor mode="out"/>' not in src:
     print("legacy easing replacement skipped: no legacy block")
 p.write_text(src)
