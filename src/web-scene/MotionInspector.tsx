@@ -1,6 +1,7 @@
 import {useMemo,useState,type PointerEvent as ReactPointerEvent} from "react";
-import type {BezierCurve,BounceCurve,EasingPreset,MotionPreset,SceneLayer} from "./sceneModel";
-import {BOUNCE_PRESETS} from "./motionRuntime";
+import type {BezierCurve,BounceConfig,EasingPreset,MotionPreset,SceneLayer} from "./sceneModel";
+import BounceCurveEditor from "./BounceCurveEditor";
+import {SPRING_PRESETS,springConfig,type SpringPresetId} from "./springRuntime";
 import "./motionInspector.css";
 
 const TRANSFORMS:{id:MotionPreset;label:string;glyph:string}[]=[
@@ -38,13 +39,6 @@ function BezierEditor({mode,layer,patch}:{mode:Mode;layer:SceneLayer;patch:Props
  </div>
 }
 
-function BounceCurveEditor({layer,patch,onClose}:{layer:SceneLayer;patch:Props["patch"];onClose:()=>void}){
- const preset=layer.bouncePreset??"single",path=layer.bouncePath??BOUNCE_PRESETS[preset==="custom"?"single":preset],setPath=(next:BounceCurve)=>patch({bouncePath:next,bouncePreset:"custom"});
- const W=300,H=170,pad=16,px=(x:number)=>pad+x*(W-pad*2),py=(y:number)=>H-pad-y*(H-pad*2),d=path.slice(0,-1).map((p,i)=>`M${px(p.x)} ${py(p.y)} C ${px(p.outX)} ${py(p.outY)}, ${px(path[i+1].inX)} ${py(path[i+1].inY)}, ${px(path[i+1].x)} ${py(path[i+1].y)}`).join(" ");
- const drag=(i:number,kind:"anchor"|"in"|"out",e:ReactPointerEvent<SVGCircleElement>)=>{e.preventDefault();const svg=e.currentTarget.ownerSVGElement;if(!svg)return;const move=(ev:PointerEvent)=>{const r=svg.getBoundingClientRect(),margin=.06,x=clamp((ev.clientX-r.left)/r.width,margin,1-margin),y=clamp(1-(ev.clientY-r.top)/r.height,margin,1-margin),next=path.map(p=>({...p}));const p=next[i];if(kind==="anchor"){const dx=x-p.x,dy=y-p.y;p.x=i===0?0:i===next.length-1?1:x;p.y=y;p.inX=clamp(p.inX+dx,margin,1-margin);p.inY=clamp(p.inY+dy,margin,1-margin);p.outX=clamp(p.outX+dx,margin,1-margin);p.outY=clamp(p.outY+dy,margin,1-margin)}else{const kx=kind==="in"?"inX":"outX",ky=kind==="in"?"inY":"outY",ox=kind==="in"?"outX":"inX",oy=kind==="in"?"outY":"inY";p[kx]=x;p[ky]=y;const dx=x-p.x,dy=y-p.y,len=Math.hypot(dx,dy)||1,other=Math.min(.35,Math.hypot(p[ox]-p.x,p[oy]-p.y));p[ox]=clamp(p.x-dx/len*other,margin,1-margin);p[oy]=clamp(p.y-dy/len*other,margin,1-margin)}setPath(next)};const up=()=>{removeEventListener("pointermove",move);removeEventListener("pointerup",up)};addEventListener("pointermove",move);addEventListener("pointerup",up)};
- return <div className="bm-bounce-editor"><div className="bm-bounce-editor-head"><b>Bounce curve</b><button onClick={onClose}>×</button></div><div className="bm-bounce-presets">{(["soft","single","classic","lively"] as const).map(id=><button key={id} className={preset===id?"active":""} onClick={()=>patch({bouncePreset:id,bouncePath:BOUNCE_PRESETS[id].map(p=>({...p}))})}>{id}</button>)}</div><svg viewBox={`0 0 ${W} ${H}`} onPointerDown={e=>e.stopPropagation()}><path className="grid" d="M16 154H284 M16 85H284 M16 16H284"/><path className="curve" d={d}/>{path.map((p,i)=><g key={i}><path className="guide" d={`M${px(p.inX)} ${py(p.inY)} L${px(p.x)} ${py(p.y)} L${px(p.outX)} ${py(p.outY)}`}/>{i>0&&<circle className="handle" cx={px(p.inX)} cy={py(p.inY)} r="4" onPointerDown={e=>drag(i,"in",e)}/>}<circle className="anchor" cx={px(p.x)} cy={py(p.y)} r="5" onPointerDown={e=>drag(i,"anchor",e)}/>{i<path.length-1&&<circle className="handle" cx={px(p.outX)} cy={py(p.outY)} r="4" onPointerDown={e=>drag(i,"out",e)}/>}</g>)}</svg><small>Drag points and tangent handles. Handles stay recoverable inside the editor.</small></div>;
-}
-
 function Transition({mode,layer,patch}:{mode:Mode;layer:SceneLayer;patch:Props["patch"]}){
  const [bounceCurveOpen,setBounceCurveOpen]=useState(false);
  const raw=mode==="in"?layer.motion:(layer.outMotion??"none"),transform=raw==="fade"?"none":raw;
@@ -54,6 +48,9 @@ function Transition({mode,layer,patch}:{mode:Mode;layer:SceneLayer;patch:Props["
  const setFade=()=>patch(mode==="in"?{inOpacity:!fade,motion:layer.motion==="fade"?"none":layer.motion}:{outOpacity:!fade,outMotion:(layer.outMotion??"none")==="fade"?"none":layer.outMotion,outMotionDurationMs:layer.outMotionDurationMs||320});
  const reset=()=>patch(mode==="in"?{motion:"none",inOpacity:false}:{outMotion:"none",outOpacity:false,outMotionDurationMs:0});
  const none=transform==="none"&&!fade;
+ const bounce=springConfig(mode==="in"?(layer.inBounce??{preset:layer.bouncePreset==="soft"?"soft":layer.bouncePreset==="lively"?"bouncy":"single",direction:layer.bounceDirection??"down",distance:Math.max(.1,(layer.bounceIntensity??100)/100),offscreen:false,bounce:.12,velocity:.55}):(layer.outBounce??{preset:"single",direction:layer.bounceDirection??"up",distance:1,offscreen:false,bounce:.12,velocity:.55}));
+ const patchBounce=(next:Partial<BounceConfig>)=>{const value={...bounce,...next} as BounceConfig;patch(mode==="in"?{inBounce:value}:{outBounce:value})};
+ const chooseBouncePreset=(preset:SpringPresetId)=>patchBounce({preset,...SPRING_PRESETS[preset]});
  return <section className="bm-transition"><header><div><small>{mode.toUpperCase()}</small><h4>Effects</h4></div><span>Duration {Math.round(duration)} ms</span></header>
   <div className="bm-fx-grid">
    <button className={none?"active":""} onClick={reset}><i>•</i><b>None</b></button>
@@ -61,11 +58,14 @@ function Transition({mode,layer,patch}:{mode:Mode;layer:SceneLayer;patch:Props["
    {TRANSFORMS.map(p=><button key={p.id} className={transform===p.id?"active":""} onClick={()=>setTransform(p.id)}><i>{p.glyph}</i><b>{p.label}</b></button>)}
   </div>
   {transform==="bounce"&&<div className="bm-bounce-controls">
-   <div className="bm-bounce-direction"><span>Direction</span><div><button className={(layer.bounceDirection??"down")==="up"?"active":""} onClick={()=>patch({bounceDirection:"up"})}>↑</button><button className={layer.bounceDirection==="down"?"active":""} onClick={()=>patch({bounceDirection:"down"})}>↓</button><button className={layer.bounceDirection==="left"?"active":""} onClick={()=>patch({bounceDirection:"left"})}>←</button><button className={layer.bounceDirection==="right"?"active":""} onClick={()=>patch({bounceDirection:"right"})}>→</button></div></div>
-   <label><span>Duration</span><input type="range" min="200" max="1800" step="20" value={layer.motionDurationMs} onChange={e=>patch({motionDurationMs:Number(e.target.value)})}/><b>{layer.motionDurationMs} ms</b></label>
-   <label><span>Distance</span><input type="range" min="4" max="180" step="2" value={layer.bounceIntensity??14} onChange={e=>patch({bounceIntensity:Number(e.target.value)})}/><b>{layer.bounceIntensity??14}%</b></label>
-   <div className="bm-bounce-preset-row"><span>Curve</span><select value={layer.bouncePreset??"single"} onChange={e=>{const id=e.target.value as "soft"|"single"|"classic"|"lively";patch({bouncePreset:id,bouncePath:BOUNCE_PRESETS[id].map(p=>({...p}))})}}><option value="soft">Soft</option><option value="single">Single inertia</option><option value="classic">Classic bounce</option><option value="lively">Lively</option></select><button className="bm-bounce-curve-trigger" onClick={()=>setBounceCurveOpen(v=>!v)} title="Edit bounce curve">⌁</button></div>
-   {bounceCurveOpen&&<div className="bm-bounce-curve-popover"><BounceCurveEditor layer={layer} patch={patch} onClose={()=>setBounceCurveOpen(false)}/></div>}
+   <div className="bm-bounce-direction"><span>Direction</span><div>{(["up","down","left","right"] as const).map((id,i)=><button key={id} className={bounce.direction===id?"active":""} onClick={()=>patchBounce({direction:id})}>{["↑","↓","←","→"][i]}</button>)}</div></div>
+   <div className="bm-bounce-preset-row"><span>Preset</span><select value={bounce.preset} onChange={e=>{const id=e.target.value as SpringPresetId|"custom";if(id!=="custom")chooseBouncePreset(id)}}><option value="soft">Soft</option><option value="drop">Drop</option><option value="single">Single inertia</option><option value="bouncy">Bouncy</option>{bounce.preset==="custom"&&<option value="custom">Custom</option>}</select><button className="bm-bounce-curve-trigger" onClick={()=>setBounceCurveOpen(v=>!v)} title="Edit bounce curve">⌁</button></div>
+   <label><span>Duration</span><input type="range" min="160" max="2200" step="20" value={duration||600} onChange={e=>patch(mode==="in"?{motionDurationMs:Number(e.target.value)}:{outMotionDurationMs:Number(e.target.value)})}/><b>{duration||600} ms</b></label>
+   <label><span>Distance</span><input type="range" min=".1" max="3" step=".05" value={bounce.distance} onChange={e=>patchBounce({distance:Number(e.target.value)})}/><b>{bounce.distance.toFixed(2)}×</b></label>
+   <label><span>Bounce</span><input type="range" min="-.25" max=".5" step=".01" value={bounce.bounce} onChange={e=>patchBounce({bounce:Number(e.target.value),preset:"custom"})}/><b>{bounce.bounce.toFixed(2)}</b></label>
+   <label><span>Velocity</span><input type="range" min="-1" max="4" step=".05" value={bounce.velocity} onChange={e=>patchBounce({velocity:Number(e.target.value),preset:"custom"})}/><b>{bounce.velocity.toFixed(2)}</b></label>
+   <label className="bm-bounce-offscreen"><span>Start</span><input type="checkbox" checked={bounce.offscreen} onChange={e=>patchBounce({offscreen:e.target.checked})}/><b>{bounce.offscreen?"Off canvas":"Relative"}</b></label>
+   {bounceCurveOpen&&<div className="bm-bounce-curve-popover"><BounceCurveEditor config={bounce} duration={duration||600} onChange={next=>patch(mode==="in"?{inBounce:next}:{outBounce:next})} onClose={()=>setBounceCurveOpen(false)}/></div>}
   </div>}
   <BezierEditor mode={mode} layer={layer} patch={patch}/>
  </section>
