@@ -3,3 +3,5 @@
 .bm-bezier .handle{vector-effect:non-scaling-stroke;transform-box:fill-box;transform-origin:center}.bm-bezier-canvas{aspect-ratio:1.75/1}.bm-bezier-canvas svg{overflow:visible}.bm-bezier .curve{stroke-width:1.05}.bm-bezier .guide{stroke-width:.55}
 
 .bm-bounce-controls{margin-top:12px;padding:10px;border:1px solid #2b333e;border-radius:7px;background:#11161d;display:grid;gap:9px}.bm-bounce-controls label{display:grid;grid-template-columns:48px minmax(0,1fr) 54px;align-items:center;gap:8px}.bm-bounce-controls span,.bm-bounce-controls b{font-size:9px;color:#8994a4;font-weight:500}.bm-bounce-controls b{text-align:right;font-variant-numeric:tabular-nums}.bm-bounce-controls input{width:100%;accent-color:#786cff}
+
+.bm-bounce-direction{display:grid;grid-template-columns:48px minmax(0,1fr);align-items:center;gap:8px}.bm-bounce-direction>span{font-size:9px;color:#8994a4}.bm-bounce-direction>div{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}.bm-bounce-direction button{height:28px;border:1px solid #303846;border-radius:5px;background:#171d26;color:#aeb7c4;cursor:pointer}.bm-bounce-direction button.active{border-color:#7065e8;background:#211f3a;color:#fff}
