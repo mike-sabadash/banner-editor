@@ -52,6 +52,7 @@ function Transition({mode,layer,patch}:{mode:Mode;layer:SceneLayer;patch:Props["
    {TRANSFORMS.map(p=><button key={p.id} className={transform===p.id?"active":""} onClick={()=>setTransform(p.id)}><i>{p.glyph}</i><b>{p.label}</b></button>)}
   </div>
   {transform==="bounce"&&<div className="bm-bounce-controls">
+   <div className="bm-bounce-direction"><span>Direction</span><div><button className={(layer.bounceDirection??"up")==="up"?"active":""} onClick={()=>patch({bounceDirection:"up"})}>↑</button><button className={layer.bounceDirection==="down"?"active":""} onClick={()=>patch({bounceDirection:"down"})}>↓</button><button className={layer.bounceDirection==="left"?"active":""} onClick={()=>patch({bounceDirection:"left"})}>←</button><button className={layer.bounceDirection==="right"?"active":""} onClick={()=>patch({bounceDirection:"right"})}>→</button></div></div>
    <label><span>Speed</span><input type="range" min="200" max="1400" step="20" value={layer.motionDurationMs} onChange={e=>patch({motionDurationMs:Number(e.target.value)})}/><b>{layer.motionDurationMs} ms</b></label>
    <label><span>Bounce</span><input type="range" min="4" max="28" step="1" value={layer.bounceIntensity??14} onChange={e=>patch({bounceIntensity:Number(e.target.value)})}/><b>{layer.bounceIntensity??14}</b></label>
    <label><span>Smooth</span><input type="range" min="1" max="5" step="1" value={layer.bounceBounces??3} onChange={e=>patch({bounceBounces:Number(e.target.value)})}/><b>{layer.bounceBounces??3}</b></label>
