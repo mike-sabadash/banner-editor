@@ -4,7 +4,7 @@ import "./motionInspector.css";
 
 const TRANSFORMS:{id:MotionPreset;label:string;glyph:string}[]=[
  {id:"from-left",label:"From left",glyph:"→"},{id:"from-right",label:"From right",glyph:"←"},
- {id:"from-top",label:"From top",glyph:"↓"},{id:"from-bottom",label:"From bottom",glyph:"↑"},{id:"scale-in",label:"Scale",glyph:"↗"}
+ {id:"from-top",label:"From top",glyph:"↓"},{id:"from-bottom",label:"From bottom",glyph:"↑"},{id:"scale-in",label:"Scale",glyph:"↗"},{id:"bounce",label:"Bounce",glyph:"↕"}
 ];
 const CURVES:Record<Exclude<EasingPreset,"cubic-bezier">,BezierCurve>={
  "linear":[0,0,1,1],"ease-in":[.42,0,1,1],"ease-out":[0,0,.58,1],"ease-in-out":[.42,0,.58,1]
@@ -51,6 +51,11 @@ function Transition({mode,layer,patch}:{mode:Mode;layer:SceneLayer;patch:Props["
    <button className={fade?"active":""} onClick={setFade}><i>◌</i><b>Fade</b></button>
    {TRANSFORMS.map(p=><button key={p.id} className={transform===p.id?"active":""} onClick={()=>setTransform(p.id)}><i>{p.glyph}</i><b>{p.label}</b></button>)}
   </div>
+  {transform==="bounce"&&<div className="bm-bounce-controls">
+   <label><span>Speed</span><input type="range" min="200" max="1400" step="20" value={layer.motionDurationMs} onChange={e=>patch({motionDurationMs:Number(e.target.value)})}/><b>{layer.motionDurationMs} ms</b></label>
+   <label><span>Bounce</span><input type="range" min="4" max="28" step="1" value={layer.bounceIntensity??14} onChange={e=>patch({bounceIntensity:Number(e.target.value)})}/><b>{layer.bounceIntensity??14}</b></label>
+   <label><span>Smooth</span><input type="range" min="1" max="5" step="1" value={layer.bounceBounces??3} onChange={e=>patch({bounceBounces:Number(e.target.value)})}/><b>{layer.bounceBounces??3}</b></label>
+  </div>}
   <BezierEditor mode={mode} layer={layer} patch={patch}/>
  </section>
 }
