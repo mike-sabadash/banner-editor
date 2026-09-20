@@ -7,5 +7,6 @@ describe("motion runtime acceptance",()=>{
  it("supports scale plus fade",()=>{const l={...base,motion:"scale-in" as const};const f=motionFrame(l,300);expect(f.opacity).toBeCloseTo(.5,3);expect(String(f.transform)).toContain("scale(0.91)")});
  it("keeps IN and OUT easing independent",()=>{const l={...base,easing:"ease-in" as const,outEasing:"ease-out" as const};expect(motionFrame(l,300).opacity).not.toBe(motionFrame(l,1950).opacity)});
  it("evaluates custom bezier endpoints",()=>{expect(cubicBezierProgress(0,[.2,.8,.2,1])).toBe(0);expect(cubicBezierProgress(1,[.2,.8,.2,1])).toBe(1)});
+ it("moves down-entry bounce from above and lands exactly at target",()=>{const l={...base,motion:"bounce" as const,motionDurationMs:700,inBounce:{direction:"down" as const,distance:1,offscreen:true,bounce:.16,velocity:1.8,preset:"drop" as const},inBounceVector:{x:0,y:-240}};expect(String(motionFrame(l,100).transform)).toContain("-240%");expect(String(motionFrame(l,800).transform)).toContain("0%")});
  it("uses inclusive visibility bounds",()=>{expect(layerVisibleAt(base,99)).toBe(false);expect(layerVisibleAt(base,100)).toBe(true);expect(layerVisibleAt(base,2100)).toBe(true);expect(layerVisibleAt(base,2101)).toBe(false)});
 });
