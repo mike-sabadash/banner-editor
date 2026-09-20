@@ -56,15 +56,15 @@
 }
 
 /* Figma-style viewport rulers + persistent guides */
-.bm-stage.has-rulers{padding-top:64px;padding-left:86px}
+.bm-stage.has-rulers{padding-top:0;padding-left:0}
 .bm-stage-ruler{position:absolute;z-index:40;background:#11161d;color:#788392;border-color:rgba(255,255,255,.13);font-size:8px;user-select:none;touch-action:none}
-.bm-stage-ruler-x{left:22px;right:0;top:0;height:22px;border-bottom:1px solid rgba(255,255,255,.13);cursor:ns-resize}
-.bm-stage-ruler-y{top:22px;bottom:0;left:0;width:22px;border-right:1px solid rgba(255,255,255,.13);cursor:ew-resize}
+.bm-stage-ruler-x{left:22px;right:0;top:0;height:22px;border-bottom:1px solid rgba(255,255,255,.13);cursor:ns-resize;overflow:hidden}
+.bm-stage-ruler-y{top:22px;bottom:0;left:0;width:22px;border-right:1px solid rgba(255,255,255,.13);cursor:ew-resize;overflow:hidden}
 .bm-ruler-corner{position:absolute;z-index:42;left:0;top:0;width:22px;height:22px;background:#11161d;border-right:1px solid rgba(255,255,255,.13);border-bottom:1px solid rgba(255,255,255,.13)}
 .bm-stage-ruler i{position:absolute;display:block;background:rgba(255,255,255,.28);font-style:normal;pointer-events:none}
-.bm-stage-ruler-x i{top:13px;width:1px;height:9px}.bm-stage-ruler-x i span{position:absolute;bottom:7px;left:3px;white-space:nowrap}
-.bm-stage-ruler-y i{left:13px;width:9px;height:1px}.bm-stage-ruler-y i span{position:absolute;left:3px;top:2px;transform:rotate(-90deg);transform-origin:top left;white-space:nowrap}
+.bm-stage-ruler-x i{top:14px;width:1px;height:8px}.bm-stage-ruler-x i:after{content:"";position:absolute;left:25px;bottom:0;width:1px;height:4px;background:rgba(255,255,255,.16)}.bm-stage-ruler-x i span{position:absolute;bottom:7px;left:3px;white-space:nowrap}
+.bm-stage-ruler-y i{left:14px;width:8px;height:1px}.bm-stage-ruler-y i:after{content:"";position:absolute;top:25px;right:0;width:4px;height:1px;background:rgba(255,255,255,.16)}.bm-stage-ruler-y i span{position:absolute;right:7px;top:3px;transform:rotate(-90deg);transform-origin:top right;white-space:nowrap}
 .bm-stage-guide{position:absolute;z-index:35;display:block;background:#4da3ff;pointer-events:auto;touch-action:none}
-.bm-stage-guide.vertical{top:22px;bottom:0;width:1px;cursor:ew-resize}
-.bm-stage-guide.horizontal{left:22px;right:0;height:1px;cursor:ns-resize}
+.bm-stage-guide.vertical{top:0;bottom:0;width:1px;cursor:ew-resize}
+.bm-stage-guide.horizontal{left:0;right:0;height:1px;cursor:ns-resize}
 .bm-stage-guide:hover{background:#8bc5ff;box-shadow:0 0 0 1px rgba(77,163,255,.2)}
