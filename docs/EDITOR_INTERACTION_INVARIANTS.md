@@ -10,6 +10,7 @@ These are product rules, not implementation suggestions. Do not change them whil
 - Inspector / properties / other UI does not reinterpret Space and must never move/pan itself because Space is held.
 - Hover is not shortcut focus. Moving the pointer over another area must not change Space behavior.
 - Clicking Canvas explicitly switches shortcut context back to Canvas.
-- Clicking Timeline explicitly switches shortcut context back to Timeline.
+- Clicking Timeline explicitly switches shortcut context back to Timeline. It must blur stale input/select/contenteditable focus from Properties so that old DOM focus cannot steal Space.
+- When Timeline owns shortcut context, Space is Play/Pause even if a stale form-control target somehow reaches the global key handler.
 - Inputs, textarea, select and contenteditable retain native keyboard behavior.
 - Do not infer Space behavior from :hover.
