@@ -1,13 +1,13 @@
 import {spring} from "animejs/easings";
-import type {BounceCurve} from "./sceneModel";
+import type {BounceCurve,BounceDirection} from "./sceneModel";
 
 export type SpringPresetId="soft"|"drop"|"single"|"bouncy";
-export type SpringConfig={preset:SpringPresetId|"custom";bounce:number;velocity:number;distance:number;offscreen:boolean;customCurve?:BounceCurve};
+export type SpringConfig={preset:SpringPresetId|"custom";direction:BounceDirection;bounce:number;velocity:number;distance:number;offscreen:boolean;customCurve?:BounceCurve};
 export const SPRING_PRESETS:Record<SpringPresetId,Omit<SpringConfig,"preset">>={
- soft:{bounce:-.08,velocity:0,distance:1,offscreen:false},
- drop:{bounce:.16,velocity:1.8,distance:1,offscreen:true},
- single:{bounce:.12,velocity:.55,distance:1,offscreen:false},
- bouncy:{bounce:.34,velocity:.25,distance:1,offscreen:false}
+ soft:{direction:"down",bounce:-.08,velocity:0,distance:1,offscreen:false},
+ drop:{direction:"down",bounce:.16,velocity:1.8,distance:1,offscreen:true},
+ single:{direction:"down",bounce:.12,velocity:.55,distance:1,offscreen:false},
+ bouncy:{direction:"down",bounce:.34,velocity:.25,distance:1,offscreen:false}
 };
 export const springConfig=(value?:Partial<SpringConfig>):SpringConfig=>{const preset=value?.preset??"single",base=preset==="custom"?SPRING_PRESETS.single:SPRING_PRESETS[preset];return{preset,...base,...value,bounce:Math.max(-.5,Math.min(.5,value?.bounce??base.bounce)),velocity:Math.max(-10,Math.min(10,value?.velocity??base.velocity)),distance:Math.max(.05,Math.min(4,value?.distance??base.distance))}};
 export const animeSpringProgress=(t:number,duration:number,config:SpringConfig)=>{if(t<=0)return 0;if(t>=1)return 1;const model=spring({bounce:config.bounce,duration:Math.max(10,duration)});model.velocity=config.velocity;return model.ease(t)};
