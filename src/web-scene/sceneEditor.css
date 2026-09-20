@@ -56,16 +56,21 @@
 }
 
 /* Figma-style viewport rulers + persistent guides */
-.bm-stage.has-rulers{padding-top:0;padding-left:0}
-.bm-stage-ruler{position:absolute;z-index:80;background:#11161d;color:#87909d;border-color:rgba(255,255,255,.14);font-size:8px;line-height:1;user-select:none;touch-action:none}
-.bm-stage-ruler-x{left:20px;right:0;top:0;height:20px;border-bottom:1px solid rgba(255,255,255,.14);cursor:ns-resize;overflow:hidden}
-.bm-stage-ruler-y{top:20px;bottom:0;left:0;width:20px;border-right:1px solid rgba(255,255,255,.14);cursor:ew-resize;overflow:hidden}
+.bm-stage.has-rulers{padding-top:0!important;padding-left:0!important}
+.bm-stage-ruler{position:absolute;z-index:80;background:#11161d!important;color:#8e98a6!important;font-size:9px;line-height:1;user-select:none;touch-action:none;overflow:hidden}
+.bm-stage-ruler-x{left:20px;right:0;top:0;height:20px;border-bottom:1px solid rgba(255,255,255,.14);cursor:ns-resize}
+.bm-stage-ruler-y{top:20px;bottom:0;left:0;width:20px;border-right:1px solid rgba(255,255,255,.14);cursor:ew-resize}
 .bm-ruler-corner{position:absolute;z-index:82;left:0;top:0;width:20px;height:20px;background:#11161d;border-right:1px solid rgba(255,255,255,.14);border-bottom:1px solid rgba(255,255,255,.14)}
-.bm-stage-ruler i{position:absolute;display:block;background:rgba(255,255,255,.28);font-style:normal;pointer-events:none;border-radius:0!important;box-shadow:none!important}
-.bm-stage-ruler-x i{top:13px;width:1px;height:7px}.bm-stage-ruler-x i:after{content:"";position:absolute;left:25px;bottom:0;width:1px;height:3px;background:rgba(255,255,255,.15)}.bm-stage-ruler-x i span{position:absolute;bottom:7px;left:3px;white-space:nowrap;background:transparent!important;border:0!important;border-radius:0!important;padding:0!important;box-shadow:none!important}
-.bm-stage-ruler-y i{left:13px;width:7px;height:1px}.bm-stage-ruler-y i:after{content:"";position:absolute;top:25px;right:0;width:3px;height:1px;background:rgba(255,255,255,.15)}.bm-stage-ruler-y i span{position:absolute;right:7px;top:3px;transform:rotate(-90deg);transform-origin:top right;white-space:nowrap;background:transparent!important;border:0!important;border-radius:0!important;padding:0!important;box-shadow:none!important}
-.bm-stage-guide{position:absolute;z-index:76;display:block;background:#ff5b57!important;pointer-events:auto;touch-action:none;opacity:1!important;box-shadow:none!important}
-.bm-stage-guide.vertical{top:0;bottom:0;width:1px;cursor:ew-resize}
-.bm-stage-guide.horizontal{left:0;right:0;height:1px;cursor:ns-resize}
+.bm-stage-ruler i,.bm-stage-ruler i.major,.bm-stage-ruler i.minor{position:absolute!important;display:block!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;font-style:normal;pointer-events:none}
+.bm-stage-ruler-x i{bottom:0!important;top:auto!important;width:1px!important;height:4px!important;border-left:1px solid rgba(255,255,255,.26)!important}
+.bm-stage-ruler-x i.major{height:7px!important}
+.bm-stage-ruler-x i span{position:absolute!important;left:3px!important;bottom:7px!important;width:auto!important;height:auto!important;padding:0!important;margin:0!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;color:#8e98a6!important;white-space:nowrap!important}
+.bm-stage-ruler-y i{right:0!important;left:auto!important;width:4px!important;height:1px!important;border-top:1px solid rgba(255,255,255,.26)!important}
+.bm-stage-ruler-y i.major{width:7px!important}
+.bm-stage-ruler-y i span{position:absolute!important;right:7px!important;top:3px!important;width:auto!important;height:auto!important;padding:0!important;margin:0!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;color:#8e98a6!important;white-space:nowrap!important;transform:rotate(-90deg)!important;transform-origin:top right!important}
+.bm-stage-ruler i:after{display:none!important}
+.bm-stage-guide{position:absolute!important;z-index:76!important;display:block!important;background:#ff5b57!important;pointer-events:auto!important;touch-action:none!important;opacity:1!important;box-shadow:none!important}
+.bm-stage-guide.vertical{top:0!important;bottom:0!important;width:1px!important;height:auto!important;cursor:ew-resize}
+.bm-stage-guide.horizontal{left:0!important;right:0!important;height:1px!important;width:auto!important;cursor:ns-resize}
 .bm-stage-guide:hover{background:#ff7773!important}
 .bm-stage>.bm-tools{z-index:100!important}
