@@ -1,4 +1,4 @@
-import {useMemo,type PointerEvent as ReactPointerEvent} from "react";
+import {useMemo,useState,type PointerEvent as ReactPointerEvent} from "react";
 import type {BezierCurve,EasingPreset,MotionPreset,SceneLayer} from "./sceneModel";
 import "./motionInspector.css";
 
@@ -37,7 +37,13 @@ function BezierEditor({mode,layer,patch}:{mode:Mode;layer:SceneLayer;patch:Props
  </div>
 }
 
+function BounceCurveEditor({layer,patch}:Props){
+ const proxy:SceneLayer={...layer,easing:"cubic-bezier",easingBezier:layer.bounceCurve??[.2,.8,.2,1]};
+ return <BezierEditor mode="in" layer={proxy} patch={next=>{if(next.easingBezier)patch({bounceCurve:next.easingBezier})}}/>;
+}
+
 function Transition({mode,layer,patch}:{mode:Mode;layer:SceneLayer;patch:Props["patch"]}){
+ const [bounceCurveOpen,setBounceCurveOpen]=useState(false);
  const raw=mode==="in"?layer.motion:(layer.outMotion??"none"),transform=raw==="fade"?"none":raw;
  const fade=mode==="in"?!!(layer.inOpacity||layer.motion==="fade"):!!(layer.outOpacity||(layer.outMotion??"none")==="fade");
  const duration=mode==="in"?layer.motionDurationMs:(layer.outMotionDurationMs??0);
@@ -53,9 +59,11 @@ function Transition({mode,layer,patch}:{mode:Mode;layer:SceneLayer;patch:Props["
   </div>
   {transform==="bounce"&&<div className="bm-bounce-controls">
    <div className="bm-bounce-direction"><span>Direction</span><div><button className={(layer.bounceDirection??"up")==="up"?"active":""} onClick={()=>patch({bounceDirection:"up"})}>↑</button><button className={layer.bounceDirection==="down"?"active":""} onClick={()=>patch({bounceDirection:"down"})}>↓</button><button className={layer.bounceDirection==="left"?"active":""} onClick={()=>patch({bounceDirection:"left"})}>←</button><button className={layer.bounceDirection==="right"?"active":""} onClick={()=>patch({bounceDirection:"right"})}>→</button></div></div>
-   <label><span>Speed</span><input type="range" min="200" max="1400" step="20" value={layer.motionDurationMs} onChange={e=>patch({motionDurationMs:Number(e.target.value)})}/><b>{layer.motionDurationMs} ms</b></label>
-   <label><span>Bounce</span><input type="range" min="4" max="28" step="1" value={layer.bounceIntensity??14} onChange={e=>patch({bounceIntensity:Number(e.target.value)})}/><b>{layer.bounceIntensity??14}</b></label>
-   <label><span>Smooth</span><input type="range" min="1" max="5" step="1" value={layer.bounceBounces??3} onChange={e=>patch({bounceBounces:Number(e.target.value)})}/><b>{layer.bounceBounces??3}</b></label>
+   <label><span>Duration</span><input type="range" min="200" max="1400" step="20" value={layer.motionDurationMs} onChange={e=>patch({motionDurationMs:Number(e.target.value)})}/><b>{layer.motionDurationMs} ms</b></label>
+   <label><span>Bounce</span><input type="range" min="0" max="1" step=".05" value={layer.bounceAmount??.25} onChange={e=>patch({bounceAmount:Number(e.target.value)})}/><b>{(layer.bounceAmount??.25).toFixed(2)}</b></label>
+   <label><span>Distance</span><input type="range" min="4" max="28" step="1" value={layer.bounceIntensity??14} onChange={e=>patch({bounceIntensity:Number(e.target.value)})}/><b>{layer.bounceIntensity??14}%</b></label>
+   <button className="bm-bounce-curve-trigger" onClick={()=>setBounceCurveOpen(v=>!v)} title="Edit bounce timing curve">⌁ <span>Curve</span></button>
+   {bounceCurveOpen&&<div className="bm-bounce-curve-popover"><button className="bm-bounce-curve-close" onClick={()=>setBounceCurveOpen(false)}>×</button><BounceCurveEditor layer={layer} patch={patch}/></div>}
   </div>}
   <BezierEditor mode={mode} layer={layer} patch={patch}/>
  </section>
