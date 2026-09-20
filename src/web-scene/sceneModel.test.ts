@@ -1,7 +1,8 @@
 import {describe,expect,it} from "vitest";
-import {DEFAULT_SCENES,RU_CORE_10,adaptBox,familyFor,generateScene,motionVector,templateFor} from "./sceneModel";
+import {DEFAULT_SCENES,RU_CORE_10,adaptBox,familyFor,generateScene,motionVector,templateFor,useAsResponsiveMaster,MASTER_FORMAT} from "./sceneModel";
 describe("scene responsive model",()=>{
-  it("defines the Eurasia display catalog with the core formats",()=>{expect(RU_CORE_10.length).toBeGreaterThanOrEqual(10);expect(RU_CORE_10.map(f=>f.id)).toEqual(expect.arrayContaining(["240x400","300x250","300x300","300x500","300x600","160x600","728x90","970x250","320x50","320x100"]))});
+  it("defines the Eurasia display catalog with the core formats",()=>{expect(RU_CORE_10.length).toBeGreaterThanOrEqual(10);expect(RU_CORE_10.map(f=>f.id)).toEqual(expect.arrayContaining(["240x400","300x250","300x300","300x500","300x600","160x600","728x90","970x250","320x50","320x100"]))  it("preserves independent bounce config in responsive masters",()=>{const scene=structuredClone(DEFAULT_SCENES[0]);scene.layers[1].motion="bounce";scene.layers[1].inBounce={direction:"down",distance:1.4,offscreen:true,bounce:.16,velocity:1.8,preset:"drop"};const state=useAsResponsiveMaster([scene],MASTER_FORMAT,undefined,"tall");const saved=Object.values(state.responsiveMasters[0].scenes[scene.id].layers).find(l=>l.id===scene.layers[1].id)!;expect(saved.inBounce).toEqual(scene.layers[1].inBounce)});
+});
   it("classifies representative aspect ratios",()=>{expect(familyFor(320,50)).toBe("micro-strip");expect(familyFor(728,90)).toBe("strip");expect(familyFor(970,250)).toBe("wide");expect(familyFor(300,600)).toBe("tall");expect(familyFor(240,400)).toBe("portrait");expect(familyFor(300,250)).toBe("rectangle")});
   it("keeps hero and text in separate strip zones",()=>{const headline=templateFor("strip","headline"),hero=templateFor("strip","hero");expect(headline.x+headline.w).toBeLessThanOrEqual(hero.x)});
   it("turns directional motion into relative vectors",()=>{expect(motionVector("from-right",{x:50,y:5,w:25,h:90}).x).toBeGreaterThan(0);expect(motionVector("from-bottom",{x:5,y:50,w:80,h:30}).y).toBeGreaterThan(0)});
