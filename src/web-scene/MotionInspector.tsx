@@ -44,7 +44,8 @@ function Transition({mode,layer,patch,checkpoint}:{mode:Mode;layer:SceneLayer;pa
  const raw=mode==="in"?layer.motion:(layer.outMotion??"none"),transform=raw==="fade"?"none":raw;
  const fade=mode==="in"?!!(layer.inOpacity||layer.motion==="fade"):!!(layer.outOpacity||(layer.outMotion??"none")==="fade");
  const duration=mode==="in"?layer.motionDurationMs:(layer.outMotionDurationMs??0);
- const edit=(next:Partial<SceneLayer>)=>{checkpoint?.();patch(next)};\n const setTransform=(id:MotionPreset)=>edit(mode==="in"?{motion:id}:{outMotion:id,outMotionDurationMs:id==="none"&&!fade?0:(layer.outMotionDurationMs||320)});
+ const edit=(next:Partial<SceneLayer>)=>{checkpoint?.();patch(next)};
+ const setTransform=(id:MotionPreset)=>edit(mode==="in"?{motion:id}:{outMotion:id,outMotionDurationMs:id==="none"&&!fade?0:(layer.outMotionDurationMs||320)});
  const setFade=()=>edit(mode==="in"?{inOpacity:!fade,motion:layer.motion==="fade"?"none":layer.motion}:{outOpacity:!fade,outMotion:(layer.outMotion??"none")==="fade"?"none":layer.outMotion,outMotionDurationMs:layer.outMotionDurationMs||320});
  const reset=()=>edit(mode==="in"?{motion:"none",inOpacity:false}:{outMotion:"none",outOpacity:false,outMotionDurationMs:0});
  const none=transform==="none"&&!fade;
