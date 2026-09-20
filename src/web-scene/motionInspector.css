@@ -15,3 +15,9 @@
 /* Graph-editor ergonomics: larger value graph and generous invisible pointer targets. */
 .bm-bounce-curve-popover{width:min(520px,calc(100vw - 32px));right:0;overflow:visible;max-height:none}
 .bm-bounce-editor{padding:6px}.bm-bounce-editor svg{height:300px;overflow:hidden}.bm-bounce-editor .grid{stroke-width:.6}.bm-bounce-editor .curve{stroke-width:2.2;vector-effect:non-scaling-stroke}.bm-bounce-editor .guide{stroke-width:1;vector-effect:non-scaling-stroke}.bm-bounce-editor .handle,.bm-bounce-editor .anchor{pointer-events:none;vector-effect:non-scaling-stroke}.bm-bounce-editor .hit{fill:transparent;stroke:none;cursor:grab;pointer-events:all}.bm-bounce-editor .hit:active{cursor:grabbing}.bm-curve-actions{display:flex;align-items:center;gap:2px}.bm-curve-actions button{display:grid;place-items:center}.bm-curve-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:7px;color:#6f7a8a;font-size:8px}.bm-curve-footer button{display:flex;align-items:center;gap:5px;height:27px;padding:0 8px;border:1px solid #303846;border-radius:5px;background:#171d26;color:#aeb7c4;font-size:9px;cursor:pointer}
+
+/* Keep the bounce graph inside the inspector viewport. */
+.bm-bounce-curve-popover{position:fixed;z-index:400;top:96px;right:300px;bottom:96px;width:min(500px,calc(100vw - 340px));max-height:calc(100vh - 192px);overflow:auto;box-sizing:border-box}
+.bm-bounce-editor{min-width:0}
+.bm-bounce-editor svg{width:100%;height:auto;max-height:320px;aspect-ratio:420/250;overflow:hidden}
+@media(max-width:1100px){.bm-bounce-curve-popover{right:16px;width:min(500px,calc(100vw - 32px))}}
