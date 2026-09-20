@@ -2,7 +2,7 @@ import type {CSSProperties} from "react";
 import type {BezierCurve,BounceConfig,BounceCurve,EasingPreset,MotionPreset} from "./sceneModel";
 import {bounceProgress,springConfig} from "./springRuntime";
 
-type MotionLayer={motion:MotionPreset;motionDurationMs:number;outMotion?:MotionPreset;outMotionDurationMs?:number;startMs:number;endMs:number;motionVector:{x:number;y:number};inBounceVector?:{x:number;y:number};outBounceVector?:{x:number;y:number};easing:EasingPreset;easingBezier?:BezierCurve;outEasing?:EasingPreset;outEasingBezier?:BezierCurve;inOpacity?:boolean;outOpacity?:boolean;inBounce?:BounceConfig;outBounce?:BounceConfig;bounceIntensity?:number;bounceDirection?:"up"|"down"|"left"|"right";bouncePath?:BounceCurve;bouncePreset?:string};
+type MotionLayer={motion:MotionPreset;motionDurationMs:number;outMotion?:MotionPreset;outMotionDurationMs?:number;startMs:number;endMs:number;motionVector:{x:number;y:number};outMotionVector?:{x:number;y:number};inBounceVector?:{x:number;y:number};outBounceVector?:{x:number;y:number};easing:EasingPreset;easingBezier?:BezierCurve;outEasing?:EasingPreset;outEasingBezier?:BezierCurve;inOpacity?:boolean;outOpacity?:boolean;inBounce?:BounceConfig;outBounce?:BounceConfig;bounceIntensity?:number;bounceDirection?:"up"|"down"|"left"|"right";bouncePath?:BounceCurve;bouncePreset?:string};
 const clamp01=(v:number)=>Math.max(0,Math.min(1,v));
 const curveFor=(name:EasingPreset,custom?:BezierCurve):BezierCurve=>name==="linear"?[0,0,1,1]:name==="ease-in"?[.42,0,1,1]:name==="ease-in-out"?[.42,0,.58,1]:name==="cubic-bezier"?(custom??[.25,.1,.25,1]):[0,0,.58,1];
 export const cubicBezierProgress=(t:number,curve:BezierCurve)=>{
