@@ -1,7 +1,7 @@
 import type {CSSProperties} from "react";
 import type {BezierCurve,EasingPreset,MotionPreset} from "./sceneModel";
 
-type MotionLayer={motion:MotionPreset;motionDurationMs:number;outMotion?:MotionPreset;outMotionDurationMs?:number;startMs:number;endMs:number;motionVector:{x:number;y:number};easing:EasingPreset;easingBezier?:BezierCurve;outEasing?:EasingPreset;outEasingBezier?:BezierCurve;inOpacity?:boolean;outOpacity?:boolean};
+type MotionLayer={motion:MotionPreset;motionDurationMs:number;outMotion?:MotionPreset;outMotionDurationMs?:number;startMs:number;endMs:number;motionVector:{x:number;y:number};easing:EasingPreset;easingBezier?:BezierCurve;outEasing?:EasingPreset;outEasingBezier?:BezierCurve;inOpacity?:boolean;outOpacity?:boolean;bounceIntensity?:number;bounceBounces?:number};
 const clamp01=(v:number)=>Math.max(0,Math.min(1,v));
 const curveFor=(name:EasingPreset,custom?:BezierCurve):BezierCurve=>name==="linear"?[0,0,1,1]:name==="ease-in"?[.42,0,1,1]:name==="ease-in-out"?[.42,0,.58,1]:name==="cubic-bezier"?(custom??[.25,.1,.25,1]):[0,0,.58,1];
 export const cubicBezierProgress=(t:number,curve:BezierCurve)=>{
@@ -25,6 +25,7 @@ export function motionFrame(layer:MotionLayer,localMs:number):CSSProperties{
  const preset:MotionPreset=isOut?(layer.outMotion==="fade"?"none":layer.outMotion??"none"):(layer.motion==="fade"?"none":layer.motion);
  const inverse=1-p;let transform="translate3d(0,0,0) scale(1)";
  if(preset==="scale-in")transform=`translate3d(0,0,0) scale(${Number((.82+.18*p).toFixed(4))})`;
+ else if(preset==="bounce"){const amp=layer.bounceIntensity??14,bounces=layer.bounceBounces??3,envelope=Math.pow(1-p,1.35),y=-Math.abs(Math.sin(p*Math.PI*bounces))*amp*envelope;transform=`translate3d(0,${Number(y.toFixed(4))}%,0) scale(1)`}
  else if(["from-left","from-right","from-top","from-bottom"].includes(preset))transform=`translate3d(${layer.motionVector.x*inverse}%,${layer.motionVector.y*inverse}%,0) scale(1)`;
  return {opacity:fade?p:1,transform,transformOrigin:"center",willChange:"transform, opacity"};
 }
