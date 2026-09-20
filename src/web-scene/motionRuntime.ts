@@ -4,7 +4,18 @@ import type {BezierCurve,EasingPreset,MotionPreset} from "./sceneModel";
 type MotionLayer={motion:MotionPreset;motionDurationMs:number;outMotion?:MotionPreset;outMotionDurationMs?:number;startMs:number;endMs:number;motionVector:{x:number;y:number};easing:EasingPreset;easingBezier?:BezierCurve;outEasing?:EasingPreset;outEasingBezier?:BezierCurve;inOpacity?:boolean;outOpacity?:boolean};
 const clamp01=(v:number)=>Math.max(0,Math.min(1,v));
 const curveFor=(name:EasingPreset,custom?:BezierCurve):BezierCurve=>name==="linear"?[0,0,1,1]:name==="ease-in"?[.42,0,1,1]:name==="ease-in-out"?[.42,0,.58,1]:name==="cubic-bezier"?(custom??[.25,.1,.25,1]):[0,0,.58,1];
-export const cubicBezierProgress=(t:number,curve:BezierCurve)=>{if(t<=0)return 0;if(t>=1)return 1;const[x1,y1,x2,y2]=curve;const safeX1=clamp01(Math.min(x1,x2)),safeX2=clamp01(Math.max(x1,x2)),safeY1=clamp01(y1),safeY2=clamp01(y2),cx=3*safeX1,bx=3*(safeX2-safeX1)-cx,ax=1-cx,cy=3*safeY1,by=3*(safeY2-safeY1)-cy,ay=1-cy;const sampleX=(u:number)=>((ax*u+bx)*u+cx)*u;let lo=0,hi=1;for(let i=0;i<24;i++){const u=(lo+hi)/2;if(sampleX(u)<t)lo=u;else hi=u}const u=(lo+hi)/2;return ((ay*u+by)*u+cy)*u};
+export const cubicBezierProgress=(t:number,curve:BezierCurve)=>{
+ if(t<=0)return 0;if(t>=1)return 1;
+ const[x1,y1,x2,y2]=curve,safeX1=clamp01(x1),safeX2=clamp01(x2);
+ const sample=(u:number,a1:number,a2:number)=>{const c=3*a1,b=3*(a2-a1)-c,a=1-c-b;return((a*u+b)*u+c)*u};
+ const slope=(u:number,a1:number,a2:number)=>3*(1-3*a2+3*a1)*u*u+2*(3*a2-6*a1)*u+3*a1;
+ let lo=0,hi=1,u=t;
+ for(let i=0;i<8;i++){const x=sample(u,safeX1,safeX2)-t,d=slope(u,safeX1,safeX2);if(Math.abs(x)<1e-7)break;if(Math.abs(d)<1e-7)break;const next=u-x/d;if(next<=lo||next>=hi)break;u=next;if(x>0)hi=u;else lo=u}
+ lo=0;hi=1;
+ for(let i=0;i<28;i++){u=(lo+hi)/2;if(sample(u,safeX1,safeX2)<t)lo=u;else hi=u}
+ u=(lo+hi)/2;
+ return clamp01(sample(u,y1,y2));
+};
 const eased=(t:number,name:EasingPreset,curve?:BezierCurve)=>cubicBezierProgress(clamp01(t),curveFor(name,curve));
 export function motionFrame(layer:MotionLayer,localMs:number):CSSProperties{
  const inDuration=Math.max(1,layer.motionDurationMs||1),outDuration=Math.max(1,layer.outMotionDurationMs||1);
