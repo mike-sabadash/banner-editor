@@ -74,3 +74,10 @@
 .bm-stage-guide.horizontal{left:0!important;right:0!important;height:1px!important;width:auto!important;cursor:ns-resize}
 .bm-stage-guide:hover{background:#ff7773!important}
 .bm-stage>.bm-tools{z-index:100!important}
+
+/* Ruler viewport boundary: guides/rulers never cover the fixed timeline. */
+.bm-stage.has-rulers{overflow:hidden!important}
+.bm-stage-guide.vertical{top:20px!important;bottom:0!important}
+.bm-stage-guide.horizontal{left:20px!important;right:0!important}
+.bm-center>.bm-timeline{z-index:110!important}
+.bm-center>.bm-timeline-resizer{z-index:120!important}
