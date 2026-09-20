@@ -21,7 +21,7 @@ const eased=(t:number,name:EasingPreset,curve?:BezierCurve)=>cubicBezierProgress
 export function motionFrame(layer:MotionLayer,localMs:number):CSSProperties{
  const inDuration=Math.max(1,layer.motionDurationMs||1),outDuration=Math.max(1,layer.outMotionDurationMs||1);
  const inRaw=clamp01((localMs-layer.startMs)/inDuration),outStart=layer.endMs-outDuration,outRaw=clamp01((layer.endMs-localMs)/outDuration),isOut=!!layer.outMotionDurationMs&&localMs>=outStart;
- const raw=isOut?outRaw:inRaw,p=isOut?eased(raw,layer.outEasing??layer.easing,layer.outEasingBezier):eased(raw,layer.easing,layer.easingBezier);
+ const raw=isOut?outRaw:inRaw,p=isOut?1-eased(1-raw,layer.outEasing??layer.easing,layer.outEasingBezier):eased(raw,layer.easing,layer.easingBezier);
  const legacyFade=isOut?(layer.outMotion==="fade"):(layer.motion==="fade"),fade=isOut?(!!layer.outOpacity||legacyFade):(!!layer.inOpacity||legacyFade);
  const preset:MotionPreset=isOut?(layer.outMotion==="fade"?"none":layer.outMotion??"none"):(layer.motion==="fade"?"none":layer.motion);
  const inverse=1-p;let transform="translate3d(0,0,0) scale(1)";
