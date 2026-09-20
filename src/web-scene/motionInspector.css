@@ -21,3 +21,15 @@
 .bm-bounce-editor{min-width:0}
 .bm-bounce-editor svg{width:100%;height:auto;max-height:320px;aspect-ratio:420/250;overflow:hidden}
 @media(max-width:1100px){.bm-bounce-curve-popover{right:16px;width:min(500px,calc(100vw - 32px))}}
+
+/* Floating graph editor: professional sparse anchors, linked tangents, movable panel. */
+.bm-bounce-curve-popover{position:static!important;width:0!important;height:0!important;padding:0!important;margin:0!important;border:0!important;background:transparent!important;box-shadow:none!important;overflow:visible!important}
+.bm-floating-curve{position:fixed;z-index:520;width:min(620px,calc(100vw - 24px));box-sizing:border-box;padding:14px;background:#11161d;border:1px solid #343d4a;border-radius:10px;box-shadow:0 18px 50px rgba(0,0,0,.48)}
+.bm-floating-curve.dragging{user-select:none}.bm-curve-dragbar{cursor:move;padding:2px 2px 10px;margin:-2px -2px 8px}.bm-curve-dragbar button{cursor:pointer}
+.bm-floating-curve svg{width:100%;height:auto;aspect-ratio:480/280;max-height:none;overflow:hidden}
+.bm-floating-curve .curve-hit{stroke:transparent!important;stroke-width:18!important;pointer-events:stroke;cursor:crosshair}
+.bm-floating-curve .curve:not(.curve-hit){pointer-events:none}
+.bm-floating-curve .anchor{fill:#8a7cff;stroke:#e3e0ff;stroke-width:1.2}.bm-floating-curve .handle{fill:#11161d;stroke:#9c91ff;stroke-width:1.5}
+.bm-floating-curve .guide{stroke:#697486;stroke-width:1}.bm-floating-curve .hit{fill:transparent;pointer-events:all}
+.bm-floating-curve .bm-curve-actions button{width:32px;height:32px;border:1px solid #303846;border-radius:6px;background:#171d26}.bm-floating-curve .bm-curve-actions .close{font-size:22px;line-height:1}.bm-floating-curve .bm-curve-actions{gap:6px}
+.bm-floating-curve .bm-curve-footer{margin-top:10px;padding-top:9px;border-top:1px solid #252c36}
