@@ -15,7 +15,7 @@ const clamp=(v:number,min:number,max:number)=>Math.min(max,Math.max(min,v));
 const curveFor=(preset:EasingPreset,custom?:BezierCurve):BezierCurve=>preset==="cubic-bezier"?(custom??[.25,.1,.25,1]):CURVES[preset];
 
 type Mode="in"|"out";
-type Props={layer:SceneLayer;patch:(patch:Partial<SceneLayer>)=>void};
+type Props={layer:SceneLayer;patch:(patch:Partial<SceneLayer>)=>void;checkpoint?:()=>void};
 
 function BezierEditor({mode,layer,patch}:{mode:Mode;layer:SceneLayer;patch:Props["patch"]}){
  const preset:EasingPreset=mode==="in"?layer.easing:(layer.outEasing??layer.easing);
@@ -39,7 +39,7 @@ function BezierEditor({mode,layer,patch}:{mode:Mode;layer:SceneLayer;patch:Props
  </div>
 }
 
-function Transition({mode,layer,patch}:{mode:Mode;layer:SceneLayer;patch:Props["patch"]}){
+function Transition({mode,layer,patch,checkpoint}:{mode:Mode;layer:SceneLayer;patch:Props["patch"];checkpoint?:()=>void}){
  const [bounceCurveOpen,setBounceCurveOpen]=useState(false);
  const raw=mode==="in"?layer.motion:(layer.outMotion??"none"),transform=raw==="fade"?"none":raw;
  const fade=mode==="in"?!!(layer.inOpacity||layer.motion==="fade"):!!(layer.outOpacity||(layer.outMotion??"none")==="fade");
@@ -65,9 +65,9 @@ function Transition({mode,layer,patch}:{mode:Mode;layer:SceneLayer;patch:Props["
    <label><span>Bounce</span><input type="range" min="-.25" max=".5" step=".01" value={bounce.bounce} onChange={e=>patchBounce({bounce:Number(e.target.value),preset:"custom"})}/><b>{bounce.bounce.toFixed(2)}</b></label>
    <label><span>Velocity</span><input type="range" min="-1" max="4" step=".05" value={bounce.velocity} onChange={e=>patchBounce({velocity:Number(e.target.value),preset:"custom"})}/><b>{bounce.velocity.toFixed(2)}</b></label>
    <label className="bm-bounce-offscreen"><span>Start</span><input type="checkbox" checked={bounce.offscreen} onChange={e=>patchBounce({offscreen:e.target.checked})}/><b>{bounce.offscreen?"Off canvas":"Relative"}</b></label>
-   {bounceCurveOpen&&<div className="bm-bounce-curve-popover"><BounceCurveEditor config={bounce} duration={duration||600} onChange={next=>patch(mode==="in"?{inBounce:next}:{outBounce:next})} onClose={()=>setBounceCurveOpen(false)}/></div>}
+   {bounceCurveOpen&&<div className="bm-bounce-curve-popover"><BounceCurveEditor config={bounce} duration={duration||600} onGestureStart={checkpoint} onChange={next=>patch(mode==="in"?{inBounce:next}:{outBounce:next})} onClose={()=>setBounceCurveOpen(false)}/></div>}
   </div>}
   <BezierEditor mode={mode} layer={layer} patch={patch}/>
  </section>
 }
-export default function MotionInspector({layer,patch}:Props){return <div className="bm-motion-inspector"><Transition mode="in" layer={layer} patch={patch}/><Transition mode="out" layer={layer} patch={patch}/></div>}
+export default function MotionInspector({layer,patch,checkpoint}:Props){return <div className="bm-motion-inspector"><Transition mode="in" layer={layer} patch={patch} checkpoint={checkpoint}/><Transition mode="out" layer={layer} patch={patch} checkpoint={checkpoint}/></div>}
