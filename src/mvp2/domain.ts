@@ -31,6 +31,7 @@ export type CreativeDocument={
  fonts?:CampaignFont[];
  responsiveMasters?:Array<any>;
  formatOverrides?:Record<string,any>;
+ rulerGuides?:Array<{id:string;axis:"x"|"y";position:number}>;
  updatedAt?:string;
 };
 
