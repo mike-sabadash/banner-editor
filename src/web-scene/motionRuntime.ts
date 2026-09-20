@@ -18,8 +18,8 @@ export const cubicBezierProgress=(t:number,curve:BezierCurve)=>{
 };
 const eased=(t:number,name:EasingPreset,curve?:BezierCurve)=>cubicBezierProgress(clamp01(t),curveFor(name,curve));
 export const BOUNCE_PRESETS:Record<"soft"|"single"|"classic"|"lively",BounceCurve>={
- soft:[{x:0,y:0,inX:0,inY:0,outX:.22,outY:.58},{x:1,y:1,inX:.72,inY:1.02,outX:1,outY:1}],
- single:[{x:0,y:0,inX:0,inY:0,outX:.24,outY:.72},{x:.7,y:1.13,inX:.5,inY:1.13,outX:.84,outY:1.13},{x:1,y:1,inX:.9,inY:1,outX:1,outY:1}],
+ soft:[{x:0,y:0,inX:0,inY:0,outX:.12,outY:.7},{x:1,y:1,inX:.7,inY:1,outX:1,outY:1}],
+ single:[{x:0,y:0,inX:0,inY:0,outX:.08,outY:.92},{x:.58,y:1.08,inX:.42,inY:1.08,outX:.72,outY:1.08},{x:1,y:1,inX:.86,inY:1,outX:1,outY:1}],
  classic:[{x:0,y:0,inX:0,inY:0,outX:.18,outY:.72},{x:.55,y:1.18,inX:.4,inY:1.18,outX:.65,outY:1.18},{x:.78,y:.94,inX:.7,inY:.94,outX:.84,outY:.94},{x:.9,y:1.045,inX:.86,inY:1.045,outX:.94,outY:1.045},{x:1,y:1,inX:.97,inY:1,outX:1,outY:1}],
  lively:[{x:0,y:0,inX:0,inY:0,outX:.14,outY:.82},{x:.46,y:1.25,inX:.32,inY:1.25,outX:.56,outY:1.25},{x:.68,y:.88,inX:.6,inY:.88,outX:.75,outY:.88},{x:.82,y:1.08,inX:.77,inY:1.08,outX:.87,outY:1.08},{x:.92,y:.97,inX:.89,inY:.97,outX:.96,outY:.97},{x:1,y:1,inX:.98,inY:1,outX:1,outY:1}]
 };
@@ -33,7 +33,7 @@ export function motionFrame(layer:MotionLayer,localMs:number):CSSProperties{
  const preset:MotionPreset=isOut?(layer.outMotion==="fade"?"none":layer.outMotion??"none"):(layer.motion==="fade"?"none":layer.motion);
  const inverse=1-p;let transform="translate3d(0,0,0) scale(1)";
  if(preset==="scale-in")transform=`translate3d(0,0,0) scale(${Number((.82+.18*p).toFixed(4))})`;
- else if(preset==="bounce"){const amp=layer.bounceIntensity??14,path=layer.bouncePath??BOUNCE_PRESETS[layer.bouncePreset&&layer.bouncePreset!=="custom"?layer.bouncePreset:"single"],progress=bounceCurveProgress(isOut?outRaw:inRaw,path),d=(1-progress)*amp,dir=layer.bounceDirection??"up",x=dir==="left"?-d:dir==="right"?d:0,y=dir==="up"?-d:dir==="down"?d:0;transform=`translate3d(${Number(x.toFixed(4))}%,${Number(y.toFixed(4))}%,0) scale(1)`}
+ else if(preset==="bounce"){const amp=layer.bounceIntensity??14,path=layer.bouncePath??BOUNCE_PRESETS[layer.bouncePreset&&layer.bouncePreset!=="custom"?layer.bouncePreset:"single"],progress=bounceCurveProgress(isOut?outRaw:inRaw,path),d=(1-progress)*amp,dir=layer.bounceDirection??"down",x=dir==="left"?-d:dir==="right"?d:0,y=dir==="down"?-d:dir==="up"?d:0;transform=`translate3d(${Number(x.toFixed(4))}%,${Number(y.toFixed(4))}%,0) scale(1)`}
  else if(["from-left","from-right","from-top","from-bottom"].includes(preset))transform=`translate3d(${layer.motionVector.x*inverse}%,${layer.motionVector.y*inverse}%,0) scale(1)`;
  return {opacity:fade?p:1,transform,transformOrigin:"center",willChange:"transform, opacity"};
 }
