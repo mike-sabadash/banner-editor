@@ -44,12 +44,12 @@ function Transition({mode,layer,patch,checkpoint}:{mode:Mode;layer:SceneLayer;pa
  const raw=mode==="in"?layer.motion:(layer.outMotion??"none"),transform=raw==="fade"?"none":raw;
  const fade=mode==="in"?!!(layer.inOpacity||layer.motion==="fade"):!!(layer.outOpacity||(layer.outMotion??"none")==="fade");
  const duration=mode==="in"?layer.motionDurationMs:(layer.outMotionDurationMs??0);
- const setTransform=(id:MotionPreset)=>patch(mode==="in"?{motion:id}:{outMotion:id,outMotionDurationMs:id==="none"&&!fade?0:(layer.outMotionDurationMs||320)});
- const setFade=()=>patch(mode==="in"?{inOpacity:!fade,motion:layer.motion==="fade"?"none":layer.motion}:{outOpacity:!fade,outMotion:(layer.outMotion??"none")==="fade"?"none":layer.outMotion,outMotionDurationMs:layer.outMotionDurationMs||320});
- const reset=()=>patch(mode==="in"?{motion:"none",inOpacity:false}:{outMotion:"none",outOpacity:false,outMotionDurationMs:0});
+ const edit=(next:Partial<SceneLayer>)=>{checkpoint?.();patch(next)};\n const setTransform=(id:MotionPreset)=>edit(mode==="in"?{motion:id}:{outMotion:id,outMotionDurationMs:id==="none"&&!fade?0:(layer.outMotionDurationMs||320)});
+ const setFade=()=>edit(mode==="in"?{inOpacity:!fade,motion:layer.motion==="fade"?"none":layer.motion}:{outOpacity:!fade,outMotion:(layer.outMotion??"none")==="fade"?"none":layer.outMotion,outMotionDurationMs:layer.outMotionDurationMs||320});
+ const reset=()=>edit(mode==="in"?{motion:"none",inOpacity:false}:{outMotion:"none",outOpacity:false,outMotionDurationMs:0});
  const none=transform==="none"&&!fade;
  const bounce=springConfig(mode==="in"?(layer.inBounce??{preset:layer.bouncePreset==="soft"?"soft":layer.bouncePreset==="lively"?"bouncy":"single",direction:layer.bounceDirection??"down",distance:Math.max(.1,(layer.bounceIntensity??100)/100),offscreen:false,bounce:.12,velocity:.55}):(layer.outBounce??{preset:"single",direction:layer.bounceDirection??"up",distance:1,offscreen:false,bounce:.12,velocity:.55}));
- const patchBounce=(next:Partial<BounceConfig>)=>{const value={...bounce,...next} as BounceConfig;patch(mode==="in"?{inBounce:value}:{outBounce:value})};
+ const patchBounce=(next:Partial<BounceConfig>,record=true)=>{const value={...bounce,...next} as BounceConfig;if(record)checkpoint?.();patch(mode==="in"?{inBounce:value}:{outBounce:value})};
  const chooseBouncePreset=(preset:SpringPresetId)=>patchBounce({preset,...SPRING_PRESETS[preset]});
  return <section className="bm-transition"><header><div><small>{mode.toUpperCase()}</small><h4>Effects</h4></div><span>Duration {Math.round(duration)} ms</span></header>
   <div className="bm-fx-grid">
