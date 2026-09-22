@@ -4,13 +4,15 @@ set -euo pipefail
 APP_DIR="/var/www/banner-editor"
 BRANCH="${BANNERMATIC_DEPLOY_BRANCH:-codex/mvp2-figma-cloud-runtime}"
 NGINX_SRC="$APP_DIR/deploy/nginx/ads.rechord.online.conf"
-NGINX_DST="/etc/nginx/conf.d/ads.rechord.online.conf"
+NGINX_DST="/etc/nginx/conf.d/studio.bannermatic.online.conf"
 LEGACY_NGINX_LINK="/etc/nginx/sites-enabled/ads.rechord.online"
+LEGACY_NGINX_CONF="/etc/nginx/conf.d/ads.rechord.online.conf"
+MIGRATION_NGINX_LINK="/etc/nginx/sites-enabled/bannermatic-new-domains"
 DEPLOY_KEY="/root/.ssh/banner_editor_deploy"
 GIT_SSH_COMMAND="ssh -i $DEPLOY_KEY -p 443 -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
 export GIT_SSH_COMMAND
 
-printf '\n== Bannermatic ads deploy ==\n'
+printf '\n== Bannermatic Studio deploy ==\n'
 cd "$APP_DIR"
 
 if [ ! -f "$DEPLOY_KEY" ]; then echo "ERROR: deploy key not found at $DEPLOY_KEY" >&2; exit 1; fi
@@ -55,12 +57,11 @@ node --check server/ttKnowledgeService.mjs
 
 if [ ! -f .env ]; then echo "ERROR: $APP_DIR/.env is missing" >&2; exit 1; fi
 if ! grep -q '^OPENROUTER_API_KEY=' .env; then echo "ERROR: OPENROUTER_API_KEY is not configured" >&2; exit 1; fi
-if [ ! -f /etc/letsencrypt/live/ads.rechord.online/fullchain.pem ]; then echo "ERROR: ads.rechord.online TLS certificate is missing" >&2; exit 1; fi
+if [ ! -f /etc/letsencrypt/live/studio.bannermatic.online/fullchain.pem ]; then echo "ERROR: studio.bannermatic.online TLS certificate is missing" >&2; exit 1; fi
 
-# Keep exactly one nginx server definition for ads.rechord.online. Certbot had
-# previously created conf.d/ads.rechord.online.conf while an older sites-enabled
-# entry remained active, so nginx ignored the frontend server block.
-rm -f "$LEGACY_NGINX_LINK"
+# Keep one canonical Studio host. Remove the temporary migration host and the
+# legacy ads host before installing the versioned Studio template.
+rm -f "$LEGACY_NGINX_LINK" "$LEGACY_NGINX_CONF" "$MIGRATION_NGINX_LINK"
 cp "$NGINX_SRC" "$NGINX_DST"
 nginx -t
 systemctl reload nginx
@@ -88,8 +89,8 @@ for attempt in {1..20}; do
   fi
   sleep 1
 done
-curl -fsS --max-time 20 https://ads.rechord.online/healthz
+curl -fsS --max-time 20 https://studio.bannermatic.online/healthz
 printf '\n'
-curl -fsS --max-time 20 https://ads.rechord.online/ | grep -q '<div id="root"></div>'
-curl -fsS --max-time 20 https://ads.rechord.online/api/tt/kb | python3 -c 'import json,sys; d=json.load(sys.stdin); print("TT Knowledge sources:", len(d.get("items", d if isinstance(d,list) else [])))'
+curl -fsS --max-time 20 https://studio.bannermatic.online/ | grep -q '<div id="root"></div>'
+curl -fsS --max-time 20 https://studio.bannermatic.online/api/tt/kb | python3 -c 'import json,sys; d=json.load(sys.stdin); print("TT Knowledge sources:", len(d.get("items", d if isinstance(d,list) else [])))'
 printf '\nDEPLOY_OK branch=%s commit=%s\n' "$BRANCH" "$(git rev-parse --short HEAD)"
