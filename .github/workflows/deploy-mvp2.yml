@@ -34,12 +34,12 @@ jobs:
             'cd /var/www/banner-editor && export GIT_SSH_COMMAND="ssh -i /root/.ssh/banner_editor_deploy -p 443 -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new" && git fetch origin codex/mvp2-figma-cloud-runtime:refs/remotes/origin/codex/mvp2-figma-cloud-runtime && git reset --hard HEAD && if git ls-files --error-unmatch .github/workflows/deploy-mvp2.yml >/dev/null 2>&1; then git checkout -- .github/workflows/deploy-mvp2.yml; else rm -f .github/workflows/deploy-mvp2.yml; fi && git switch -C codex/mvp2-figma-cloud-runtime origin/codex/mvp2-figma-cloud-runtime --no-track && BANNERMATIC_DEPLOY_BRANCH=codex/mvp2-figma-cloud-runtime bash scripts/deploy-ads.sh'
       - name: Verify public Bannermatic entry
         run: |
-          curl -fsS --max-time 30 https://ads.rechord.online/healthz
-          html="$(curl -fsS --max-time 30 https://ads.rechord.online/)"
+          curl -fsS --max-time 30 https://studio.bannermatic.online/healthz
+          html="$(curl -fsS --max-time 30 https://studio.bannermatic.online/)"
           printf '%s' "$html" | grep -q '<div id="root"></div>'
           asset="$(printf '%s' "$html" | grep -oE 'src="/assets/[^"]+\.js"' | head -1 | cut -d'"' -f2)"
           test -n "$asset"
-          bundle="$(curl -fsS --max-time 30 "https://ads.rechord.online$asset")"
+          bundle="$(curl -fsS --max-time 30 "https://studio.bannermatic.online$asset")"
           printf '%s' "$bundle" | grep -q 'Custom Bézier'
           printf '%s' "$bundle" | grep -q 'Duration '
           printf '%s' "$bundle" | grep -q 'From left'
