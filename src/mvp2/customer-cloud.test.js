@@ -5,7 +5,8 @@ const wall=readFileSync(new URL('./CampaignWall.tsx',import.meta.url),'utf8');
 const main=readFileSync(new URL('../main.tsx',import.meta.url),'utf8');
 describe('Bannermatic customer cloud',()=>{
  it('keeps the cloud shell available as an explicit compatibility route',()=>{
-  expect(main).toContain('return <Editor/>');
+  expect(main).toContain('return <BannermaticProduct/>');
+  expect(main).toContain('return <CampaignSceneEditor/>');
   expect(main).toContain('params.get("view")==="mvp2-shell-legacy"');
  });
  it('covers campaigns, media plan, creative wall, delivery and settings',()=>{

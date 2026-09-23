@@ -6,8 +6,10 @@ const viewport=readFileSync(new URL('./viewport.css',import.meta.url),'utf8');
 const mediaPlan=readFileSync(new URL('./MediaPlanWorkspace.tsx',import.meta.url),'utf8');
 const workspaces=readFileSync(new URL('./next-elite-workspaces.css',import.meta.url),'utf8');
 describe('Bannermatic modular customer journey',()=>{
- it('uses the editor as the primary Studio route and keeps the legacy shell reachable',()=>{
-  expect(main).toContain('return <Editor/>');
+ it('uses the campaign product as the primary Studio route and keeps the scene editor reachable',()=>{
+  expect(main).toContain('return <BannermaticProduct/>');
+  expect(main).toContain('params.get("view")==="scene-editor"');
+  expect(main).toContain('return <CampaignSceneEditor/>');
   expect(main).toContain('mvp2-shell-legacy');
  });
  it('uses reviewed media, campaign wall and delivery workspaces',()=>{
