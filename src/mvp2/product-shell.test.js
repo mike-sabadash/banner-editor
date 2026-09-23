@@ -6,8 +6,8 @@ const viewport=readFileSync(new URL('./viewport.css',import.meta.url),'utf8');
 const mediaPlan=readFileSync(new URL('./MediaPlanWorkspace.tsx',import.meta.url),'utf8');
 const workspaces=readFileSync(new URL('./next-elite-workspaces.css',import.meta.url),'utf8');
 describe('Bannermatic modular customer journey',()=>{
- it('uses the modular product shell for authenticated users',()=>{
-  expect(main).toContain('return <BannermaticProduct/>');
+ it('uses the editor as the primary Studio route and keeps the legacy shell reachable',()=>{
+  expect(main).toContain('return <Editor/>');
   expect(main).toContain('mvp2-shell-legacy');
  });
  it('uses reviewed media, campaign wall and delivery workspaces',()=>{
