@@ -4,9 +4,11 @@ const main=readFileSync(new URL('../main.tsx',import.meta.url),'utf8');
 const auth=readFileSync(new URL('./AuthPage.tsx',import.meta.url),'utf8');
 const css=readFileSync(new URL('./auth.css',import.meta.url),'utf8');
 describe('Bannermatic customer auth journey',()=>{
- it('keeps auth out of the direct Studio entry route',()=>{
-  expect(main).toContain('return <Editor/>');
-  expect(main).not.toContain('<AuthPage mode={auth}');
+ it('opens Studio on server-backed auth and keeps registration available',()=>{
+  expect(main).toContain('return <AuthPage mode={auth}');
+  expect(main).toContain('params.get("auth")==="register"?"register":"login"');
+  expect(main).toContain('return <BannermaticProduct/>');
+  expect(main).not.toContain('return <MarketingHome');
  });
  it('uses real server-backed register and login actions',()=>{
   expect(auth).toContain('api.login');
