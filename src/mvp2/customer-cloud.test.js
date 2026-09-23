@@ -4,8 +4,8 @@ const product=readFileSync(new URL('./BannermaticProduct.tsx',import.meta.url),'
 const wall=readFileSync(new URL('./CampaignWall.tsx',import.meta.url),'utf8');
 const main=readFileSync(new URL('../main.tsx',import.meta.url),'utf8');
 describe('Bannermatic customer cloud',()=>{
- it('uses the modular product as the primary authenticated SaaS shell',()=>{
-  expect(main).toContain('return <BannermaticProduct/>');
+ it('keeps the cloud shell available as an explicit compatibility route',()=>{
+  expect(main).toContain('return <Editor/>');
   expect(main).toContain('params.get("view")==="mvp2-shell-legacy"');
  });
  it('covers campaigns, media plan, creative wall, delivery and settings',()=>{
