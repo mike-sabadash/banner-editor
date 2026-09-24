@@ -86,4 +86,39 @@ describe("Responsive Masters end-to-end",()=>{
     expect(responsiveMasterScore(a,format("160x600"))).toBe(Infinity);
     expect(affectedFormatsForFamily("strip",RU_CORE_10).map(item=>item.id)).toEqual(expect.arrayContaining(["728x90","970x90","1000x120"]));
   });
+  it("rolls a real multi-role composition from Original Master through a curated Family Master into intermediate formats",()=>{
+    const scenes=structuredClone(DEFAULT_SCENES);
+    const product=scenes[0];
+    product.layers.push(
+      {id:"logo-rollout",name:"Brand logo",kind:"text",role:"logo",text:"BRAND",color:"#fff",masterBox:{x:8,y:4,w:30,h:8},fontSize:22,fontWeight:800,fontFamily:"Inter",motion:"fade",motionDurationMs:260,easing:"ease-out",startMs:0,endMs:2200,visible:true},
+      {id:"cta-rollout",name:"CTA",kind:"text",role:"cta",text:"Shop now",color:"#fff",masterBox:{x:8,y:84,w:42,h:8},fontSize:14,fontWeight:700,fontFamily:"Inter",motion:"fade",motionDurationMs:280,easing:"ease-out",startMs:500,endMs:2200,visible:true},
+      {id:"legal-rollout",name:"Legal",kind:"text",role:"legal",text:"Terms apply",color:"#aaa",masterBox:{x:8,y:94,w:84,h:4},fontSize:9,fontWeight:400,fontFamily:"Inter",motion:"none",motionDurationMs:0,easing:"linear",startMs:0,endMs:2200,visible:true}
+    );
+    const family=format("300x300"),intermediate=format("300x250"),sibling=format("336x280");
+    const deterministic=generateScene(product,family,EMPTY_RESPONSIVE_STATE);
+    expect(deterministic.layers.find(l=>l.role==="hero")!.box).not.toEqual(product.layers.find(l=>l.role==="hero")!.masterBox);
+    let state:ResponsiveState=EMPTY_RESPONSIVE_STATE;
+    const curated:{id:string;role:any;box:{x:number;y:number;w:number;h:number};fontSize?:number}[]=[
+      {id:"headline-1",role:"headline",box:{x:6,y:8,w:44,h:24},fontSize:27},
+      {id:"hero-1",role:"hero",box:{x:53,y:8,w:41,h:66}},
+      {id:"logo-rollout",role:"logo",box:{x:6,y:4,w:22,h:9},fontSize:18},
+      {id:"cta-rollout",role:"cta",box:{x:6,y:76,w:30,h:13},fontSize:13},
+      {id:"legal-rollout",role:"legal",box:{x:6,y:91,w:88,h:6},fontSize:8}
+    ];
+    for(const item of curated)state=setLayerOverride(state,family.id,product.id,item.id,item.role,{box:item.box,...(item.fontSize?{fontSize:item.fontSize}:{})});
+    state=useAsResponsiveMaster(scenes,family,state,"rectangle","2026-09-24T00:00:00Z");
+    expect(formatInheritance(family,state)).toMatchObject({kind:"responsive-master",sourceFormatId:"300x300"});
+    for(const target of [intermediate,sibling]){
+      expect(formatInheritance(target,state)).toMatchObject({kind:"inherited",sourceFormatId:"300x300"});
+      const output=generateScene(product,target,state);
+      for(const item of curated){const layer=output.layers.find(l=>l.id===item.id)!;expect(layer.box,item.id+" @ "+target.id).toEqual(item.box);expect(layer.visible).toBe(true)}
+      expect(output.layers.find(l=>l.id==="headline-1")!.fontSize).toBeGreaterThanOrEqual(7);
+      expect(output.layers.find(l=>l.id==="legal-rollout")!.box.y+output.layers.find(l=>l.id==="legal-rollout")!.box.h).toBeLessThanOrEqual(100);
+    }
+    state=setLayerOverride(state,intermediate.id,product.id,"cta-rollout","cta",{box:{x:8,y:73,w:34,h:15}});
+    expect(formatInheritance(intermediate,state).kind).toBe("individual");
+    expect(generateScene(product,intermediate,state).layers.find(l=>l.id==="cta-rollout")!.box).toEqual({x:8,y:73,w:34,h:15});
+    expect(generateScene(product,sibling,state).layers.find(l=>l.id==="cta-rollout")!.box).toEqual({x:6,y:76,w:30,h:13});
+  });
+
 });
