@@ -17,24 +17,24 @@
 - [x] Gate 0 PASS
 
 ## Phase 1 — Technical Requirements + @1x/@2x
-- [ ] 1.1 exportScale 1|2 per format
-- [ ] 1.2 default @1x
-- [ ] 1.3 Media Plan/TT can set @2x
-- [ ] 1.4 maxBytes
-- [ ] 1.5 export type HTML5/JPG/PNG/WebP
-- [ ] 1.6 separate logical and physical export size
-- [ ] 1.7 200×300 @2x remains 200×300 editor canvas
-- [ ] 1.8 physical export becomes 400×600
-- [ ] 1.9 advanced manual scale override
-- [ ] 1.10 mark override as manual
-- [ ] 1.11 @2x badge
-- [ ] 1.12 weight-limit badge
-- [ ] 1.13 export-type badge
-- [ ] 1.14 preserve MASTER/AUTO
-- [ ] 1.15 compact badge UX
-- [ ] 1.16 campaign summary N formats require @2x
-- [ ] 1.17 summary filters/highlights formats
-- [ ] Gate 1 PASS
+- [x] 1.1 exportScale 1|2 per format
+- [x] 1.2 default @1x
+- [x] 1.3 Media Plan/TT can set @2x
+- [x] 1.4 maxBytes
+- [x] 1.5 export type HTML5/JPG/PNG/WebP
+- [x] 1.6 separate logical and physical export size
+- [x] 1.7 200×300 @2x remains 200×300 editor canvas
+- [x] 1.8 physical export becomes 400×600
+- [x] 1.9 advanced manual scale override
+- [x] 1.10 mark override as manual
+- [x] 1.11 @2x badge
+- [x] 1.12 weight-limit badge
+- [x] 1.13 export-type badge
+- [x] 1.14 preserve MASTER/AUTO
+- [x] 1.15 compact badge UX
+- [x] 1.16 campaign summary N formats require @2x
+- [x] 1.17 summary filters/highlights formats
+- [x] Gate 1 PASS
 
 ## Phase 2 — Asset Quality / Density Engine
 - [ ] 2.1 sourceWidth/sourceHeight
