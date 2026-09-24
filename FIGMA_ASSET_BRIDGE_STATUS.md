@@ -44,7 +44,7 @@ At the beginning of EVERY continuation/session:
 | 2 | Asset Quality / Density Engine | DONE | PASS |
 | 3 | Figma Connection | DONE | PASS |
 | 4 | Figma Browser + Frame Detection | DONE | PASS |
-| 5 | Figma Layer Normalization | TODO | NOT RUN |
+| 5 | Figma Layer Normalization | DONE | PASS |
 | 6 | Semantic Layer Mapper | TODO | NOT RUN |
 | 7 | Import Plan | TODO | NOT RUN |
 | 8 | Apply Import | TODO | NOT RUN |
@@ -56,16 +56,25 @@ At the beginning of EVERY continuation/session:
 | 14 | Full E2E / Release | TODO | NOT RUN |
 
 ## Current checkpoint
-- Current phase: **Phase 5**
-- Current item: **5.1**
-- Last completed item: **Gate 4**
-- Last verified implementation commit: **08c4df006dba0fe0a8989464add1dc4cd921f9e5**
-- Tests at checkpoint: **GitHub Actions run 35987820916 PASS — 65 test files / 284 tests; TypeScript/Vite build PASS; server syntax/deploy script checks PASS**
+- Current phase: **Phase 6**
+- Current item: **6.1**
+- Last completed item: **Gate 5**
+- Last verified implementation commit: **cf7867ea8acd2f93b89045e9bf774e85d185daa4**
+- Tests at checkpoint: **GitHub Actions run 35989040911 PASS — 66 test files / 288 tests; TypeScript/Vite build PASS; server syntax/deploy script checks PASS**
 - Known blockers: **none**
 - Production state: untouched by this initiative.
 
 ## NEXT ACTION
-Start Phase 5 at item 5.1. Re-read this status + canonical checklist, inspect current branch HEAD/diff, then implement Figma Layer Normalization.
+Start Phase 6 at item 6.1. Re-read this status + canonical checklist, inspect current branch HEAD/diff, then implement Semantic Layer Mapper.
+
+## Phase 5 evidence
+- Added read-only Figma node-tree normalizer and authenticated `/normalize` bridge endpoint.
+- TEXT becomes editable normalized text; IMAGE fills become raster asset descriptors; simple VECTOR nodes become SVG/vector asset descriptors; RECTANGLE and ELLIPSE become native shapes.
+- Groups and nested frames retain hierarchy metadata while child layers are flattened into stable frame-relative logical geometry; Figma Auto Layout is recorded as metadata only and never becomes a runtime dependency.
+- Masks, effects, non-normal blend modes, boolean/unsupported node types and unsupported containers become explicit visual-fallback records with source node IDs so later import can render/materialize them without silently dropping visuals.
+- Normalized layers preserve z-order, opacity, rotation, crop/imageTransform and frame-relative percentage geometry.
+- Gate 5 CI: run `35989040911` SUCCESS — 66 test files / 288 tests, build PASS, server/deploy syntax checks PASS.
+- Draft PR: #84. Production branch untouched.
 
 ## Phase 4 evidence
 - Campaign Wall now has an isolated `Import design` entry point opening the new one-way Asset Bridge browser; legacy plugin/runtime remains excluded from the product shell.
