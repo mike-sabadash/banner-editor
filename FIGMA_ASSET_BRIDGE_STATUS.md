@@ -47,7 +47,7 @@ At the beginning of EVERY continuation/session:
 | 5 | Figma Layer Normalization | DONE | PASS |
 | 6 | Semantic Layer Mapper | DONE | PASS |
 | 7 | Import Plan | DONE | PASS |
-| 8 | Apply Import | TODO | NOT RUN |
+| 8 | Apply Import | DONE | PASS |
 | 9 | Responsive Masters handoff | TODO | NOT RUN |
 | 10 | Update from Figma | TODO | NOT RUN |
 | 11 | Export Optimizer | TODO | NOT RUN |
@@ -56,16 +56,26 @@ At the beginning of EVERY continuation/session:
 | 14 | Full E2E / Release | TODO | NOT RUN |
 
 ## Current checkpoint
-- Current phase: **Phase 8**
-- Current item: **8.1**
-- Last completed item: **Gate 7**
-- Last verified implementation commit: **96232b2a587f533bcaa19feb6a6ba5d5e3befa7b**
-- Tests at checkpoint: **GitHub Actions run 35991181402 PASS — 68 test files / 297 tests; TypeScript/Vite build PASS; server syntax/deploy script checks PASS**
+- Current phase: **Phase 9**
+- Current item: **9.1**
+- Last completed item: **Gate 8**
+- Last verified implementation commit: **48f50098e9f1afcdac169db7721a0231860dd91c**
+- Tests at checkpoint: **GitHub Actions run 35991585683 PASS — 69 test files / 301 tests; TypeScript/Vite build PASS; server syntax/deploy script checks PASS**
 - Known blockers: **none**
 - Production state: untouched by this initiative.
 
 ## NEXT ACTION
-Start Phase 8 at item 8.1. Re-read this status + canonical checklist, inspect current branch HEAD/diff, then implement Apply Import.
+Start Phase 9 at item 9.1. Re-read this status + canonical checklist, inspect current branch HEAD/diff, then implement Responsive Masters handoff.
+
+## Phase 8 evidence
+- Apply Import now creates a full creative-document checkpoint before mutation and returns it for Undo semantics.
+- Figma image/vector/fallback nodes are exported server-side, downloaded, and materialized into Bannermatic-owned runtime asset storage; persisted AssetSource records reference Bannermatic URLs, not Figma CDN URLs.
+- Imported layers use stable frame+node IDs, semantic roles, asset references, Figma provenance and SHA-256 fingerprints; per-format import metadata stores frame fingerprints and node IDs.
+- Exact selected frames are applied as format-specific Scene 01 overrides; original scene list, durations, existing layer animation/timeline and Responsive Masters remain untouched.
+- Single-frame and multi-frame batch flows share the same transaction; tests cover five key compositions, full checkpoint Undo, and idempotent retry without duplicate layers.
+- Import Plan CTA now executes Apply Import and reports imported layer/asset counts.
+- Gate 8 CI: run `35991585683` SUCCESS — 69 test files / 301 tests, build PASS, server/deploy syntax checks PASS.
+- Draft PR: #84. Production branch untouched.
 
 ## Phase 7 evidence
 - Added campaign-scoped read-only ImportPlan endpoint; it fetches selected Figma nodes, normalizes and semantically maps them, but performs no campaign mutation.
