@@ -41,7 +41,7 @@ At the beginning of EVERY continuation/session:
 |---|---|---|---|
 | 0 | Foundation & migration safety | DONE | PASS |
 | 1 | Technical Requirements + @1x/@2x | DONE | PASS |
-| 2 | Asset Quality / Density Engine | TODO | NOT RUN |
+| 2 | Asset Quality / Density Engine | DONE | PASS |
 | 3 | Figma Connection | TODO | NOT RUN |
 | 4 | Figma Browser + Frame Detection | TODO | NOT RUN |
 | 5 | Figma Layer Normalization | TODO | NOT RUN |
@@ -56,16 +56,26 @@ At the beginning of EVERY continuation/session:
 | 14 | Full E2E / Release | TODO | NOT RUN |
 
 ## Current checkpoint
-- Current phase: **Phase 2**
-- Current item: **2.1**
-- Last completed item: **Gate 1**
-- Last verified implementation commit: **f06025dcef908fd5499c6913c48bd3d0551de5e8**
-- Tests at checkpoint: **GitHub Actions run 35985519836 PASS on final Phase 1 checkpoint — full test suite PASS; TypeScript/Vite build PASS; server syntax/deploy script checks PASS**
+- Current phase: **Phase 3**
+- Current item: **3.1**
+- Last completed item: **Gate 2**
+- Last verified implementation commit: **f77d78084489020723d94022f07a95d5bccb3d80**
+- Tests at checkpoint: **GitHub Actions run 35986375110 PASS — 63 test files / 276 tests; TypeScript/Vite build PASS; server syntax/deploy script checks PASS**
 - Known blockers: **none**
 - Production state: untouched by this initiative.
 
 ## NEXT ACTION
-Start Phase 2 at item 2.1. Re-read this status + canonical checklist, inspect current branch HEAD/diff, then implement Asset Quality / Density Engine without changing visual object size.
+Start Phase 3 at item 3.1. Re-read this status + canonical checklist, inspect current branch HEAD/diff, then implement secure server-side Figma Connection.
+
+## Phase 2 evidence
+- AssetSource raster dimensions drive deterministic effective density from source pixels / placed logical pixels.
+- Canonical 400×600→200×300=2×, 300×450→200×300=1.5×, 200×300→200×300=1× cases covered by tests.
+- Density is compared with format exportScale and classified OK / Warning / Insufficient.
+- Density calculation is read-only: source resolution never changes masterBox, resolved layout, or visual object size.
+- Selected image Asset Quality Inspector shows Source, Placed, Density and Required scale.
+- Campaign Wall shows per-format quality warnings and a campaign-level insufficient-assets list.
+- Gate 2 CI: run `35986375110` SUCCESS — 63 test files / 276 tests, build PASS, server/deploy syntax checks PASS.
+- Draft PR: #84. Production branch untouched.
 
 ## Phase 1 evidence
 - Per-format exportScale is normalized to @1x/@2x; default is @1x.
