@@ -44,6 +44,8 @@ function Transition({mode,layer,patch,checkpoint}:{mode:Mode;layer:SceneLayer;pa
  const raw=mode==="in"?layer.motion:(layer.outMotion??"none"),transform=raw==="fade"?"none":raw;
  const fade=mode==="in"?!!(layer.inOpacity||layer.motion==="fade"):!!(layer.outOpacity||(layer.outMotion??"none")==="fade");
  const duration=mode==="in"?layer.motionDurationMs:(layer.outMotionDurationMs??0);
+ const distance=mode==="in"?(layer.motionDistancePct??20):(layer.outMotionDistancePct??20);
+ const scaleEdge=mode==="in"?(layer.motionScaleFromPct??82):(layer.outMotionScaleToPct??82);
  const edit=(next:Partial<SceneLayer>)=>{checkpoint?.();patch(next)};
  const setTransform=(id:MotionPreset)=>edit(mode==="in"?{motion:id}:{outMotion:id,outMotionDurationMs:id==="none"&&!fade?0:(layer.outMotionDurationMs||320)});
  const setFade=()=>edit(mode==="in"?{inOpacity:!fade,motion:layer.motion==="fade"?"none":layer.motion}:{outOpacity:!fade,outMotion:(layer.outMotion??"none")==="fade"?"none":layer.outMotion,outMotionDurationMs:layer.outMotionDurationMs||320});
@@ -58,6 +60,11 @@ function Transition({mode,layer,patch,checkpoint}:{mode:Mode;layer:SceneLayer;pa
    <button className={fade?"active":""} onClick={setFade}><i>◌</i><b>Fade</b></button>
    {TRANSFORMS.map(p=><button key={p.id} className={transform===p.id?"active":""} onClick={()=>setTransform(p.id)}><i>{p.glyph}</i><b>{p.label}</b></button>)}
   </div>
+  {!none&&transform!=="bounce"&&<div className="bm-motion-parameters">
+   <label><span>Duration</span><input type="range" min="80" max="5000" step="20" value={duration||400} onPointerDown={checkpoint} onChange={e=>patch(mode==="in"?{motionDurationMs:Number(e.target.value)}:{outMotionDurationMs:Number(e.target.value)})}/><input type="number" min="80" max="5000" step="20" value={duration||400} onFocus={checkpoint} onChange={e=>patch(mode==="in"?{motionDurationMs:clamp(Number(e.target.value),80,5000)}:{outMotionDurationMs:clamp(Number(e.target.value),80,5000)})}/><b>ms</b></label>
+   {["from-left","from-right","from-top","from-bottom"].includes(transform)&&<label><span>Distance</span><input type="range" min="0" max="200" step="1" value={distance} onPointerDown={checkpoint} onChange={e=>patch(mode==="in"?{motionDistancePct:Number(e.target.value)}:{outMotionDistancePct:Number(e.target.value)})}/><input type="number" min="0" max="200" step="1" value={distance} onFocus={checkpoint} onChange={e=>patch(mode==="in"?{motionDistancePct:clamp(Number(e.target.value),0,200)}:{outMotionDistancePct:clamp(Number(e.target.value),0,200)})}/><b>%</b></label>}
+   {transform==="scale-in"&&<label><span>{mode==="in"?"From size":"To size"}</span><input type="range" min="0" max="200" step="1" value={scaleEdge} onPointerDown={checkpoint} onChange={e=>patch(mode==="in"?{motionScaleFromPct:Number(e.target.value)}:{outMotionScaleToPct:Number(e.target.value)})}/><input type="number" min="0" max="200" step="1" value={scaleEdge} onFocus={checkpoint} onChange={e=>patch(mode==="in"?{motionScaleFromPct:clamp(Number(e.target.value),0,200)}:{outMotionScaleToPct:clamp(Number(e.target.value),0,200)})}/><b>%</b></label>}
+  </div>}
   {transform==="bounce"&&<div className="bm-bounce-controls">
    <div className="bm-bounce-direction"><span>Direction</span><div>{(["up","down","left","right"] as const).map((id,i)=><button key={id} className={bounce.direction===id?"active":""} onClick={()=>patchBounce({direction:id})}>{["↑","↓","←","→"][i]}</button>)}</div></div>
    <div className="bm-bounce-preset-row"><span>Preset</span><select value={bounce.preset} onChange={e=>{const id=e.target.value as SpringPresetId|"custom";if(id!=="custom")chooseBouncePreset(id)}}><option value="soft">Soft</option><option value="drop">Drop</option><option value="single">Single inertia</option><option value="bouncy">Bouncy</option>{bounce.preset==="custom"&&<option value="custom">Custom</option>}</select><button className="bm-bounce-curve-trigger" onClick={()=>setBounceCurveOpen(v=>!v)} title="Edit bounce curve">⌁</button></div>
