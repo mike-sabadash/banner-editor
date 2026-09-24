@@ -55,23 +55,23 @@
 - [x] Gate 2 PASS
 
 ## Phase 3 — Figma Connection
-- [ ] 3.1 server-side Figma integration
-- [ ] 3.2 no credentials in frontend
-- [ ] 3.3 secure credential storage
-- [ ] 3.4 figma/status endpoint
-- [ ] 3.5 connect/reconnect
-- [ ] 3.6 disconnect
-- [ ] 3.7 expired/revoked token handling
-- [ ] 3.8 listFiles
-- [ ] 3.9 getFile
-- [ ] 3.10 pages
-- [ ] 3.11 frames
-- [ ] 3.12 getNodes
-- [ ] 3.13 exportNodes
-- [ ] 3.14 getVersion
-- [ ] 3.15 timeouts/retries
-- [ ] 3.16 rate-limit handling
-- [ ] Gate 3 PASS
+- [x] 3.1 server-side Figma integration
+- [x] 3.2 no credentials in frontend
+- [x] 3.3 secure credential storage
+- [x] 3.4 figma/status endpoint
+- [x] 3.5 connect/reconnect
+- [x] 3.6 disconnect
+- [x] 3.7 expired/revoked token handling
+- [x] 3.8 listFiles
+- [x] 3.9 getFile
+- [x] 3.10 pages
+- [x] 3.11 frames
+- [x] 3.12 getNodes
+- [x] 3.13 exportNodes
+- [x] 3.14 getVersion
+- [x] 3.15 timeouts/retries
+- [x] 3.16 rate-limit handling
+- [x] Gate 3 PASS
 
 ## Phase 4 — Figma Browser + Frame Detection
 - [ ] 4.1 Import design entry point
