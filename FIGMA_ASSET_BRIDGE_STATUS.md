@@ -49,23 +49,33 @@ At the beginning of EVERY continuation/session:
 | 7 | Import Plan | DONE | PASS |
 | 8 | Apply Import | DONE | PASS |
 | 9 | Responsive Masters handoff | DONE | PASS |
-| 10 | Update from Figma | TODO | NOT RUN |
+| 10 | Update from Figma | DONE | PASS |
 | 11 | Export Optimizer | TODO | NOT RUN |
 | 12 | AI Director integration | TODO | NOT RUN |
 | 13 | Security & production hardening | TODO | NOT RUN |
 | 14 | Full E2E / Release | TODO | NOT RUN |
 
 ## Current checkpoint
-- Current phase: **Phase 10**
-- Current item: **10.1**
-- Last completed item: **Gate 9**
-- Last verified implementation commit: **f82c04fb114659c6573b7b04309c7598c666559a**
-- Tests at checkpoint: **GitHub Actions run 35992248448 PASS — 70 test files / 306 tests; TypeScript/Vite build PASS; server syntax/deploy script checks PASS**
+- Current phase: **Phase 11**
+- Current item: **11.1**
+- Last completed item: **Gate 10**
+- Last verified implementation commit: **42725838b9b303e38191bbf7ca64b7889f83c276**
+- Tests at checkpoint: **GitHub Actions run 35992918945 PASS — 71 test files / 310 tests; TypeScript/Vite build PASS; server syntax/deploy script checks PASS**
 - Known blockers: **none**
 - Production state: untouched by this initiative.
 
 ## NEXT ACTION
-Start Phase 10 at item 10.1. Re-read this status + canonical checklist, inspect current branch HEAD/diff, then implement Update from Figma.
+Start Phase 11 at item 11.1. Re-read this status + canonical checklist, inspect current branch HEAD/diff, then implement Export Optimizer.
+
+## Phase 10 evidence
+- Imported Family Masters now expose `Update from Figma`; update starts with a fresh Figma version lookup and node normalization before any mutation.
+- Diff engine compares node IDs/fingerprints and classifies added, removed, asset-changed, geometry-changed, text-changed and unchanged layers; UI displays version, counts and changed-layer list.
+- Default `Update assets only` replaces Bannermatic-owned materialized assets while preserving geometry, animation, timeline, semantic roles and local corrections.
+- Explicit `Layout + assets` updates geometry/text/assets but still preserves Bannermatic animation/timeline and semantic role state.
+- Missing Figma layers are never silently deleted; removed and newly added nodes are surfaced as conflicts and existing composition is kept until explicit import resolution.
+- Every update returns a full pre-update creative-document checkpoint for Undo semantics.
+- Gate 10 CI: run `35992918945` SUCCESS — 71 test files / 310 tests, build PASS, server/deploy syntax checks PASS.
+- Draft PR: #84. Production branch untouched.
 
 ## Phase 9 evidence
 - Exact imported Figma formats are exposed as Family Master candidates on the Format Wall with explicit `CANDIDATE` / `MASTER` status and `Use as Family Master` actions.
