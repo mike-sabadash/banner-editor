@@ -23,6 +23,9 @@ export const MASTER_FORMAT:OutputFormat={id:"master",width:300,height:600,label:
 export function familyFor(width:number,height:number):LayoutFamily{const ratio=width/height;if(height<=60)return "micro-strip";if(height<=120||ratio>=5)return "strip";if(ratio>=2.3)return "wide";if(height/width>=1.7)return "tall";if(height>width)return "portrait";return "rectangle";}
 const FORMAT_SIZES=[[240,400],[300,250],[300,300],[300,500],[300,600],[160,600],[120,600],[200,300],[250,250],[336,280],[320,480],[320,50],[320,100],[320,250],[320,320],[320,480],[320,640],[360,640],[480,320],[640,100],[640,200],[640,360],[728,90],[970,90],[970,250],[1000,120],[1000,250]] as const;
 export const RU_CORE_10:OutputFormat[]=FORMAT_SIZES.map(([width,height])=>({id:`${width}x${height}`,width,height,label:`${width}x${height}`,family:familyFor(width,height)}));
+// Minimal human-authored set: one representative master per geometry family. All other sizes inherit from these and AI Director handles exceptional composition fixes.
+export const RECOMMENDED_MANUAL_MASTERS:Readonly<Record<LayoutFamily,string>>={tall:"300x600",portrait:"240x400",rectangle:"300x300",wide:"970x250",strip:"728x90","micro-strip":"320x50"};
+export const recommendedManualMasterFormats=()=>Object.entries(RECOMMENDED_MANUAL_MASTERS).map(([family,id])=>RU_CORE_10.find(format=>format.id===id&&format.family===family)).filter((format):format is OutputFormat=>Boolean(format));
 const B=(x:number,y:number,w:number,h:number):Box=>({x,y,w,h}),cloneBox=(box:Box):Box=>({...box}),cloneCrop=(crop?:CropState)=>crop?{...crop}:undefined,clamp=(v:number,min:number,max:number)=>Math.min(max,Math.max(min,v));
 const base=(id:string,name:string,kind:LayerKind,role:LayerRole,masterBox:Box,extra:Partial<SceneLayer>={}):SceneLayer=>({id,name,kind,role,masterBox,motion:"none",motionDurationMs:400,easing:"ease-out",startMs:0,endMs:2200,visible:true,...extra});
 export const DEFAULT_SCENES:Scene[]=[
