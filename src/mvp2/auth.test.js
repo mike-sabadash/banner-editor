@@ -15,6 +15,15 @@ describe('Bannermatic customer auth journey',()=>{
   expect(auth).toContain('api.register');
   expect(auth).toContain('onAuthenticated');
  });
+ it('requires separate legal consent and exposes regional OAuth providers',()=>{
+  expect(auth).toContain('termsAccepted:true');
+  expect(auth).toContain('privacyAccepted:true');
+  expect(auth).toContain('/legal/terms.html');
+  expect(auth).toContain('/legal/consent.html');
+  expect(auth).toContain('/legal/privacy.html');
+  expect(auth).toContain('oauth.providers.map');
+  expect(auth).toContain('/api/auth/oauth/');
+ });
  it('keeps auth multilingual and mobile responsive',()=>{
   expect(auth).toContain("locale==='ru'");
   expect(auth).toContain("onLocale('en')");
