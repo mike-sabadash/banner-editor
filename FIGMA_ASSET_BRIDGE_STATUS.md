@@ -40,7 +40,7 @@ At the beginning of EVERY continuation/session:
 | Phase | Name | State | Gate |
 |---|---|---|---|
 | 0 | Foundation & migration safety | DONE | PASS |
-| 1 | Technical Requirements + @1x/@2x | TODO | NOT RUN |
+| 1 | Technical Requirements + @1x/@2x | DONE | PASS |
 | 2 | Asset Quality / Density Engine | TODO | NOT RUN |
 | 3 | Figma Connection | TODO | NOT RUN |
 | 4 | Figma Browser + Frame Detection | TODO | NOT RUN |
@@ -56,16 +56,26 @@ At the beginning of EVERY continuation/session:
 | 14 | Full E2E / Release | TODO | NOT RUN |
 
 ## Current checkpoint
-- Current phase: **Phase 1**
-- Current item: **1.1**
-- Last completed item: **Gate 0**
-- Last verified implementation commit: **cec05e000e5c7e642fe770ac197bc0873e0ab010**
-- Tests at checkpoint: **GitHub Actions run 35984491751 PASS — 63 test files / 269 tests; TypeScript/Vite build PASS; server syntax/deploy script checks PASS**
+- Current phase: **Phase 2**
+- Current item: **2.1**
+- Last completed item: **Gate 1**
+- Last verified implementation commit: **f06025dcef908fd5499c6913c48bd3d0551de5e8**
+- Tests at checkpoint: **GitHub Actions run 35985433970 PASS — full test suite PASS; TypeScript/Vite build PASS; server syntax/deploy script checks PASS**
 - Known blockers: **none**
 - Production state: untouched by this initiative.
 
 ## NEXT ACTION
-Start Phase 1 at item 1.1. Re-read this status + canonical checklist, inspect current branch HEAD/diff, then implement Technical Requirements + @1x/@2x without changing logical canvas geometry.
+Start Phase 2 at item 2.1. Re-read this status + canonical checklist, inspect current branch HEAD/diff, then implement Asset Quality / Density Engine without changing visual object size.
+
+## Phase 1 evidence
+- Per-format exportScale is normalized to @1x/@2x; default is @1x.
+- Media Plan / TT can supply exportScale, exportType and max weight; compiled formats preserve strict requirements.
+- Logical canvas dimensions remain unchanged; physicalExportSize computes export pixels independently (200×300 @2x → 400×600).
+- Advanced manual scale override is explicit and marked MANUAL; recompilation preserves it.
+- Campaign Wall and Media Plan show compact @Nx / weight / type badges; @2x summary filters affected formats.
+- Scene Editor surfaces requirements without changing canvas geometry or Responsive Master inheritance.
+- Gate 1 CI: run `35985433970` SUCCESS; tests PASS, build PASS, server/deploy syntax checks PASS.
+- Draft PR: #84. Production branch untouched.
 
 ## Phase 0 evidence
 - Feature flag `FIGMA_ASSET_BRIDGE` is disabled by default.
