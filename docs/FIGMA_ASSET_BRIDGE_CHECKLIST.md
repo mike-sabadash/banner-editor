@@ -239,21 +239,21 @@
 - [x] Gate 11 PASS
 
 ## Phase 12 — AI Director integration
-- [ ] 12.1 FormatSpec context
-- [ ] 12.2 resolved layouts
-- [ ] 12.3 exportScale context
-- [ ] 12.4 maxBytes context
-- [ ] 12.5 density warnings
-- [ ] 12.6 AI cannot invent/change @2x
-- [ ] 12.7 layout correction
-- [ ] 12.8 optional decor/copy suppression
-- [ ] 12.9 semantic roles
-- [ ] 12.10 Verification Pass
-- [ ] 12.11 Layout warnings
-- [ ] 12.12 Asset Quality warnings
-- [ ] 12.13 Export Requirement warnings
-- [ ] 12.14 warning → format/layer navigation
-- [ ] Gate 12 PASS
+- [x] 12.1 FormatSpec context
+- [x] 12.2 resolved layouts
+- [x] 12.3 exportScale context
+- [x] 12.4 maxBytes context
+- [x] 12.5 density warnings
+- [x] 12.6 AI cannot invent/change @2x
+- [x] 12.7 layout correction
+- [x] 12.8 optional decor/copy suppression
+- [x] 12.9 semantic roles
+- [x] 12.10 Verification Pass
+- [x] 12.11 Layout warnings
+- [x] 12.12 Asset Quality warnings
+- [x] 12.13 Export Requirement warnings
+- [x] 12.14 warning → format/layer navigation
+- [x] Gate 12 PASS
 
 ## Phase 13 — Security & production hardening
 - [ ] 13.1 encrypted credentials
