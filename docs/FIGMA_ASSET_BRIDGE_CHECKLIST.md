@@ -37,22 +37,22 @@
 - [x] Gate 1 PASS
 
 ## Phase 2 — Asset Quality / Density Engine
-- [ ] 2.1 sourceWidth/sourceHeight
-- [ ] 2.2 placed physical size
-- [ ] 2.3 effective source density
-- [ ] 2.4 400×600→200×300 = 2×
-- [ ] 2.5 300×450→200×300 = 1.5×
-- [ ] 2.6 200×300→200×300 = 1×
-- [ ] 2.7 compare density with required exportScale
-- [ ] 2.8 OK state
-- [ ] 2.9 Warning state
-- [ ] 2.10 Insufficient state
-- [ ] 2.11 source resolution never changes visual object size
-- [ ] 2.12 Asset Quality Inspector
-- [ ] 2.13 source/placed/required display
-- [ ] 2.14 per-format warning
-- [ ] 2.15 campaign insufficient-assets list
-- [ ] Gate 2 PASS
+- [x] 2.1 sourceWidth/sourceHeight
+- [x] 2.2 placed physical size
+- [x] 2.3 effective source density
+- [x] 2.4 400×600→200×300 = 2×
+- [x] 2.5 300×450→200×300 = 1.5×
+- [x] 2.6 200×300→200×300 = 1×
+- [x] 2.7 compare density with required exportScale
+- [x] 2.8 OK state
+- [x] 2.9 Warning state
+- [x] 2.10 Insufficient state
+- [x] 2.11 source resolution never changes visual object size
+- [x] 2.12 Asset Quality Inspector
+- [x] 2.13 source/placed/required display
+- [x] 2.14 per-format warning
+- [x] 2.15 campaign insufficient-assets list
+- [x] Gate 2 PASS
 
 ## Phase 3 — Figma Connection
 - [ ] 3.1 server-side Figma integration
