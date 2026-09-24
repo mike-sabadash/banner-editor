@@ -52,20 +52,30 @@ At the beginning of EVERY continuation/session:
 | 10 | Update from Figma | DONE | PASS |
 | 11 | Export Optimizer | DONE | PASS |
 | 12 | AI Director integration | DONE | PASS |
-| 13 | Security & production hardening | TODO | NOT RUN |
+| 13 | Security & production hardening | DONE | PASS |
 | 14 | Full E2E / Release | TODO | NOT RUN |
 
 ## Current checkpoint
-- Current phase: **Phase 13**
-- Current item: **13.1**
-- Last completed item: **Gate 12**
-- Last verified implementation commit: **b2ef498feb34cc9fee1d8063681def60c03eb6d7**
-- Tests at checkpoint: **GitHub Actions run 35994315675 PASS — 73 test files / 320 tests; TypeScript/Vite build PASS; server syntax/deploy script checks PASS**
+- Current phase: **Phase 14**
+- Current item: **14.1**
+- Last completed item: **Gate 13**
+- Last verified implementation commit: **e77dd4d49ba33917f28826ffe22f5701ba36fe7d**
+- Tests at checkpoint: **GitHub Actions run 35994680626 PASS — 74 test files / 326 tests; TypeScript/Vite build PASS; server syntax/deploy script checks PASS**
 - Known blockers: **none**
 - Production state: untouched by this initiative.
 
 ## NEXT ACTION
-Start Phase 13 at item 13.1. Re-read this status + canonical checklist, inspect current branch HEAD/diff, then implement security and production hardening.
+Start Phase 14 at item 14.1. Re-read this status + canonical checklist, inspect current branch HEAD/diff, then run full E2E/release and only then production deploy.
+
+## Phase 13 evidence
+- Figma credentials remain server-only and AES-256-GCM encrypted; no token is exposed through bridge status or frontend persistence.
+- Imported binaries now enforce MIME allowlisting and file-size limits; SVG input is sanitized for scripts, event handlers, foreignObject and active javascript/data HTML links before persistence.
+- Node batch limits, per-workspace request rate limiting, import concurrency limits and existing Figma API timeout/retry/revocation handling harden large/abusive workflows.
+- Deleted/renamed nodes remain explicit Update conflicts via Phase 10 diff behavior rather than silent deletion; revoked credentials are removed from active state.
+- Admin-only bridge metrics expose import failures/capacity signals, unknown-role rate, update-conflict rate, export-failure count, oversize/rate-limit counts and configured safety limits.
+- Large Figma documents are bounded by selected-node batch limits rather than loading unlimited node sets into import operations.
+- Gate 13 CI: run `35994680626` SUCCESS — 74 test files / 326 tests, build PASS, server/deploy syntax checks PASS.
+- Draft PR: #84. Production branch untouched.
 
 ## Phase 12 evidence
 - AI Director payload now carries FormatSpec technical requirements (exportScale, maxBytes, exportType), resolved layouts, semantic roles and asset-quality warnings.
