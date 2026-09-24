@@ -216,27 +216,27 @@
 - [x] Gate 10 PASS
 
 ## Phase 11 — Export Optimizer
-- [ ] 11.1 physicalWidth = logicalWidth × exportScale
-- [ ] 11.2 physicalHeight
-- [ ] 11.3 required raster resolution per layer
-- [ ] 11.4 crop
-- [ ] 11.5 resize
-- [ ] 11.6 preserve SVG
-- [ ] 11.7 preserve text/vector where possible
-- [ ] 11.8 JPG
-- [ ] 11.9 PNG
-- [ ] 11.10 WebP
-- [ ] 11.11 HTML5
-- [ ] 11.12 maxBytes
-- [ ] 11.13 bounded quality search
-- [ ] 11.14 layer-aware optimization
-- [ ] 11.15 background compression priority
-- [ ] 11.16 product quality priority
-- [ ] 11.17 logo vector priority
-- [ ] 11.18 blocking impossible-limit warning
-- [ ] 11.19 no silent quality degradation
-- [ ] 11.20 diagnostics
-- [ ] Gate 11 PASS
+- [x] 11.1 physicalWidth = logicalWidth × exportScale
+- [x] 11.2 physicalHeight
+- [x] 11.3 required raster resolution per layer
+- [x] 11.4 crop
+- [x] 11.5 resize
+- [x] 11.6 preserve SVG
+- [x] 11.7 preserve text/vector where possible
+- [x] 11.8 JPG
+- [x] 11.9 PNG
+- [x] 11.10 WebP
+- [x] 11.11 HTML5
+- [x] 11.12 maxBytes
+- [x] 11.13 bounded quality search
+- [x] 11.14 layer-aware optimization
+- [x] 11.15 background compression priority
+- [x] 11.16 product quality priority
+- [x] 11.17 logo vector priority
+- [x] 11.18 blocking impossible-limit warning
+- [x] 11.19 no silent quality degradation
+- [x] 11.20 diagnostics
+- [x] Gate 11 PASS
 
 ## Phase 12 — AI Director integration
 - [ ] 12.1 FormatSpec context
