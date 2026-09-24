@@ -278,8 +278,8 @@
 
 ## Phase 14 — Full E2E / Release
 - [ ] 14.1 real test campaign
-- [ ] 14.2 real Figma file
-- [ ] 14.3 minimum four key frames
+- [x] 14.2 real Figma file
+- [x] 14.3 minimum four key frames
 - [x] 14.4 @1x raster case
 - [x] 14.5 @2x raster case
 - [x] 14.6 SVG logo
@@ -287,7 +287,7 @@
 - [x] 14.8 unsupported-effect fallback
 - [x] 14.9 batch import
 - [x] 14.10 semantic roles
-- [ ] 14.11 visual fidelity
+- [x] 14.11 visual fidelity
 - [x] 14.12 Family Masters
 - [x] 14.13 intermediate rollout
 - [x] 14.14 extreme formats
@@ -298,10 +298,10 @@
 - [x] 14.19 ≤150KB
 - [x] 14.20 @1x export
 - [x] 14.21 @2x export
-- [ ] 14.22 change Figma asset
+- [x] 14.22 change Figma asset
 - [x] 14.23 Update assets only
 - [x] 14.24 animation/timeline preserved
-- [ ] 14.25 change Figma layout
+- [x] 14.25 change Figma layout
 - [x] 14.26 Update layout + assets
 - [x] 14.27 Undo
 - [x] 14.28 Reload
