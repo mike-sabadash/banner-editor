@@ -39,7 +39,7 @@ At the beginning of EVERY continuation/session:
 ## Phase ledger
 | Phase | Name | State | Gate |
 |---|---|---|---|
-| 0 | Foundation & migration safety | TODO | NOT RUN |
+| 0 | Foundation & migration safety | DONE | PASS |
 | 1 | Technical Requirements + @1x/@2x | TODO | NOT RUN |
 | 2 | Asset Quality / Density Engine | TODO | NOT RUN |
 | 3 | Figma Connection | TODO | NOT RUN |
@@ -56,16 +56,25 @@ At the beginning of EVERY continuation/session:
 | 14 | Full E2E / Release | TODO | NOT RUN |
 
 ## Current checkpoint
-- Current phase: **Phase 0**
-- Current item: **0.1**
-- Last completed item: **none**
-- Last verified implementation commit: **none**
-- Tests at checkpoint: **not run**
+- Current phase: **Phase 1**
+- Current item: **1.1**
+- Last completed item: **Gate 0**
+- Last verified implementation commit: **cec05e000e5c7e642fe770ac197bc0873e0ab010**
+- Tests at checkpoint: **GitHub Actions run 35984491751 PASS — 63 test files / 269 tests; TypeScript/Vite build PASS; server syntax/deploy script checks PASS**
 - Known blockers: **none**
 - Production state: untouched by this initiative.
 
 ## NEXT ACTION
-Start Phase 0. Before code changes inspect current production architecture and branch diff, then implement item 0.1 `FIGMA_ASSET_BRIDGE` feature flag without altering current behavior.
+Start Phase 1 at item 1.1. Re-read this status + canonical checklist, inspect current branch HEAD/diff, then implement Technical Requirements + @1x/@2x without changing logical canvas geometry.
+
+## Phase 0 evidence
+- Feature flag `FIGMA_ASSET_BRIDGE` is disabled by default.
+- Additive `FormatSpec`, `AssetSource`, Figma provenance, semantic layer metadata and optional CreativeDocument assets added.
+- Campaign format recompilation preserves optional bridge metadata.
+- Responsive master snapshots preserve semantic/provenance metadata.
+- Legacy creative documents remain valid because all new persisted fields are optional.
+- Gate 0 CI: run `35984491751` SUCCESS, 63 test files / 269 tests, build PASS.
+- Draft PR: #84. Production branch untouched.
 
 ## Decision log
 - 2026-09-24 — Persistent recovery mechanism created before implementation starts.
