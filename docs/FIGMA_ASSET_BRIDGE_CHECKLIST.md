@@ -256,25 +256,25 @@
 - [x] Gate 12 PASS
 
 ## Phase 13 — Security & production hardening
-- [ ] 13.1 encrypted credentials
-- [ ] 13.2 no token in client/localStorage
-- [ ] 13.3 MIME validation
-- [ ] 13.4 SVG sanitization
-- [ ] 13.5 file-size limits
-- [ ] 13.6 node-count limits
-- [ ] 13.7 concurrent-import limits
-- [ ] 13.8 timeout handling
-- [ ] 13.9 rate-limit handling
-- [ ] 13.10 expired/revoked auth
-- [ ] 13.11 deleted Figma file
-- [ ] 13.12 deleted node
-- [ ] 13.13 renamed node
-- [ ] 13.14 large-document stress
-- [ ] 13.15 import telemetry
-- [ ] 13.16 unknown-role metric
-- [ ] 13.17 conflict metric
-- [ ] 13.18 export-failure metric
-- [ ] Gate 13 PASS
+- [x] 13.1 encrypted credentials
+- [x] 13.2 no token in client/localStorage
+- [x] 13.3 MIME validation
+- [x] 13.4 SVG sanitization
+- [x] 13.5 file-size limits
+- [x] 13.6 node-count limits
+- [x] 13.7 concurrent-import limits
+- [x] 13.8 timeout handling
+- [x] 13.9 rate-limit handling
+- [x] 13.10 expired/revoked auth
+- [x] 13.11 deleted Figma file
+- [x] 13.12 deleted node
+- [x] 13.13 renamed node
+- [x] 13.14 large-document stress
+- [x] 13.15 import telemetry
+- [x] 13.16 unknown-role metric
+- [x] 13.17 conflict metric
+- [x] 13.18 export-failure metric
+- [x] Gate 13 PASS
 
 ## Phase 14 — Full E2E / Release
 - [ ] 14.1 real test campaign
