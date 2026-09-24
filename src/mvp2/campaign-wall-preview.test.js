@@ -5,13 +5,13 @@ describe('Campaign Wall published previews',()=>{
  it('renders real Figma SVG snapshots before live HTML exists',()=>{
   expect(wall).toContain('format.previewSvg');
   expect(wall).toContain('srcDoc={svgDoc(format.previewSvg)}');
-  expect(wall).toContain('Figma snapshot');
+  expect(wall).toContain('Creative snapshot');
  });
  it('treats only HTML/URL representations as live playback',()=>{
   expect(wall).toContain('const isLive=(format:VisualFormat)=>Boolean(format.previewHtml||format.previewUrl)');
   expect(wall).toContain('const liveCount');
   expect(wall).toContain('disabled={!liveCount}');
-  expect(wall).toContain("const previewLabel=isLive(format)?'Live HTML':format.previewSvg?'Figma snapshot':'Not published'");
+  expect(wall).toContain("const previewLabel=isLive(format)?'Live HTML':format.previewSvg?'Creative snapshot':'Not published'");
  });
  it('renders self-contained published HTML in a script-enabled sandbox',()=>{
   expect(wall).toContain('srcDoc={format.previewHtml}');
