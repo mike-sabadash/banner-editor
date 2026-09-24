@@ -51,6 +51,7 @@ print("EDITOR_REGRESSION_GUARD_OK")
 PY
 npm ci
 npm test
+export VITE_FIGMA_ASSET_BRIDGE=true
 npm run build
 node --check server/openrouterGateway.mjs
 node --check server/ttKnowledgeService.mjs

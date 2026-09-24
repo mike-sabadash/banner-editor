@@ -21,7 +21,7 @@ const strings=(values:Array<string|null|undefined>)=>[...new Set(values.map(v=>S
 
 export function formatsFromCampaign(campaign?:Campaign):OutputFormat[]{
   if(!campaign?.formats?.length)return [];
-  return campaign.formats.map(f=>({id:f.id,width:f.width,height:f.height,label:f.size||`${f.width}×${f.height}`,family:familyFor(f.width,f.height)}));
+  return campaign.formats.map(f=>({id:f.id,width:f.width,height:f.height,label:f.size||`${f.width}×${f.height}`,family:familyFor(f.width,f.height),exportScale:f.exportScale,maxBytes:f.maxBytes,exportType:f.exportType,requirementsSource:f.requirementsSource}));
 }
 
 function linkedPlacements(campaign:Campaign,format:VisualFormat):Placement[]{
