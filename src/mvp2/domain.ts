@@ -8,12 +8,6 @@ export type RequirementsSource="media-plan"|"manual";
 export type FormatSpec={id:string;width:number;height:number;exportScale?:ExportScale;maxBytes?:number;exportType?:ExportType;source?:RequirementsSource;requirementsSource?:string};
 export type FigmaAssetProvenance={fileKey:string;nodeId:string;versionId?:string;nodeName:string};
 export type AssetSource={id:string;origin:"figma"|"upload"|"generated";sourceWidth?:number;sourceHeight?:number;mimeType?:string;storageUrl:string;vector:boolean;figma?:FigmaAssetProvenance};
-export type ExportScale=1|2;
-export type ExportType="html5"|"jpg"|"png"|"webp";
-export type RequirementsSource="media-plan"|"manual";
-export type FormatSpec={id:string;width:number;height:number;exportScale?:ExportScale;maxBytes?:number;exportType?:ExportType;source?:RequirementsSource;requirementsSource?:string};
-export type FigmaAssetProvenance={fileKey:string;nodeId:string;versionId?:string;nodeName:string};
-export type AssetSource={id:string;origin:"figma"|"upload"|"generated";sourceWidth?:number;sourceHeight?:number;mimeType?:string;storageUrl:string;vector:boolean;figma?:FigmaAssetProvenance};
 
 export type RequirementSet={
  maxZipKb?:number|null;
