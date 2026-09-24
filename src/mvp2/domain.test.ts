@@ -1,5 +1,5 @@
 import {describe,expect,it} from "vitest";
-import {campaignReadiness,can,compileVisualFormats,type Campaign,type Placement} from "./domain";
+import {campaignReadiness,can,compileVisualFormats,type AssetSource,type Campaign,type CreativeDocument,type FormatSpec,type Placement} from "./domain";
 
 const placements:Placement[]=[
  {id:"a",platform:"Yandex",placement:"ROS",width:300,height:250,requirements:{maxZipKb:150}},
@@ -34,4 +34,5 @@ describe("Bannermatic MVP2 campaign compiler domain",()=>{
   expect(can("viewer","edit-creative")).toBe(false);
   expect(can("owner","manage-access")).toBe(true);
  });
+ it("keeps Phase 0 bridge fields additive for legacy creative documents",()=>{const legacy:CreativeDocument={version:2,masterFormat:{width:300,height:600},scenes:[]};expect(legacy.assets).toBeUndefined();const spec:FormatSpec={id:"300x250",width:300,height:250};expect(spec.exportScale).toBeUndefined();const asset:AssetSource={id:"a",origin:"figma",storageUrl:"/assets/a.png",vector:false,figma:{fileKey:"f",nodeId:"1:2",nodeName:"Hero"}};const enriched:CreativeDocument={...legacy,assets:{a:asset}};expect(JSON.parse(JSON.stringify(enriched)).assets.a.figma.nodeId).toBe("1:2")});
 });
