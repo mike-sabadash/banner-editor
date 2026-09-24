@@ -94,27 +94,27 @@
 - [x] Gate 4 PASS
 
 ## Phase 5 — Figma Layer Normalization
-- [ ] 5.1 parse node tree
-- [ ] 5.2 TEXT → editable text
-- [ ] 5.3 IMAGE fill → AssetSource
-- [ ] 5.4 simple VECTOR
-- [ ] 5.5 RECTANGLE
-- [ ] 5.6 ELLIPSE
-- [ ] 5.7 groups
-- [ ] 5.8 nested frames
-- [ ] 5.9 masks
-- [ ] 5.10 effects
-- [ ] 5.11 blend modes
-- [ ] 5.12 unsupported → visual fallback
-- [ ] 5.13 preserve visual fidelity in fallback
-- [ ] 5.14 no Figma Auto Layout runtime
-- [ ] 5.15 no component/variable/plugin runtime dependency
-- [ ] 5.16 z-order
-- [ ] 5.17 opacity
-- [ ] 5.18 crop
-- [ ] 5.19 rotation
-- [ ] 5.20 frame-relative geometry
-- [ ] Gate 5 PASS
+- [x] 5.1 parse node tree
+- [x] 5.2 TEXT → editable text
+- [x] 5.3 IMAGE fill → AssetSource
+- [x] 5.4 simple VECTOR
+- [x] 5.5 RECTANGLE
+- [x] 5.6 ELLIPSE
+- [x] 5.7 groups
+- [x] 5.8 nested frames
+- [x] 5.9 masks
+- [x] 5.10 effects
+- [x] 5.11 blend modes
+- [x] 5.12 unsupported → visual fallback
+- [x] 5.13 preserve visual fidelity in fallback
+- [x] 5.14 no Figma Auto Layout runtime
+- [x] 5.15 no component/variable/plugin runtime dependency
+- [x] 5.16 z-order
+- [x] 5.17 opacity
+- [x] 5.18 crop
+- [x] 5.19 rotation
+- [x] 5.20 frame-relative geometry
+- [x] Gate 5 PASS
 
 ## Phase 6 — Semantic Layer Mapper
 - [ ] 6.1 normalize names
