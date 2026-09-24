@@ -193,27 +193,27 @@
 - [x] Gate 9 PASS
 
 ## Phase 10 — Update from Figma
-- [ ] 10.1 Update from Figma action
-- [ ] 10.2 version check
-- [ ] 10.3 fingerprint comparison
-- [ ] 10.4 added
-- [ ] 10.5 removed
-- [ ] 10.6 asset changed
-- [ ] 10.7 geometry changed
-- [ ] 10.8 text changed
-- [ ] 10.9 unchanged
-- [ ] 10.10 diff UI
-- [ ] 10.11 default assets-only
-- [ ] 10.12 explicit layout+assets
-- [ ] 10.13 preserve animation
-- [ ] 10.14 preserve timeline
-- [ ] 10.15 preserve semantic role
-- [ ] 10.16 preserve local corrections for assets-only
-- [ ] 10.17 conflict detection
-- [ ] 10.18 no silent deletion
-- [ ] 10.19 checkpoint
-- [ ] 10.20 undo update
-- [ ] Gate 10 PASS
+- [x] 10.1 Update from Figma action
+- [x] 10.2 version check
+- [x] 10.3 fingerprint comparison
+- [x] 10.4 added
+- [x] 10.5 removed
+- [x] 10.6 asset changed
+- [x] 10.7 geometry changed
+- [x] 10.8 text changed
+- [x] 10.9 unchanged
+- [x] 10.10 diff UI
+- [x] 10.11 default assets-only
+- [x] 10.12 explicit layout+assets
+- [x] 10.13 preserve animation
+- [x] 10.14 preserve timeline
+- [x] 10.15 preserve semantic role
+- [x] 10.16 preserve local corrections for assets-only
+- [x] 10.17 conflict detection
+- [x] 10.18 no silent deletion
+- [x] 10.19 checkpoint
+- [x] 10.20 undo update
+- [x] Gate 10 PASS
 
 ## Phase 11 — Export Optimizer
 - [ ] 11.1 physicalWidth = logicalWidth × exportScale
