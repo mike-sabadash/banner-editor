@@ -57,15 +57,23 @@ At the beginning of EVERY continuation/session:
 
 ## Current checkpoint
 - Current phase: **Phase 14**
-- Current item: **14.1**
+- Current item: **14.1 / 14.2 / 14.3 / 14.11 / 14.15 / 14.22 / 14.25 / 14.34 — real connected-Figma + browser E2E evidence pending**
 - Last completed item: **Gate 13**
 - Last verified implementation commit: **e77dd4d49ba33917f28826ffe22f5701ba36fe7d**
 - Tests at checkpoint: **GitHub Actions run 35994680626 PASS — 74 test files / 326 tests; TypeScript/Vite build PASS; server syntax/deploy script checks PASS**
-- Known blockers: **none**
-- Production state: untouched by this initiative.
+- Known blockers: **Real Figma release fixture cannot be created from this session until one of the two connected Figma accounts is explicitly selected; Figma MCP requires account disambiguation for writes. Production browser-interaction tooling is not available in this chat.**
+- Production state: **Phase 14 code merged and deployed; deploy run 35995411433 PASS. Release gate remains open pending real-Figma/browser evidence.**
 
 ## NEXT ACTION
 Start Phase 14 at item 14.1. Re-read this status + canonical checklist, inspect current branch HEAD/diff, then run full E2E/release and only then production deploy.
+
+## Phase 14 partial release evidence
+- PR #84 was marked ready and squash-merged to production as `4c922ff0f0c703628de972618087be07de933dcd` after exact-head CI passed.
+- Added full pipeline release regression covering four key compositions, @1x/@2x, vector logo, editable text, unsupported-effect fallback, batch import, semantic roles, Family Masters/extreme micro-strip, Verification, ≤150KB requirement, @1x/@2x export planning, update modes, animation/timeline preservation, Undo checkpoint and JSON reload persistence.
+- Fixed a release-critical issue discovered during Gate 14: Figma credentials are now encrypted and persisted server-side across gateway restarts instead of being lost with the in-memory process. Production build explicitly enables `VITE_FIGMA_ASSET_BRIDGE=true`.
+- Feature CI: run `35995178680` PASS — 75 test files / 327 tests; build and syntax checks PASS. Production merged CI also passed.
+- Production deploy run `35995411433` PASS, including SSH deploy and public health/bundle smoke step.
+- Gate 14 is NOT marked PASS yet: items requiring a real connected Figma fixture and real browser interaction remain unchecked rather than being falsely inferred from synthetic tests.
 
 ## Phase 13 evidence
 - Figma credentials remain server-only and AES-256-GCM encrypted; no token is exposed through bridge status or frontend persistence.
