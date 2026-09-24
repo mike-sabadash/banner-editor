@@ -20,18 +20,12 @@ describe('Bannermatic modular customer journey',()=>{
   expect(product).toContain('<CampaignWall');
   expect(product).toContain('<DeliveryWorkspace');
  });
- it('keeps the customer journey in the same campaign while making the web editor primary and Figma optional',()=>{
+ it('keeps the customer journey in the same campaign with the web editor as the MVP creative surface',()=>{
   expect(product).toContain("const openCreativeEditor=");
   expect(product).toContain("setScreen('creative')");
-  expect(product).toContain('<FigmaConnectPanel');
+  expect(product).not.toContain('<FigmaConnectPanel');
   expect(product).toContain("can(role,'edit-creative')");
-  const panel=readFileSync(new URL('./FigmaConnectPanel.tsx',import.meta.url),'utf8');
-  expect(panel).toContain('Open Creative Editor');
-  expect(panel).toContain('campaignId=');
-  expect(panel).toContain('api.figmaStatus');
-  expect(panel).toContain('same campaign');
-  expect(panel).toContain('Optional bridge');
-  expect(panel).toContain('pair?');
+  expect(product).toContain('view=scene-editor&campaignId=');
  });
  it('keeps campaign lifecycle actions explicit and recoverable',()=>{
   expect(product).toContain('api.deleteCampaign');
