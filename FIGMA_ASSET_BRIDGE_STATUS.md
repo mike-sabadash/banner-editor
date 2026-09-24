@@ -46,7 +46,7 @@ At the beginning of EVERY continuation/session:
 | 4 | Figma Browser + Frame Detection | DONE | PASS |
 | 5 | Figma Layer Normalization | DONE | PASS |
 | 6 | Semantic Layer Mapper | DONE | PASS |
-| 7 | Import Plan | TODO | NOT RUN |
+| 7 | Import Plan | DONE | PASS |
 | 8 | Apply Import | TODO | NOT RUN |
 | 9 | Responsive Masters handoff | TODO | NOT RUN |
 | 10 | Update from Figma | TODO | NOT RUN |
@@ -56,16 +56,25 @@ At the beginning of EVERY continuation/session:
 | 14 | Full E2E / Release | TODO | NOT RUN |
 
 ## Current checkpoint
-- Current phase: **Phase 7**
-- Current item: **7.1**
-- Last completed item: **Gate 6**
-- Last verified implementation commit: **cf609037c22534807532146e1f2da6d7e9af831c**
-- Tests at checkpoint: **GitHub Actions run 35990602857 PASS — 67 test files / 293 tests; TypeScript/Vite build PASS; server syntax/deploy script checks PASS**
+- Current phase: **Phase 8**
+- Current item: **8.1**
+- Last completed item: **Gate 7**
+- Last verified implementation commit: **96232b2a587f533bcaa19feb6a6ba5d5e3befa7b**
+- Tests at checkpoint: **GitHub Actions run 35991181402 PASS — 68 test files / 297 tests; TypeScript/Vite build PASS; server syntax/deploy script checks PASS**
 - Known blockers: **none**
 - Production state: untouched by this initiative.
 
 ## NEXT ACTION
-Start Phase 7 at item 7.1. Re-read this status + canonical checklist, inspect current branch HEAD/diff, then implement read-only Import Plan.
+Start Phase 8 at item 8.1. Re-read this status + canonical checklist, inspect current branch HEAD/diff, then implement Apply Import.
+
+## Phase 7 evidence
+- Added campaign-scoped read-only ImportPlan endpoint; it fetches selected Figma nodes, normalizes and semantically maps them, but performs no campaign mutation.
+- Plan includes selected frames, exact target formats, layer counts, semantic-role breakdown, unknown layers, unsupported visual fallbacks, raster source-density warnings and mapping conflicts.
+- Missing exact targets and duplicate selected frames targeting one campaign format are explicit conflicts; no nearest-format suggestion is silently applied.
+- Import Plan UI previews each frame → target mapping plus role chips and diagnostics before any Apply step.
+- Batch CTA is present as `Import N layouts into Scene 01` but deliberately disabled until Phase 8 Apply Import exists, preserving Phase 7 read-only semantics.
+- Gate 7 CI: run `35991181402` SUCCESS — 68 test files / 297 tests, build PASS, server/deploy syntax checks PASS.
+- Draft PR: #84. Production branch untouched.
 
 ## Phase 6 evidence
 - Deterministic semantic mapper normalizes layer names and maps background/product/logo/headline/cta/legal/decor aliases before any AI call.
