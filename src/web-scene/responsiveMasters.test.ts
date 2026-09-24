@@ -2,7 +2,7 @@ import {describe,expect,it} from "vitest";
 import {
   DEFAULT_SCENES,EMPTY_RESPONSIVE_STATE,RU_CORE_10,affectedFormatsForFamily,countFormatOverrides,
   familyFor,formatInheritance,generateScene,resetFormatOverride,resetLayerOverride,resetOverrideProperty,
-  responsiveMasterScore,selectResponsiveMaster,setLayerOverride,updateResponsiveMaster,useAsResponsiveMaster,
+  responsiveMasterScore,selectResponsiveMaster,setLayerOverride,updateResponsiveMaster,useAsResponsiveMaster,recommendedManualMasterFormats,
   type OutputFormat,type ResponsiveState
 } from "./sceneModel";
 
@@ -86,4 +86,69 @@ describe("Responsive Masters end-to-end",()=>{
     expect(responsiveMasterScore(a,format("160x600"))).toBe(Infinity);
     expect(affectedFormatsForFamily("strip",RU_CORE_10).map(item=>item.id)).toEqual(expect.arrayContaining(["728x90","970x90","1000x120"]));
   });
+  it("rolls a real multi-role composition from Original Master through a curated Family Master into intermediate formats",()=>{
+    const scenes=structuredClone(DEFAULT_SCENES);
+    const product=scenes[0];
+    product.layers.push(
+      {id:"logo-rollout",name:"Brand logo",kind:"text",role:"logo",text:"BRAND",color:"#fff",masterBox:{x:8,y:4,w:30,h:8},fontSize:22,fontWeight:800,fontFamily:"Inter",motion:"fade",motionDurationMs:260,easing:"ease-out",startMs:0,endMs:2200,visible:true},
+      {id:"cta-rollout",name:"CTA",kind:"text",role:"cta",text:"Shop now",color:"#fff",masterBox:{x:8,y:84,w:42,h:8},fontSize:14,fontWeight:700,fontFamily:"Inter",motion:"fade",motionDurationMs:280,easing:"ease-out",startMs:500,endMs:2200,visible:true},
+      {id:"legal-rollout",name:"Legal",kind:"text",role:"legal",text:"Terms apply",color:"#aaa",masterBox:{x:8,y:94,w:84,h:4},fontSize:9,fontWeight:400,fontFamily:"Inter",motion:"none",motionDurationMs:0,easing:"linear",startMs:0,endMs:2200,visible:true}
+    );
+    const family=format("300x300"),intermediate=format("300x250"),sibling=format("336x280");
+    const deterministic=generateScene(product,family,EMPTY_RESPONSIVE_STATE);
+    expect(deterministic.layers.find(l=>l.role==="hero")!.box).not.toEqual(product.layers.find(l=>l.role==="hero")!.masterBox);
+    let state:ResponsiveState=EMPTY_RESPONSIVE_STATE;
+    const curated:{id:string;role:any;box:{x:number;y:number;w:number;h:number};fontSize?:number}[]=[
+      {id:"headline-1",role:"headline",box:{x:6,y:8,w:44,h:24},fontSize:27},
+      {id:"hero-1",role:"hero",box:{x:53,y:8,w:41,h:66}},
+      {id:"logo-rollout",role:"logo",box:{x:6,y:4,w:22,h:9},fontSize:18},
+      {id:"cta-rollout",role:"cta",box:{x:6,y:76,w:30,h:13},fontSize:13},
+      {id:"legal-rollout",role:"legal",box:{x:6,y:91,w:88,h:6},fontSize:8}
+    ];
+    for(const item of curated)state=setLayerOverride(state,family.id,product.id,item.id,item.role,{box:item.box,...(item.fontSize?{fontSize:item.fontSize}:{})});
+    state=useAsResponsiveMaster(scenes,family,state,"rectangle","2026-09-24T00:00:00Z");
+    expect(formatInheritance(family,state)).toMatchObject({kind:"responsive-master",sourceFormatId:"300x300"});
+    for(const target of [intermediate,sibling]){
+      expect(formatInheritance(target,state)).toMatchObject({kind:"inherited",sourceFormatId:"300x300"});
+      const output=generateScene(product,target,state);
+      for(const item of curated){const layer=output.layers.find(l=>l.id===item.id)!;expect(layer.box,item.id+" @ "+target.id).toEqual(item.box);expect(layer.visible).toBe(true)}
+      expect(output.layers.find(l=>l.id==="headline-1")!.fontSize).toBeGreaterThanOrEqual(7);
+      expect(output.layers.find(l=>l.id==="legal-rollout")!.box.y+output.layers.find(l=>l.id==="legal-rollout")!.box.h).toBeLessThanOrEqual(100);
+    }
+    state=setLayerOverride(state,intermediate.id,product.id,"cta-rollout","cta",{box:{x:8,y:73,w:34,h:15}});
+    expect(formatInheritance(intermediate,state).kind).toBe("individual");
+    expect(generateScene(product,intermediate,state).layers.find(l=>l.id==="cta-rollout")!.box).toEqual({x:8,y:73,w:34,h:15});
+    expect(generateScene(product,sibling,state).layers.find(l=>l.id==="cta-rollout")!.box).toEqual({x:6,y:76,w:30,h:13});
+  });
+
+  it("keeps critical content viable across extreme skyscraper, micro-strip, strip, wide, square, portrait and fullscreen layouts",()=>{
+    const scenes=structuredClone(DEFAULT_SCENES),product=scenes[0];
+    product.layers.push(
+      {id:"logo-extreme",name:"Logo",kind:"text",role:"logo",text:"BRAND",color:"#fff",masterBox:{x:8,y:4,w:30,h:8},fontSize:22,fontWeight:800,fontFamily:"Inter",motion:"fade",motionDurationMs:250,easing:"ease-out",startMs:0,endMs:2200,visible:true},
+      {id:"cta-extreme",name:"CTA",kind:"text",role:"cta",text:"Shop",color:"#fff",masterBox:{x:8,y:84,w:42,h:8},fontSize:14,fontWeight:700,fontFamily:"Inter",motion:"fade",motionDurationMs:250,easing:"ease-out",startMs:400,endMs:2200,visible:true},
+      {id:"legal-extreme",name:"Legal",kind:"text",role:"legal",text:"Terms apply",color:"#aaa",masterBox:{x:8,y:94,w:84,h:4},fontSize:9,fontWeight:400,fontFamily:"Inter",motion:"none",motionDurationMs:0,easing:"linear",startMs:0,endMs:2200,visible:true}
+    );
+    const targets:OutputFormat[]=[
+      format("120x600"),format("320x50"),format("728x90"),format("970x250"),format("300x300"),format("240x400"),
+      {id:"360x780-fullscreen",width:360,height:780,label:"360x780 Fullscreen",family:familyFor(360,780)}
+    ];
+    for(const target of targets){
+      const layers=generateScene(product,target,EMPTY_RESPONSIVE_STATE).layers;
+      const byRole=(role:string)=>layers.find(layer=>layer.role===role)!;
+      for(const role of ["background","headline","hero","logo","cta","legal"]){const layer=byRole(role);expect(layer,role+" @ "+target.id).toBeTruthy();expect(layer.visible,role+" visible @ "+target.id).toBe(true);expect(Number.isFinite(layer.box.x)&&Number.isFinite(layer.box.y)&&layer.box.w>0&&layer.box.h>0,role+" geometry @ "+target.id).toBe(true)}
+      for(const role of ["headline","logo","cta","legal"]){const b=byRole(role).box;expect(b.x,role+" x @ "+target.id).toBeGreaterThanOrEqual(0);expect(b.y,role+" y @ "+target.id).toBeGreaterThanOrEqual(0);expect(b.x+b.w,role+" right @ "+target.id).toBeLessThanOrEqual(100.001);expect(b.y+b.h,role+" bottom @ "+target.id).toBeLessThanOrEqual(100.001)}
+      if(target.family==="micro-strip")expect(layers.some(layer=>layer.role==="copy")).toBe(false);
+      else expect(layers.some(layer=>layer.role==="copy")).toBe(true);
+    }
+  });
+
+  it("uses only six manual masters to cover every responsive geometry family",()=>{
+    const masters=recommendedManualMasterFormats();
+    expect(masters.map(item=>item.id)).toEqual(["300x600","240x400","300x300","970x250","728x90","320x50"]);
+    expect(new Set(masters.map(item=>item.family))).toEqual(new Set(["tall","portrait","rectangle","wide","strip","micro-strip"]));
+    let state:ResponsiveState=EMPTY_RESPONSIVE_STATE;
+    for(const master of masters)state=useAsResponsiveMaster(DEFAULT_SCENES,master,state,master.family);
+    for(const target of RU_CORE_10){const selected=selectResponsiveMaster(target,state);expect(selected,target.id).toBeTruthy();expect(selected!.family,target.id).toBe(target.family)}
+  });
+
 });
