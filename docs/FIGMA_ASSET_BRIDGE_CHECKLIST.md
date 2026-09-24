@@ -4,17 +4,17 @@
 > Update checkboxes in place. Full design rationale lives in the canonical Notion specification linked from `FIGMA_ASSET_BRIDGE_STATUS.md`.
 
 ## Phase 0 — Foundation & migration safety
-- [ ] 0.1 Feature flag `FIGMA_ASSET_BRIDGE`
-- [ ] 0.2 Extend FormatSpec: exportScale, maxBytes, exportType, requirementsSource
-- [ ] 0.3 Separate AssetSource model from canvas placement
-- [ ] 0.4 Add Figma provenance metadata
-- [ ] 0.5 Add semantic role to SceneLayer
-- [ ] 0.6 Enforce logical-coordinate geometry invariant
-- [ ] 0.7 Additive migration only
-- [ ] 0.8 Backward compatibility for old campaigns
-- [ ] 0.9 Serialization/deserialization tests
-- [ ] 0.10 Regression: Responsive Masters/animation/timeline/AI Director unchanged
-- [ ] Gate 0 PASS
+- [x] 0.1 Feature flag `FIGMA_ASSET_BRIDGE`
+- [x] 0.2 Extend FormatSpec: exportScale, maxBytes, exportType, requirementsSource
+- [x] 0.3 Separate AssetSource model from canvas placement
+- [x] 0.4 Add Figma provenance metadata
+- [x] 0.5 Add semantic role to SceneLayer
+- [x] 0.6 Enforce logical-coordinate geometry invariant
+- [x] 0.7 Additive migration only
+- [x] 0.8 Backward compatibility for old campaigns
+- [x] 0.9 Serialization/deserialization tests
+- [x] 0.10 Regression: Responsive Masters/animation/timeline/AI Director unchanged
+- [x] Gate 0 PASS
 
 ## Phase 1 — Technical Requirements + @1x/@2x
 - [ ] 1.1 exportScale 1|2 per format
