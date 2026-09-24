@@ -48,7 +48,7 @@ At the beginning of EVERY continuation/session:
 | 6 | Semantic Layer Mapper | DONE | PASS |
 | 7 | Import Plan | DONE | PASS |
 | 8 | Apply Import | DONE | PASS |
-| 9 | Responsive Masters handoff | TODO | NOT RUN |
+| 9 | Responsive Masters handoff | DONE | PASS |
 | 10 | Update from Figma | TODO | NOT RUN |
 | 11 | Export Optimizer | TODO | NOT RUN |
 | 12 | AI Director integration | TODO | NOT RUN |
@@ -56,16 +56,27 @@ At the beginning of EVERY continuation/session:
 | 14 | Full E2E / Release | TODO | NOT RUN |
 
 ## Current checkpoint
-- Current phase: **Phase 9**
-- Current item: **9.1**
-- Last completed item: **Gate 8**
-- Last verified implementation commit: **48f50098e9f1afcdac169db7721a0231860dd91c**
-- Tests at checkpoint: **GitHub Actions run 35991585683 PASS — 69 test files / 301 tests; TypeScript/Vite build PASS; server syntax/deploy script checks PASS**
+- Current phase: **Phase 10**
+- Current item: **10.1**
+- Last completed item: **Gate 9**
+- Last verified implementation commit: **f82c04fb114659c6573b7b04309c7598c666559a**
+- Tests at checkpoint: **GitHub Actions run 35992248448 PASS — 70 test files / 306 tests; TypeScript/Vite build PASS; server syntax/deploy script checks PASS**
 - Known blockers: **none**
 - Production state: untouched by this initiative.
 
 ## NEXT ACTION
-Start Phase 9 at item 9.1. Re-read this status + canonical checklist, inspect current branch HEAD/diff, then implement Responsive Masters handoff.
+Start Phase 10 at item 10.1. Re-read this status + canonical checklist, inspect current branch HEAD/diff, then implement Update from Figma.
+
+## Phase 9 evidence
+- Exact imported Figma formats are exposed as Family Master candidates on the Format Wall with explicit `CANDIDATE` / `MASTER` status and `Use as Family Master` actions.
+- Promotion converts imported per-format snapshots into the existing `responsiveMasters` model; no parallel Figma inheritance system is created.
+- Geometry classification covers portrait, tall, rectangle, wide, strip and micro-strip, including extreme strip formats.
+- Master snapshots preserve imported semantic/provenance layer state and remove the source-format local override after promotion so the promoted source becomes the family authority.
+- Existing local overrides on other formats are retained above family inheritance; intermediate AUTO rollout continues through the established Responsive Masters resolver.
+- Batch promotion supports the intended 4–6 human key compositions and the Format Wall communicates Figma layouts → Family Masters → AUTO formats.
+- Initial CI build exposed an async React effect typing issue; fixed and rerun successfully.
+- Gate 9 CI: run `35992248448` SUCCESS — 70 test files / 306 tests, build PASS, server/deploy syntax checks PASS.
+- Draft PR: #84. Production branch untouched.
 
 ## Phase 8 evidence
 - Apply Import now creates a full creative-document checkpoint before mutation and returns it for Undo semantics.
