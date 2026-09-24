@@ -26,8 +26,10 @@ describe('Bannermatic modular customer journey',()=>{
   expect(product).toContain("const openCreativeEditor=");
   expect(product).toContain("setScreen('creative')");
   expect(product).not.toMatch(/figma/i);
-  expect(wall).not.toMatch(/figma/i);
+  expect(wall).toContain('FigmaImportBrowser');
+  expect(wall).toContain('Import design');
   expect(delivery).not.toMatch(/figma/i);
+  expect(product).not.toMatch(/FigmaImportBrowser|figmaBridge|figmaPair/i);
   expect(product).toContain("can(role,'edit-creative')");
   expect(product).toContain('view=scene-editor&campaignId=');
  });
