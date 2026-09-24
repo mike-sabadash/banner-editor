@@ -140,19 +140,19 @@
 - [x] Gate 6 PASS
 
 ## Phase 7 — Import Plan
-- [ ] 7.1 read-only ImportPlan
-- [ ] 7.2 no campaign mutation during plan
-- [ ] 7.3 selected frames
-- [ ] 7.4 target formats
-- [ ] 7.5 layer count
-- [ ] 7.6 semantic roles
-- [ ] 7.7 unknown layers
-- [ ] 7.8 unsupported effects
-- [ ] 7.9 source-resolution warnings
-- [ ] 7.10 conflicts
-- [ ] 7.11 result preview
-- [ ] 7.12 batch import CTA
-- [ ] Gate 7 PASS
+- [x] 7.1 read-only ImportPlan
+- [x] 7.2 no campaign mutation during plan
+- [x] 7.3 selected frames
+- [x] 7.4 target formats
+- [x] 7.5 layer count
+- [x] 7.6 semantic roles
+- [x] 7.7 unknown layers
+- [x] 7.8 unsupported effects
+- [x] 7.9 source-resolution warnings
+- [x] 7.10 conflicts
+- [x] 7.11 result preview
+- [x] 7.12 batch import CTA
+- [x] Gate 7 PASS
 
 ## Phase 8 — Apply Import
 - [ ] 8.1 Undo checkpoint
