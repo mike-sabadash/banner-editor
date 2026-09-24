@@ -42,7 +42,7 @@ afterAll(async()=>{if(running?.server)await stop(running.server);if(root)await r
 
 describe('vNext live HTTP campaign production',()=>{
  it('persists, preflights and downloads real placement-specific HTML5 packages',async()=>{
-  const auth=await request(`${running.base}/api/auth/register`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:'http-e2e@example.test',password:'correct-horse',name:'HTTP E2E'})});
+  const auth=await request(`${running.base}/api/auth/register`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:'http-e2e@example.test',password:'correct-horse',name:'HTTP E2E',legalVersion:'2026-09-24',termsAccepted:true,privacyAccepted:true})});
   expect(auth.response.status).toBe(201);const token=(auth.body as any).token,headers={'content-type':'application/json',authorization:`Bearer ${token}`};
   const created=await request(`${running.base}/api/campaigns`,{method:'POST',headers,body:JSON.stringify({name:'Production proof',locale:'en'})});
   expect(created.response.status).toBe(201);const id=(created.body as any).id;
