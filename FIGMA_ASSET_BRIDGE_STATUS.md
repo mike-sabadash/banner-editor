@@ -45,7 +45,7 @@ At the beginning of EVERY continuation/session:
 | 3 | Figma Connection | DONE | PASS |
 | 4 | Figma Browser + Frame Detection | DONE | PASS |
 | 5 | Figma Layer Normalization | DONE | PASS |
-| 6 | Semantic Layer Mapper | TODO | NOT RUN |
+| 6 | Semantic Layer Mapper | DONE | PASS |
 | 7 | Import Plan | TODO | NOT RUN |
 | 8 | Apply Import | TODO | NOT RUN |
 | 9 | Responsive Masters handoff | TODO | NOT RUN |
@@ -56,16 +56,25 @@ At the beginning of EVERY continuation/session:
 | 14 | Full E2E / Release | TODO | NOT RUN |
 
 ## Current checkpoint
-- Current phase: **Phase 6**
-- Current item: **6.1**
-- Last completed item: **Gate 5**
-- Last verified implementation commit: **cf7867ea8acd2f93b89045e9bf774e85d185daa4**
-- Tests at checkpoint: **GitHub Actions run 35989040911 PASS — 66 test files / 288 tests; TypeScript/Vite build PASS; server syntax/deploy script checks PASS**
+- Current phase: **Phase 7**
+- Current item: **7.1**
+- Last completed item: **Gate 6**
+- Last verified implementation commit: **cf609037c22534807532146e1f2da6d7e9af831c**
+- Tests at checkpoint: **GitHub Actions run 35990602857 PASS — 67 test files / 293 tests; TypeScript/Vite build PASS; server syntax/deploy script checks PASS**
 - Known blockers: **none**
 - Production state: untouched by this initiative.
 
 ## NEXT ACTION
-Start Phase 6 at item 6.1. Re-read this status + canonical checklist, inspect current branch HEAD/diff, then implement Semantic Layer Mapper.
+Start Phase 7 at item 7.1. Re-read this status + canonical checklist, inspect current branch HEAD/diff, then implement read-only Import Plan.
+
+## Phase 6 evidence
+- Deterministic semantic mapper normalizes layer names and maps background/product/logo/headline/cta/legal/decor aliases before any AI call.
+- Weak names use node type, position and relative-size heuristics with explicit confidence; low-confidence and unknown layers form the ambiguity queue.
+- OpenRouter semantic fallback receives only compact ambiguous-layer payloads (ID/name/type/kind/box/short text/current role), never the whole Figma document.
+- AI results cannot overwrite high-confidence deterministic mappings or user corrections; role provenance is persisted as rule / ai / user with confidence.
+- Semantic Role Review UI shows recognized/unknown counts, makes unknown layers visible, offers bounded AI resolution, and supports manual role correction persisted through semanticOverrides during normalized reads.
+- Gate 6 CI: run `35990602857` SUCCESS — 67 test files / 293 tests, build PASS, server/deploy syntax checks PASS.
+- Draft PR: #84. Production branch untouched.
 
 ## Phase 5 evidence
 - Added read-only Figma node-tree normalizer and authenticated `/normalize` bridge endpoint.
