@@ -74,24 +74,24 @@
 - [x] Gate 3 PASS
 
 ## Phase 4 — Figma Browser + Frame Detection
-- [ ] 4.1 Import design entry point
-- [ ] 4.2 source picker
-- [ ] 4.3 Figma source
-- [ ] 4.4 file picker
-- [ ] 4.5 page picker
-- [ ] 4.6 frame browser
-- [ ] 4.7 frame preview
-- [ ] 4.8 read actual dimensions
-- [ ] 4.9 exact campaign-format match
-- [ ] 4.10 frame name secondary signal
-- [ ] 4.11 META_300x600_V1 → 300×600
-- [ ] 4.12 multiple frame matches
-- [ ] 4.13 duplicate-size handling
-- [ ] 4.14 nearest family suggestion
-- [ ] 4.15 no automatic nearest apply
-- [ ] 4.16 multi-select
-- [ ] 4.17 mapping preview
-- [ ] Gate 4 PASS
+- [x] 4.1 Import design entry point
+- [x] 4.2 source picker
+- [x] 4.3 Figma source
+- [x] 4.4 file picker
+- [x] 4.5 page picker
+- [x] 4.6 frame browser
+- [x] 4.7 frame preview
+- [x] 4.8 read actual dimensions
+- [x] 4.9 exact campaign-format match
+- [x] 4.10 frame name secondary signal
+- [x] 4.11 META_300x600_V1 → 300×600
+- [x] 4.12 multiple frame matches
+- [x] 4.13 duplicate-size handling
+- [x] 4.14 nearest family suggestion
+- [x] 4.15 no automatic nearest apply
+- [x] 4.16 multi-select
+- [x] 4.17 mapping preview
+- [x] Gate 4 PASS
 
 ## Phase 5 — Figma Layer Normalization
 - [ ] 5.1 parse node tree
