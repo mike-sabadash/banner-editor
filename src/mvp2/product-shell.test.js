@@ -2,6 +2,8 @@ import {describe,it,expect} from 'vitest';
 import {readFileSync} from 'node:fs';
 const main=readFileSync(new URL('../main.tsx',import.meta.url),'utf8');
 const product=readFileSync(new URL('./BannermaticProduct.tsx',import.meta.url),'utf8');
+const wall=readFileSync(new URL('./CampaignWall.tsx',import.meta.url),'utf8');
+const delivery=readFileSync(new URL('./DeliveryWorkspace.tsx',import.meta.url),'utf8');
 const viewport=readFileSync(new URL('./viewport.css',import.meta.url),'utf8');
 const mediaPlan=readFileSync(new URL('./MediaPlanWorkspace.tsx',import.meta.url),'utf8');
 const workspaces=readFileSync(new URL('./next-elite-workspaces.css',import.meta.url),'utf8');
@@ -23,7 +25,9 @@ describe('Bannermatic modular customer journey',()=>{
  it('keeps the customer journey in the same campaign with the web editor as the MVP creative surface',()=>{
   expect(product).toContain("const openCreativeEditor=");
   expect(product).toContain("setScreen('creative')");
-  expect(product).not.toContain('<FigmaConnectPanel');
+  expect(product).not.toMatch(/figma/i);
+  expect(wall).not.toMatch(/figma/i);
+  expect(delivery).not.toMatch(/figma/i);
   expect(product).toContain("can(role,'edit-creative')");
   expect(product).toContain('view=scene-editor&campaignId=');
  });
