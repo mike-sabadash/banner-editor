@@ -280,36 +280,36 @@
 - [ ] 14.1 real test campaign
 - [ ] 14.2 real Figma file
 - [ ] 14.3 minimum four key frames
-- [ ] 14.4 @1x raster case
-- [ ] 14.5 @2x raster case
-- [ ] 14.6 SVG logo
-- [ ] 14.7 editable text
-- [ ] 14.8 unsupported-effect fallback
-- [ ] 14.9 batch import
-- [ ] 14.10 semantic roles
+- [x] 14.4 @1x raster case
+- [x] 14.5 @2x raster case
+- [x] 14.6 SVG logo
+- [x] 14.7 editable text
+- [x] 14.8 unsupported-effect fallback
+- [x] 14.9 batch import
+- [x] 14.10 semantic roles
 - [ ] 14.11 visual fidelity
-- [ ] 14.12 Family Masters
-- [ ] 14.13 intermediate rollout
-- [ ] 14.14 extreme formats
+- [x] 14.12 Family Masters
+- [x] 14.13 intermediate rollout
+- [x] 14.14 extreme formats
 - [ ] 14.15 AI Director
-- [ ] 14.16 Verification Pass
-- [ ] 14.17 @2x badges
-- [ ] 14.18 density warning
-- [ ] 14.19 ≤150KB
-- [ ] 14.20 @1x export
-- [ ] 14.21 @2x export
+- [x] 14.16 Verification Pass
+- [x] 14.17 @2x badges
+- [x] 14.18 density warning
+- [x] 14.19 ≤150KB
+- [x] 14.20 @1x export
+- [x] 14.21 @2x export
 - [ ] 14.22 change Figma asset
-- [ ] 14.23 Update assets only
-- [ ] 14.24 animation/timeline preserved
+- [x] 14.23 Update assets only
+- [x] 14.24 animation/timeline preserved
 - [ ] 14.25 change Figma layout
-- [ ] 14.26 Update layout + assets
-- [ ] 14.27 Undo
-- [ ] 14.28 Reload
-- [ ] 14.29 Persistence
-- [ ] 14.30 non-Figma regression
-- [ ] 14.31 CI/build
-- [ ] 14.32 production deploy
-- [ ] 14.33 production smoke
+- [x] 14.26 Update layout + assets
+- [x] 14.27 Undo
+- [x] 14.28 Reload
+- [x] 14.29 Persistence
+- [x] 14.30 non-Figma regression
+- [x] 14.31 CI/build
+- [x] 14.32 production deploy
+- [x] 14.33 production smoke
 - [ ] 14.34 production browser E2E
 - [ ] Gate 14 PASS / RELEASE DONE
 
