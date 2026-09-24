@@ -34,7 +34,6 @@ export type CampaignFont={id:string;family:string;style:"Regular"|"Medium"|"Semi
 export type CreativeDocument={
  version:number;
  assets?:Record<string,AssetSource>;
- assets?:Record<string,AssetSource>;
  masterFormat:{width:number;height:number};
  scenes:Array<any>;
  fonts?:CampaignFont[];
