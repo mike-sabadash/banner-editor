@@ -83,3 +83,5 @@
 .bm-stage-guide.horizontal{left:20px!important;right:0!important}
 .bm-center>.bm-timeline{z-index:110!important}
 .bm-center>.bm-timeline-resizer{z-index:120!important}
+
+.bm-ai-director-status{font-size:10px;color:#aeb8c8;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bm-ai-director-status.error{color:#ff786f}
