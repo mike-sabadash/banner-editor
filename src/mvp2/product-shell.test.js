@@ -21,7 +21,7 @@ describe('Bannermatic modular customer journey',()=>{
   expect(product).toContain('<DeliveryWorkspace');
  });
  it('keeps the customer journey in the same campaign while making the web editor primary and Figma optional',()=>{
-  expect(product).toContain("const openFigma=");
+  expect(product).toContain("const openCreativeEditor=");
   expect(product).toContain("setScreen('creative')");
   expect(product).toContain('<FigmaConnectPanel');
   expect(product).toContain("can(role,'edit-creative')");
