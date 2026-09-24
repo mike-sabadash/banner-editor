@@ -174,23 +174,23 @@
 - [x] Gate 8 PASS
 
 ## Phase 9 — Responsive Masters handoff
-- [ ] 9.1 imported exact formats → Family Master candidates
-- [ ] 9.2 Use as Family Master
-- [ ] 9.3 geometry family
-- [ ] 9.4 master snapshot
-- [ ] 9.5 intermediate rollout
-- [ ] 9.6 override precedence
-- [ ] 9.7 no parallel Figma inheritance
-- [ ] 9.8 portrait
-- [ ] 9.9 tall
-- [ ] 9.10 rectangle
-- [ ] 9.11 wide
-- [ ] 9.12 strip
-- [ ] 9.13 micro-strip
-- [ ] 9.14 extreme formats
-- [ ] 9.15 MASTER/AUTO wall status
-- [ ] 9.16 4–6 masters cover campaign
-- [ ] Gate 9 PASS
+- [x] 9.1 imported exact formats → Family Master candidates
+- [x] 9.2 Use as Family Master
+- [x] 9.3 geometry family
+- [x] 9.4 master snapshot
+- [x] 9.5 intermediate rollout
+- [x] 9.6 override precedence
+- [x] 9.7 no parallel Figma inheritance
+- [x] 9.8 portrait
+- [x] 9.9 tall
+- [x] 9.10 rectangle
+- [x] 9.11 wide
+- [x] 9.12 strip
+- [x] 9.13 micro-strip
+- [x] 9.14 extreme formats
+- [x] 9.15 MASTER/AUTO wall status
+- [x] 9.16 4–6 masters cover campaign
+- [x] Gate 9 PASS
 
 ## Phase 10 — Update from Figma
 - [ ] 10.1 Update from Figma action
