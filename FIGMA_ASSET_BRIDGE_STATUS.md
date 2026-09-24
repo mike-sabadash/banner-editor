@@ -42,7 +42,7 @@ At the beginning of EVERY continuation/session:
 | 0 | Foundation & migration safety | DONE | PASS |
 | 1 | Technical Requirements + @1x/@2x | DONE | PASS |
 | 2 | Asset Quality / Density Engine | DONE | PASS |
-| 3 | Figma Connection | TODO | NOT RUN |
+| 3 | Figma Connection | DONE | PASS |
 | 4 | Figma Browser + Frame Detection | TODO | NOT RUN |
 | 5 | Figma Layer Normalization | TODO | NOT RUN |
 | 6 | Semantic Layer Mapper | TODO | NOT RUN |
@@ -56,16 +56,26 @@ At the beginning of EVERY continuation/session:
 | 14 | Full E2E / Release | TODO | NOT RUN |
 
 ## Current checkpoint
-- Current phase: **Phase 3**
-- Current item: **3.1**
-- Last completed item: **Gate 2**
-- Last verified implementation commit: **f77d78084489020723d94022f07a95d5bccb3d80**
-- Tests at checkpoint: **GitHub Actions run 35986375110 PASS — 63 test files / 276 tests; TypeScript/Vite build PASS; server syntax/deploy script checks PASS**
+- Current phase: **Phase 4**
+- Current item: **4.1**
+- Last completed item: **Gate 3**
+- Last verified implementation commit: **5fb09bb376c6581f9b5f2baf6bfaf97d45a5b712**
+- Tests at checkpoint: **GitHub Actions run 35987390762 PASS — 64 test files / 280 tests; TypeScript/Vite build PASS; server syntax/deploy script checks PASS**
 - Known blockers: **none**
 - Production state: untouched by this initiative.
 
 ## NEXT ACTION
-Start Phase 3 at item 3.1. Re-read this status + canonical checklist, inspect current branch HEAD/diff, then implement secure server-side Figma Connection.
+Start Phase 4 at item 4.1. Re-read this status + canonical checklist, inspect current branch HEAD/diff, then implement Figma Browser + Frame Detection.
+
+## Phase 3 evidence
+- New server-only `figmaAssetBridge.mjs` wraps Figma REST; frontend never receives or stores the Figma credential.
+- Credentials are encrypted with AES-256-GCM using server key material; status exposes metadata only.
+- Authenticated integration endpoints provide status, connect/reconnect, validate, disconnect, file listing, file/page/frame retrieval, nodes, exports and versions.
+- Revoked/expired credentials are rejected and removed from active credential state.
+- Figma REST calls have timeout handling plus bounded retry/backoff for 429 and transient 5xx failures.
+- Adapter tests cover connect/reconnect, encrypted/hidden credential behavior, disconnect/revocation, files/pages/frames/nodes/exports/versions, and rate-limit retry.
+- Gate 3 CI: run `35987390762` SUCCESS — 64 test files / 280 tests, build PASS, server/deploy syntax checks PASS.
+- Draft PR: #84. Production branch untouched.
 
 ## Phase 2 evidence
 - AssetSource raster dimensions drive deterministic effective density from source pixels / placed logical pixels.
