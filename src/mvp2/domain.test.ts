@@ -35,4 +35,5 @@ describe("Bannermatic MVP2 campaign compiler domain",()=>{
   expect(can("owner","manage-access")).toBe(true);
  });
  it("keeps Phase 0 bridge fields additive for legacy creative documents",()=>{const legacy:CreativeDocument={version:2,masterFormat:{width:300,height:600},scenes:[]};expect(legacy.assets).toBeUndefined();const spec:FormatSpec={id:"300x250",width:300,height:250};expect(spec.exportScale).toBeUndefined();const asset:AssetSource={id:"a",origin:"figma",storageUrl:"/assets/a.png",vector:false,figma:{fileKey:"f",nodeId:"1:2",nodeName:"Hero"}};const enriched:CreativeDocument={...legacy,assets:{a:asset}};expect(JSON.parse(JSON.stringify(enriched)).assets.a.figma.nodeId).toBe("1:2")});
+ it("preserves optional Phase 0 format metadata when media plan is recompiled",()=>{const first=compileVisualFormats(placements).map(f=>f.size==="300×250"?{...f,exportScale:2 as const,maxBytes:150000,exportType:"png" as const,requirementsSource:"TT-42"}:f);const next=compileVisualFormats(placements,first);expect(next.find(f=>f.size==="300×250")).toMatchObject({exportScale:2,maxBytes:150000,exportType:"png",requirementsSource:"TT-42"})});
 });
