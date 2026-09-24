@@ -43,7 +43,7 @@ At the beginning of EVERY continuation/session:
 | 1 | Technical Requirements + @1x/@2x | DONE | PASS |
 | 2 | Asset Quality / Density Engine | DONE | PASS |
 | 3 | Figma Connection | DONE | PASS |
-| 4 | Figma Browser + Frame Detection | TODO | NOT RUN |
+| 4 | Figma Browser + Frame Detection | DONE | PASS |
 | 5 | Figma Layer Normalization | TODO | NOT RUN |
 | 6 | Semantic Layer Mapper | TODO | NOT RUN |
 | 7 | Import Plan | TODO | NOT RUN |
@@ -56,16 +56,25 @@ At the beginning of EVERY continuation/session:
 | 14 | Full E2E / Release | TODO | NOT RUN |
 
 ## Current checkpoint
-- Current phase: **Phase 4**
-- Current item: **4.1**
-- Last completed item: **Gate 3**
-- Last verified implementation commit: **5fb09bb376c6581f9b5f2baf6bfaf97d45a5b712**
-- Tests at checkpoint: **GitHub Actions run 35987390762 PASS — 64 test files / 280 tests; TypeScript/Vite build PASS; server syntax/deploy script checks PASS**
+- Current phase: **Phase 5**
+- Current item: **5.1**
+- Last completed item: **Gate 4**
+- Last verified implementation commit: **08c4df006dba0fe0a8989464add1dc4cd921f9e5**
+- Tests at checkpoint: **GitHub Actions run 35987820916 PASS — 65 test files / 284 tests; TypeScript/Vite build PASS; server syntax/deploy script checks PASS**
 - Known blockers: **none**
 - Production state: untouched by this initiative.
 
 ## NEXT ACTION
-Start Phase 4 at item 4.1. Re-read this status + canonical checklist, inspect current branch HEAD/diff, then implement Figma Browser + Frame Detection.
+Start Phase 5 at item 5.1. Re-read this status + canonical checklist, inspect current branch HEAD/diff, then implement Figma Layer Normalization.
+
+## Phase 4 evidence
+- Campaign Wall now has an isolated `Import design` entry point opening the new one-way Asset Bridge browser; legacy plugin/runtime remains excluded from the product shell.
+- Source picker currently exposes Figma first, with server-only credential connection from Phase 3.
+- Browser supports Figma project/team file discovery, file selection, page filtering, frame cards, actual frame dimensions and multi-select.
+- Deterministic frame matcher prioritizes actual dimensions, uses names only as a secondary signal (`META_300x600_V1` supported), flags duplicate-size frames, and suggests nearest campaign format without auto-applying it.
+- Mapping preview distinguishes EXACT / NAME MATCH / SUGGESTED and keeps nearest matches suggestion-only.
+- Gate 4 CI: run `35987820916` SUCCESS — 65 test files / 284 tests, build PASS, server/deploy syntax checks PASS.
+- Draft PR: #84. Production branch untouched.
 
 ## Phase 3 evidence
 - New server-only `figmaAssetBridge.mjs` wraps Figma REST; frontend never receives or stores the Figma credential.
