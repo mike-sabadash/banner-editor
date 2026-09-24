@@ -2,7 +2,7 @@ import {describe,expect,it} from "vitest";
 import {
   DEFAULT_SCENES,EMPTY_RESPONSIVE_STATE,RU_CORE_10,affectedFormatsForFamily,countFormatOverrides,
   familyFor,formatInheritance,generateScene,resetFormatOverride,resetLayerOverride,resetOverrideProperty,
-  responsiveMasterScore,selectResponsiveMaster,setLayerOverride,updateResponsiveMaster,useAsResponsiveMaster,
+  responsiveMasterScore,selectResponsiveMaster,setLayerOverride,updateResponsiveMaster,useAsResponsiveMaster,recommendedManualMasterFormats,
   type OutputFormat,type ResponsiveState
 } from "./sceneModel";
 
@@ -140,6 +140,15 @@ describe("Responsive Masters end-to-end",()=>{
       if(target.family==="micro-strip")expect(layers.some(layer=>layer.role==="copy")).toBe(false);
       else expect(layers.some(layer=>layer.role==="copy")).toBe(true);
     }
+  });
+
+  it("uses only six manual masters to cover every responsive geometry family",()=>{
+    const masters=recommendedManualMasterFormats();
+    expect(masters.map(item=>item.id)).toEqual(["300x600","240x400","300x300","970x250","728x90","320x50"]);
+    expect(new Set(masters.map(item=>item.family))).toEqual(new Set(["tall","portrait","rectangle","wide","strip","micro-strip"]));
+    let state:ResponsiveState=EMPTY_RESPONSIVE_STATE;
+    for(const master of masters)state=useAsResponsiveMaster(DEFAULT_SCENES,master,state,master.family);
+    for(const target of RU_CORE_10){const selected=selectResponsiveMaster(target,state);expect(selected,target.id).toBeTruthy();expect(selected!.family,target.id).toBe(target.family)}
   });
 
 });
