@@ -117,27 +117,27 @@
 - [x] Gate 5 PASS
 
 ## Phase 6 — Semantic Layer Mapper
-- [ ] 6.1 normalize names
-- [ ] 6.2 background aliases
-- [ ] 6.3 product/hero
-- [ ] 6.4 logo/brand
-- [ ] 6.5 headline/title
-- [ ] 6.6 cta/button
-- [ ] 6.7 legal/disclaimer
-- [ ] 6.8 decor
-- [ ] 6.9 node type signal
-- [ ] 6.10 position signal
-- [ ] 6.11 relative-size signal
-- [ ] 6.12 confidence
-- [ ] 6.13 deterministic mapping priority
-- [ ] 6.14 AI only for ambiguous layers
-- [ ] 6.15 minimize AI payload
-- [ ] 6.16 rule/AI/user provenance
-- [ ] 6.17 Semantic Role Review UI
-- [ ] 6.18 unknown layers visible
-- [ ] 6.19 manual correction
-- [ ] 6.20 persist correction
-- [ ] Gate 6 PASS
+- [x] 6.1 normalize names
+- [x] 6.2 background aliases
+- [x] 6.3 product/hero
+- [x] 6.4 logo/brand
+- [x] 6.5 headline/title
+- [x] 6.6 cta/button
+- [x] 6.7 legal/disclaimer
+- [x] 6.8 decor
+- [x] 6.9 node type signal
+- [x] 6.10 position signal
+- [x] 6.11 relative-size signal
+- [x] 6.12 confidence
+- [x] 6.13 deterministic mapping priority
+- [x] 6.14 AI only for ambiguous layers
+- [x] 6.15 minimize AI payload
+- [x] 6.16 rule/AI/user provenance
+- [x] 6.17 Semantic Role Review UI
+- [x] 6.18 unknown layers visible
+- [x] 6.19 manual correction
+- [x] 6.20 persist correction
+- [x] Gate 6 PASS
 
 ## Phase 7 — Import Plan
 - [ ] 7.1 read-only ImportPlan
