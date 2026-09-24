@@ -3,7 +3,7 @@ import {ChevronRight,Copy,Crop,Eye,EyeOff,Grid3X3,Hand,Image as ImageIcon,Layers
 import {api} from "../mvp2/api";
 import type {Campaign} from "../mvp2/domain";
 import {ttForFormat,validateScenesForTT} from "./campaignBridge";
-import {DEFAULT_SCENES,EMPTY_RESPONSIVE_STATE,MASTER_FORMAT,RESPONSIVE_FAMILY_LABELS,affectedFormatsForFamily,formatInheritance,generateScene,normalizeResponsiveState,resetFormatOverride,resetLayerOverride,resetOverrideProperty,resolveSceneLayers,setLayerOverride,updateResponsiveMaster,useAsResponsiveMaster,type LayerOverride,type LayerRole,type LayoutFamily,type MotionPreset,type ResponsiveState,type Scene,type SceneLayer} from "./sceneModel";
+import {DEFAULT_SCENES,EMPTY_RESPONSIVE_STATE,MASTER_FORMAT,RESPONSIVE_FAMILY_LABELS,affectedFormatsForFamily,formatInheritance,generateScene,normalizeResponsiveState,resetFormatOverride,resetLayerOverride,resetOverrideProperty,resolveSceneLayers,setLayerOverride,updateResponsiveMaster,useAsResponsiveMaster,type LayerOverride,type LayerRole,type LayoutFamily,type MotionPreset,type ResponsiveState,type Scene,type SceneLayer,type OutputFormat} from "./sceneModel";
 import {FONT_STYLES,mergeCampaignFormats} from "./editorProductControls";
 import MotionInspector from "./MotionInspector";
 import {motionFrame,layerVisibleAt} from "./motionRuntime";
