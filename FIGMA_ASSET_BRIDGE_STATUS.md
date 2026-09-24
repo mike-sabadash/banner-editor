@@ -51,21 +51,31 @@ At the beginning of EVERY continuation/session:
 | 9 | Responsive Masters handoff | DONE | PASS |
 | 10 | Update from Figma | DONE | PASS |
 | 11 | Export Optimizer | DONE | PASS |
-| 12 | AI Director integration | TODO | NOT RUN |
+| 12 | AI Director integration | DONE | PASS |
 | 13 | Security & production hardening | TODO | NOT RUN |
 | 14 | Full E2E / Release | TODO | NOT RUN |
 
 ## Current checkpoint
-- Current phase: **Phase 12**
-- Current item: **12.1**
-- Last completed item: **Gate 11**
-- Last verified implementation commit: **ed3aeabe8f9405f5d610c75ee0bf6f5eb4498f56**
-- Tests at checkpoint: **GitHub Actions run 35993659722 PASS — 72 test files / 317 tests; TypeScript/Vite build PASS; server syntax/deploy script checks PASS**
+- Current phase: **Phase 13**
+- Current item: **13.1**
+- Last completed item: **Gate 12**
+- Last verified implementation commit: **b2ef498feb34cc9fee1d8063681def60c03eb6d7**
+- Tests at checkpoint: **GitHub Actions run 35994315675 PASS — 73 test files / 320 tests; TypeScript/Vite build PASS; server syntax/deploy script checks PASS**
 - Known blockers: **none**
 - Production state: untouched by this initiative.
 
 ## NEXT ACTION
-Start Phase 12 at item 12.1. Re-read this status + canonical checklist, inspect current branch HEAD/diff, then implement AI Director integration.
+Start Phase 13 at item 13.1. Re-read this status + canonical checklist, inspect current branch HEAD/diff, then implement security and production hardening.
+
+## Phase 12 evidence
+- AI Director payload now carries FormatSpec technical requirements (exportScale, maxBytes, exportType), resolved layouts, semantic roles and asset-quality warnings.
+- Prompt policy explicitly makes @1x/@2x, maxBytes and exportType immutable Media Plan/TT/manual requirements: AI may recompose or validate but cannot invent, relax or change them.
+- Semantic roles are authoritative for hierarchy decisions; optional decor can be suppressed for extreme formats while logo/legal/CTA preservation remains required unless physically impossible.
+- Added unified Verification Pass that reports distinct Layout, Asset Quality and Export Requirement warnings, including blocking severity and exact format/scene/layer navigation targets.
+- Verification covers out-of-bounds/readability risks, density warnings and Export Optimizer requirement failures.
+- Initial test fixture parse failures were corrected; final Gate rerun is clean.
+- Gate 12 CI: run `35994315675` SUCCESS — 73 test files / 320 tests, build PASS, server/deploy syntax checks PASS.
+- Draft PR: #84. Production branch untouched.
 
 ## Phase 11 evidence
 - Export Optimizer derives physical output dimensions strictly as logical size × exportScale; @2x never changes editor canvas geometry.
