@@ -2,6 +2,12 @@ import {campaignCompliance,placementCompliance} from '../../server/mvp2Complianc
 export type AccessRole="owner"|"admin"|"designer"|"producer"|"viewer";
 export type Readiness="ready"|"warning"|"blocked"|"unknown";
 export type CreativeState="missing"|"draft"|"published";
+export type ExportScale=1|2;
+export type ExportType="html5"|"jpg"|"png"|"webp";
+export type RequirementsSource="media-plan"|"manual";
+export type FormatSpec={id:string;width:number;height:number;exportScale?:ExportScale;maxBytes?:number;exportType?:ExportType;source?:RequirementsSource;requirementsSource?:string};
+export type FigmaAssetProvenance={fileKey:string;nodeId:string;versionId?:string;nodeName:string};
+export type AssetSource={id:string;origin:"figma"|"upload"|"generated";sourceWidth?:number;sourceHeight?:number;mimeType?:string;storageUrl:string;vector:boolean;figma?:FigmaAssetProvenance};
 
 export type RequirementSet={
  maxZipKb?:number|null;
@@ -18,6 +24,7 @@ export type RequirementSet={
 export type Placement={id:string;platform:string;placement:string;width:number;height:number;requirements:RequirementSet;creativeType?:string;contentVariantIds?:string[];reviewIssues?:string[];language?:string;};
 
 export type VisualFormat={
+ exportScale?:ExportScale;maxBytes?:number;exportType?:ExportType;requirementsSource?:string;
  sourceType?:string;templateId?:string;familyId?:string;roleOverrides?:Record<string,Record<string,number|string>>;sourceFingerprint?:string;contentFingerprint?:string;variantRenders?:Record<string,any>;
  id:string;width:number;height:number;size:string;placementIds:string[];creativeState:CreativeState;creativeVersion:number;
  previewUrl?:string;previewHtml?:string;previewSvg?:string;previewType?:string;durationSec?:number;estimatedZipKb?:number;clickTagPresent?:boolean;publishedAt?:string;
@@ -26,6 +33,7 @@ export type VisualFormat={
 export type CampaignFont={id:string;family:string;style:"Regular"|"Medium"|"Semibold"|"Bold";weight:number;fileName:string;dataUrl:string};
 export type CreativeDocument={
  version:number;
+ assets?:Record<string,AssetSource>;
  masterFormat:{width:number;height:number};
  scenes:Array<any>;
  fonts?:CampaignFont[];
