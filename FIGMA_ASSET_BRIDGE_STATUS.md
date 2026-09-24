@@ -60,7 +60,7 @@ At the beginning of EVERY continuation/session:
 - Current item: **2.1**
 - Last completed item: **Gate 1**
 - Last verified implementation commit: **f06025dcef908fd5499c6913c48bd3d0551de5e8**
-- Tests at checkpoint: **GitHub Actions run 35985433970 PASS — full test suite PASS; TypeScript/Vite build PASS; server syntax/deploy script checks PASS**
+- Tests at checkpoint: **GitHub Actions run 35985519836 PASS on final Phase 1 checkpoint — full test suite PASS; TypeScript/Vite build PASS; server syntax/deploy script checks PASS**
 - Known blockers: **none**
 - Production state: untouched by this initiative.
 
@@ -74,7 +74,7 @@ Start Phase 2 at item 2.1. Re-read this status + canonical checklist, inspect cu
 - Advanced manual scale override is explicit and marked MANUAL; recompilation preserves it.
 - Campaign Wall and Media Plan show compact @Nx / weight / type badges; @2x summary filters affected formats.
 - Scene Editor surfaces requirements without changing canvas geometry or Responsive Master inheritance.
-- Gate 1 CI: run `35985433970` SUCCESS; tests PASS, build PASS, server/deploy syntax checks PASS.
+- Gate 1 final CI: run `35985519836` SUCCESS on checkpoint commit; tests PASS, build PASS, server/deploy syntax checks PASS.
 - Draft PR: #84. Production branch untouched.
 
 ## Phase 0 evidence
