@@ -155,23 +155,23 @@
 - [x] Gate 7 PASS
 
 ## Phase 8 — Apply Import
-- [ ] 8.1 Undo checkpoint
-- [ ] 8.2 materialize assets into Bannermatic storage
-- [ ] 8.3 no runtime Figma CDN dependency
-- [ ] 8.4 AssetSource records
-- [ ] 8.5 SceneLayers
-- [ ] 8.6 provenance
-- [ ] 8.7 fingerprints
-- [ ] 8.8 node IDs
-- [ ] 8.9 single-frame import
-- [ ] 8.10 multi-frame batch
-- [ ] 8.11 4–6 key compositions
-- [ ] 8.12 preserve scenes
-- [ ] 8.13 preserve timeline
-- [ ] 8.14 preserve animation
-- [ ] 8.15 undo full import
-- [ ] 8.16 retry without duplicates
-- [ ] Gate 8 PASS
+- [x] 8.1 Undo checkpoint
+- [x] 8.2 materialize assets into Bannermatic storage
+- [x] 8.3 no runtime Figma CDN dependency
+- [x] 8.4 AssetSource records
+- [x] 8.5 SceneLayers
+- [x] 8.6 provenance
+- [x] 8.7 fingerprints
+- [x] 8.8 node IDs
+- [x] 8.9 single-frame import
+- [x] 8.10 multi-frame batch
+- [x] 8.11 4–6 key compositions
+- [x] 8.12 preserve scenes
+- [x] 8.13 preserve timeline
+- [x] 8.14 preserve animation
+- [x] 8.15 undo full import
+- [x] 8.16 retry without duplicates
+- [x] Gate 8 PASS
 
 ## Phase 9 — Responsive Masters handoff
 - [ ] 9.1 imported exact formats → Family Master candidates
