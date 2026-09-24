@@ -50,22 +50,32 @@ At the beginning of EVERY continuation/session:
 | 8 | Apply Import | DONE | PASS |
 | 9 | Responsive Masters handoff | DONE | PASS |
 | 10 | Update from Figma | DONE | PASS |
-| 11 | Export Optimizer | TODO | NOT RUN |
+| 11 | Export Optimizer | DONE | PASS |
 | 12 | AI Director integration | TODO | NOT RUN |
 | 13 | Security & production hardening | TODO | NOT RUN |
 | 14 | Full E2E / Release | TODO | NOT RUN |
 
 ## Current checkpoint
-- Current phase: **Phase 11**
-- Current item: **11.1**
-- Last completed item: **Gate 10**
-- Last verified implementation commit: **42725838b9b303e38191bbf7ca64b7889f83c276**
-- Tests at checkpoint: **GitHub Actions run 35992918945 PASS — 71 test files / 310 tests; TypeScript/Vite build PASS; server syntax/deploy script checks PASS**
+- Current phase: **Phase 12**
+- Current item: **12.1**
+- Last completed item: **Gate 11**
+- Last verified implementation commit: **ed3aeabe8f9405f5d610c75ee0bf6f5eb4498f56**
+- Tests at checkpoint: **GitHub Actions run 35993659722 PASS — 72 test files / 317 tests; TypeScript/Vite build PASS; server syntax/deploy script checks PASS**
 - Known blockers: **none**
 - Production state: untouched by this initiative.
 
 ## NEXT ACTION
-Start Phase 11 at item 11.1. Re-read this status + canonical checklist, inspect current branch HEAD/diff, then implement Export Optimizer.
+Start Phase 12 at item 12.1. Re-read this status + canonical checklist, inspect current branch HEAD/diff, then implement AI Director integration.
+
+## Phase 11 evidence
+- Export Optimizer derives physical output dimensions strictly as logical size × exportScale; @2x never changes editor canvas geometry.
+- Validation computes per-layer required raster resolution and blocks insufficient source density before export.
+- Export plan supports JPG, PNG, WebP and HTML5 requirements, preserves vector/logo representation and editable text representation, and assigns layer-aware compression priority (background aggressive, product/hero high fidelity).
+- Raster optimizer contract performs resize-before-encode through a processor boundary and uses bounded quality candidates for JPG/WebP rather than unbounded loops.
+- maxBytes is a hard validation target: impossible limits return blocking diagnostics and never silently degrade output below the bounded policy.
+- Campaign endpoints `/export-validate` and `/export-optimized` expose diagnostics/physical targets for delivery integration.
+- Gate 11 CI: run `35993659722` SUCCESS — 72 test files / 317 tests, build PASS, server/deploy syntax checks PASS.
+- Draft PR: #84. Production branch untouched.
 
 ## Phase 10 evidence
 - Imported Family Masters now expose `Update from Figma`; update starts with a fresh Figma version lookup and node normalization before any mutation.
