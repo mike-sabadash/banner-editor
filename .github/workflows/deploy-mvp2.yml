@@ -47,4 +47,4 @@ jobs:
           if printf '%s' "$bundle" | grep -q 'IN · MS'; then echo 'Legacy IN · MS control still present in production bundle' >&2; exit 1; fi
           echo 'PRODUCTION_MOTION_UI_BUNDLE_OK'
 
-# deploy trigger 2026-09-26 transition-ux-fix
+# deploy trigger 2026-09-26 scene-transition-ux-cleanup
