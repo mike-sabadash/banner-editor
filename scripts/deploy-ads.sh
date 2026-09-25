@@ -34,7 +34,7 @@ checks={
  "timeline panel":"bm-timeline-resizer",
  "timeline height":"timelineHeight",
  "time ruler":"bm-time-ruler",
- "scene title timeline":"<b>{scene.name}</b>",
+ "scene title timeline":'<b>{`Scene ${Math.max(1,sceneIndex+1)}`}</b>',
  "scene scoped playhead":"scenePlayMs/Math.max(1,scene.durationMs)",
  "unified playhead overlay":"bm-playhead-overlay",
  "space playback":'e.code==="Space"',
