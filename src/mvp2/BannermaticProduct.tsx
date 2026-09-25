@@ -14,6 +14,9 @@ type Screen='campaigns'|'overview'|'media'|'creative'|'delivery'|'settings'|'con
 type Member={id:string;role:AccessRole;user:{id:string;email:string;name:string}|null};
 const EMPTY:Campaign={id:'',name:'Untitled',status:'draft',placements:[],formats:[],locale:'en'};
 const CREATIVE_REFRESH_MS=4000;
+const initialParams=new URLSearchParams(location.search);
+const requestedCampaignId=initialParams.get('campaignId')||'';
+const requestedScreen:Screen=initialParams.get('screen')==='media'?'media':'campaigns';
 
 function CampaignCard({item,ru,editable,editingName,onOpen,onStartRename,onRenameChange,onSaveRename,onCancelRename,onDelete}:{item:Campaign;ru:boolean;editable:boolean;editingName:string|null;onOpen:()=>void;onStartRename:()=>void;onRenameChange:(value:string)=>void;onSaveRename:()=>void;onCancelRename:()=>void;onDelete:()=>void}){
  const editing=editingName!==null;
@@ -21,11 +24,11 @@ function CampaignCard({item,ru,editable,editingName,onOpen,onStartRename,onRenam
 }
 
 export default function BannermaticProduct(){
- const [session,setSession]=useState<SessionPayload|null>(null),[locale,setLocale]=useState<Locale>(()=>(localStorage.getItem('bannermatic:locale') as Locale)||'en'),[screen,setScreen]=useState<Screen>('campaigns'),[campaigns,setCampaigns]=useState<Campaign[]>([]),[campaign,setCampaign]=useState<Campaign>(EMPTY),[newName,setNewName]=useState(''),[editingId,setEditingId]=useState(''),[editingName,setEditingName]=useState(''),[deleteCandidate,setDeleteCandidate]=useState<Campaign|null>(null),[campaignsLoading,setCampaignsLoading]=useState(false),[members,setMembers]=useState<Member[]>([]),[invitations,setInvitations]=useState<WorkspaceInvitation[]>([]),[inviteEmail,setInviteEmail]=useState(''),[inviteRole,setInviteRole]=useState<AccessRole>('designer'),[inviteLink,setInviteLink]=useState(''),[loading,setLoading]=useState(true),[error,setError]=useState('');
+ const [session,setSession]=useState<SessionPayload|null>(null),[locale,setLocale]=useState<Locale>(()=>(localStorage.getItem('bannermatic:locale') as Locale)||'en'),[screen,setScreen]=useState<Screen>(requestedScreen),[campaigns,setCampaigns]=useState<Campaign[]>([]),[campaign,setCampaign]=useState<Campaign>(EMPTY),[newName,setNewName]=useState(''),[editingId,setEditingId]=useState(''),[editingName,setEditingName]=useState(''),[deleteCandidate,setDeleteCandidate]=useState<Campaign|null>(null),[campaignsLoading,setCampaignsLoading]=useState(false),[members,setMembers]=useState<Member[]>([]),[invitations,setInvitations]=useState<WorkspaceInvitation[]>([]),[inviteEmail,setInviteEmail]=useState(''),[inviteRole,setInviteRole]=useState<AccessRole>('designer'),[inviteLink,setInviteLink]=useState(''),[loading,setLoading]=useState(true),[error,setError]=useState('');
  const role=(session?.role||'viewer') as AccessRole;const readiness=useMemo(()=>campaignReadiness(campaign),[campaign]);const ru=locale==='ru';
  const setLang=(value:Locale)=>{localStorage.setItem('bannermatic:locale',value);setLocale(value)};
  const applyCampaign=(next:Campaign)=>{setCampaign(next);setCampaigns(list=>list.some(c=>c.id===next.id)?list.map(c=>c.id===next.id?next:c):[next,...list])};
- const refreshCampaigns=async()=>{setCampaignsLoading(true);try{const data=await api.campaigns();setCampaigns(data.items);setCampaign(current=>data.items.find(c=>c.id===current.id)||data.items[0]||EMPTY);setError('')}catch(e){setError(ru?'Не удалось загрузить кампании. Список не был очищен — попробуйте ещё раз.':`Could not load campaigns. The current list was preserved — try again. ${e instanceof Error?e.message:String(e)}`)}finally{setCampaignsLoading(false)}};
+ const refreshCampaigns=async()=>{setCampaignsLoading(true);try{const data=await api.campaigns();setCampaigns(data.items);setCampaign(current=>data.items.find(c=>c.id===(requestedCampaignId||current.id))||data.items[0]||EMPTY);setError('')}catch(e){setError(ru?'Не удалось загрузить кампании. Список не был очищен — попробуйте ещё раз.':`Could not load campaigns. The current list was preserved — try again. ${e instanceof Error?e.message:String(e)}`)}finally{setCampaignsLoading(false)}};
  const refreshCurrentCampaign=async()=>{if(!campaign.id)return;try{applyCampaign(await api.campaign(campaign.id))}catch(e){setError(e instanceof Error?e.message:String(e))}};
  const refreshAccess=async()=>{try{const m=await api.members();setMembers(m.items);if(can(role,'manage-access')){const i=await api.invitations();setInvitations(i.items)}}catch(e){setError(e instanceof Error?e.message:String(e))}};
  useEffect(()=>{(async()=>{try{setSession(await api.me())}catch{location.href='?auth=login';return}try{await refreshCampaigns()}finally{setLoading(false)}})()},[]);

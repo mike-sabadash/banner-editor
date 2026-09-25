@@ -19,7 +19,7 @@ function toPlacements(plan:any):Placement[]{return (plan.placements||[]).map((p:
 
 export default function MediaPlanWorkspace({campaign,locale,canEdit,onUpdated,onError,onOpenCreative}:{campaign:Campaign;locale:Locale;canEdit:boolean;onUpdated:(c:Campaign)=>void;onError:(s:string)=>void;onOpenCreative:()=>void}){
  const input=useRef<HTMLInputElement>(null);
- const [mode,setMode]=useState<EntryMode>('plan'),[pending,setPending]=useState<Pending|null>(null),[busy,setBusy]=useState(false),[done,setDone]=useState('');
+ const [mode,setMode]=useState<EntryMode>(()=>new URLSearchParams(location.search).get('mode')==='manual'?'manual':'plan'),[pending,setPending]=useState<Pending|null>(null),[busy,setBusy]=useState(false),[done,setDone]=useState('');
  const [query,setQuery]=useState(''),[creativeFilter,setCreativeFilter]=useState<CreativeFilter>('all'),[showRequirements,setShowRequirements]=useState(true);
  const ru=locale==='ru';
  const pick=()=>input.current?.click();
