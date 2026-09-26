@@ -110,5 +110,5 @@ jobs:
           test -n "$asset"
           curl -fsS --max-time 30 "https://studio.bannermatic.online$asset" >/tmp/diffusion-bundle.js
           test -s /tmp/diffusion-bundle.js
-          grep -q 'boot-splash' <<<"$html"
+          grep -q '<title>Diffusion Studio</title>' <<<"$html" || { echo "PUBLIC_HTML_NOT_DIFFUSION"; echo "$html" | head -c 1200; exit 1; }
           echo "DIFFUSION_UPSTREAM_DEPLOY_OK"
