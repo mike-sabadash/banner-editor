@@ -159,27 +159,27 @@ jobs:
           const solidRows=await right.getByText('Solid', {exact:true}).count();
           console.log('inspector-add Fill', solidRows);
           if (solidRows < 1) throw new Error('Fill plus did not add a Solid fill');
-          await page.keyboard.press('Escape');
+          if (await page.getByRole('button', {name:'Close'}).count()) await page.getByRole('button', {name:'Close'}).last().click();
 
           await right.getByRole('button', {name:'Add stroke'}).click();
           await page.waitForTimeout(120);
           if (await right.getByText('Stroke', {exact:true}).count() < 2) throw new Error('Stroke plus failed');
-          await page.keyboard.press('Escape');
+          if (await page.getByRole('button', {name:'Close'}).count()) await page.getByRole('button', {name:'Close'}).last().click();
 
           await right.getByRole('button', {name:'Add shadow'}).click();
           await page.waitForTimeout(120);
           if (await right.getByText('Shadow', {exact:true}).count() < 2) throw new Error('Shadow plus failed');
-          await page.keyboard.press('Escape');
+          if (await page.getByRole('button', {name:'Close'}).count()) await page.getByRole('button', {name:'Close'}).last().click();
 
           await right.getByRole('button', {name:'Add effect'}).click();
           await page.waitForTimeout(120);
           if (await right.getByText('Layer Blur', {exact:true}).count() < 1) throw new Error('Effects plus failed');
-          await page.keyboard.press('Escape');
+          if (await page.getByRole('button', {name:'Close'}).count()) await page.getByRole('button', {name:'Close'}).last().click();
 
           await right.getByRole('button', {name:'Add animation'}).click();
           await page.waitForTimeout(120);
           if (await right.getByText('IN', {exact:true}).count() < 1) throw new Error('Animations plus failed');
-          await page.keyboard.press('Escape');
+          if (await page.getByRole('button', {name:'Close'}).count()) await page.getByRole('button', {name:'Close'}).last().click();
 
           await right.getByRole('button', {name:'Add mask'}).click();
           await page.waitForTimeout(120);
