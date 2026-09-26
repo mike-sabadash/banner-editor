@@ -35,7 +35,22 @@ import type { EditWriter } from '@/projects/edits';
 const MIN_CANVAS_HEIGHT = 200;
 const INSPECTOR_WIDTH = 264;
 
-export function EditorPage() {
+const STANDALONE_PROJECT_BUNDLE = String.raw`const { createElement, spread, insert, createTextNode } = require("@diffusionstudio/jsx");
+function Project(){
+  const stage=createElement("stage"); spread(stage,{background:"#161616",camera:[0.72,0,0,0.72,180,90]});
+  const scene=createElement("scene"); spread(scene,{name:"Banner 300×600",width:300,height:600,fill:"#101114",active:true}); insert(stage,scene);
+  const bg=createElement("rect"); spread(bg,{name:"Background",x:0,y:0,width:300,height:600,fill:"#15171c",start:0,end:8}); insert(scene,bg);
+  const hero=createElement("rect"); spread(hero,{name:"Product",x:38,y:150,width:224,height:250,fill:"#242832",cornerRadius:18,start:0.4,end:7.5}); insert(scene,hero);
+  const title=createElement("text"); spread(title,{name:"Headline",x:28,y:48,width:244,height:90,color:"#ffffff",fontSize:34,fontWeight:"bold",textAlign:"left",start:0.2,end:6.5}); insert(title,createTextNode("BANNERMATIC")); insert(scene,title);
+  const sub=createElement("text"); spread(sub,{name:"Copy",x:28,y:105,width:244,height:44,color:"#aeb4c0",fontSize:14,start:0.7,end:6.8}); insert(sub,createTextNode("Diffusion Studio editor foundation")); insert(scene,sub);
+  const cta=createElement("rect"); spread(cta,{name:"CTA",x:28,y:500,width:150,height:48,fill:"#1688ff",cornerRadius:10,start:1.2,end:8}); insert(scene,cta);
+  const ct=createElement("text"); spread(ct,{name:"CTA label",x:28,y:500,width:150,height:48,color:"#ffffff",fontSize:14,fontWeight:"bold",textAlign:"center",textBaseline:"middle",start:1.2,end:8}); insert(ct,createTextNode("OPEN")); insert(scene,ct);
+  return stage;
+}
+module.exports.default=Project;`;
+
+
+export function EditorPage(props: { standalone?: boolean } = {}) {
   const { uiVisible, timelineMinimized, timelineHeight, setTimelineHeight } = useLayout();
   const { isDesktop, isFullscreen } = useEditorApi();
   const [resizing, setResizing] = createSignal(false);
@@ -47,6 +62,16 @@ export function EditorPage() {
   // below holds a path — the watcher, the library, the writer — so all of it
   // is torn down and re-attached where the project now is.
   createEffect(() => {
+    if (props.standalone) {
+      const mounted = mount(STANDALONE_PROJECT_BUNDLE, world);
+      setInspectEntries(world, mounted.inspect);
+      onCleanup(() => {
+        mounted.dispose();
+        setInspectEntries(world, []);
+      });
+      return;
+    }
+
     const dir = project.dir();
     if (!dir) return;
 
