@@ -134,6 +134,20 @@ jobs:
           console.log('menuitems', menuCount);
           if (menuCount < 2) throw new Error('Tool dropdown did not open');
           await page.keyboard.press('Escape');
+          // Select Product from the timeline, then verify inspector "+" controls
+          // mutate the live document rather than merely receiving a click.
+          await page.getByText('Product', {exact:true}).last().click();
+          await page.waitForTimeout(200);
+          const fillHeading=page.getByText('Fill', {exact:true}).last();
+          const fillSection=fillHeading.locator('xpath=..');
+          const fillPlus=fillSection.getByRole('button').last();
+          const beforeFillText=await page.locator('[data-right-sidebar]').innerText();
+          await fillPlus.click();
+          await page.waitForTimeout(250);
+          const afterFillText=await page.locator('[data-right-sidebar]').innerText();
+          console.log('fill-plus-mutated', beforeFillText !== afterFillText);
+          if (beforeFillText === afterFillText) throw new Error('Inspector Fill plus did not mutate/open inspector');
+          await page.keyboard.press('Escape');
 
           // Regression gate for the inspector "+" controls.
           await page.getByText('Product', {exact:true}).last().click();
