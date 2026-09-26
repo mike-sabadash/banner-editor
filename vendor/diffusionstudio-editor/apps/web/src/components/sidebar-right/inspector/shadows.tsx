@@ -102,18 +102,16 @@ export function ShadowsSettings(props: ShadowsSettingsProps) {
         title="Shadow"
         ref={anchorRef}
         actions={
-          <Tooltip>
-            <TooltipTrigger
-              as={Button}
-              size="icon"
-              variant="ghost"
-              class="text-muted-foreground"
-              onClick={handleAppendShadow}
-            >
-              <Icon name="plus-add" />
-            </TooltipTrigger>
-            <TooltipContent>Add shadow</TooltipContent>
-          </Tooltip>
+          <Button
+            size="icon"
+            variant="ghost"
+            class="text-muted-foreground"
+            title="Add shadow"
+            aria-label="Add shadow"
+            onClick={handleAppendShadow}
+          >
+            <Icon name="plus-add" />
+          </Button>
         }
       >
         <For each={shadows().toReversed()}>
