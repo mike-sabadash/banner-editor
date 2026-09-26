@@ -1,0 +1,122 @@
+name: Vendor and Deploy Diffusion Studio Upstream
+
+on:
+  push:
+    branches:
+      - feature/diffusion-editor-upstream
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bannermatic-diffusion-upstream
+  cancel-in-progress: false
+
+jobs:
+  vendor-build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Bannermatic integration branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/diffusion-editor-upstream
+          fetch-depth: 0
+
+      - name: Vendor exact Diffusion Studio editor source
+        env:
+          UPSTREAM_SHA: 666cdced1f6b97a792b63e551f45797649efb27a
+        run: |
+          set -euo pipefail
+          rm -rf vendor/diffusionstudio-editor
+          git clone --filter=blob:none --no-checkout https://github.com/diffusionstudio/editor.git /tmp/diffusionstudio-editor
+          git -C /tmp/diffusionstudio-editor checkout "$UPSTREAM_SHA"
+          mkdir -p vendor/diffusionstudio-editor
+          rsync -a --exclude=.git /tmp/diffusionstudio-editor/ vendor/diffusionstudio-editor/
+          printf '%s\n' "$UPSTREAM_SHA" > vendor/diffusionstudio-editor/UPSTREAM_COMMIT
+          cat > vendor/diffusionstudio-editor/BANNERMATIC_VENDOR_NOTE.md <<'EOF'
+          # Vendored Diffusion Studio Editor
+          This directory is an unmodified source snapshot of diffusionstudio/editor at the commit recorded in UPSTREAM_COMMIT.
+          Source license: MPL-2.0. Upstream brand assets in apps/desktop/assets are excluded from MPL-2.0 by upstream; do not reuse those assets as Bannermatic branding.
+          No Bannermatic UI redesign is applied in this directory.
+          EOF
+
+      - name: Commit vendored upstream snapshot into Bannermatic
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add vendor/diffusionstudio-editor
+          if git diff --cached --quiet; then
+            echo "Vendored source already matches pinned upstream commit."
+          else
+            git commit -m "Vendor Diffusion Studio editor 0.206.0 upstream"
+            git push origin HEAD:feature/diffusion-editor-upstream
+          fi
+
+      - name: Install upstream dependencies
+        working-directory: vendor/diffusionstudio-editor
+        run: |
+          set -euo pipefail
+          cp apps/web/.env.example apps/web/.env
+          npm ci
+
+      - name: Typecheck upstream workspaces
+        working-directory: vendor/diffusionstudio-editor
+        run: npm run check
+
+      - name: Build upstream web editor
+        working-directory: vendor/diffusionstudio-editor
+        run: npm run build
+
+      - name: Prepare path-scoped deploy artifact
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/diffusion-dist
+          cp -a vendor/diffusionstudio-editor/apps/web/dist /tmp/diffusion-dist
+          # Keep upstream source untouched. Only rewrite generated absolute Vite asset URLs
+          # so the pristine build can coexist with Bannermatic under /diffusion/.
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('/tmp/diffusion-dist/index.html')
+          s=p.read_text()
+          s=s.replace('"/assets/', '"/diffusion/assets/')
+          s=s.replace("'/assets/", "'/diffusion/assets/")
+          p.write_text(s)
+          PY
+          grep -q '/diffusion/assets/' /tmp/diffusion-dist/index.html
+
+      - name: Verify deploy secret exists
+        run: |
+          test -n "${{ secrets.BANNERMATIC_SERVER_SSH_KEY }}" || { echo "BANNERMATIC_SERVER_SSH_KEY is not configured" >&2; exit 1; }
+
+      - name: Configure SSH
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.BANNERMATIC_SERVER_SSH_KEY }}" > ~/.ssh/bannermatic_server
+          chmod 600 ~/.ssh/bannermatic_server
+          ssh-keyscan -p 2222 213.182.208.29 >> ~/.ssh/known_hosts
+
+      - name: Upload pristine Diffusion web build
+        run: |
+          set -euo pipefail
+          tar -C /tmp/diffusion-dist -czf /tmp/diffusion-dist.tgz .
+          scp -i ~/.ssh/bannermatic_server -P 2222 -o IdentitiesOnly=yes /tmp/diffusion-dist.tgz root@213.182.208.29:/tmp/diffusion-dist.tgz
+          ssh -i ~/.ssh/bannermatic_server -p 2222 -o IdentitiesOnly=yes root@213.182.208.29 '
+            set -euo pipefail
+            rm -rf /var/www/banner-editor/dist/diffusion
+            mkdir -p /var/www/banner-editor/dist/diffusion
+            tar -C /var/www/banner-editor/dist/diffusion -xzf /tmp/diffusion-dist.tgz
+            rm -f /tmp/diffusion-dist.tgz
+          '
+
+      - name: Verify public Diffusion editor
+        run: |
+          set -euo pipefail
+          html="$(curl -fsSL --max-time 30 https://studio.bannermatic.online/diffusion/)"
+          printf '%s' "$html" | grep -q '/diffusion/assets/'
+          asset="$(printf '%s' "$html" | grep -oE '/diffusion/assets/[^" ]+\.js' | head -1)"
+          test -n "$asset"
+          curl -fsS --max-time 30 "https://studio.bannermatic.online$asset" >/tmp/diffusion-bundle.js
+          test -s /tmp/diffusion-bundle.js
+          echo "DIFFUSION_UPSTREAM_DEPLOY_OK"
