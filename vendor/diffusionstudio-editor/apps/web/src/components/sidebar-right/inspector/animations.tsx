@@ -108,18 +108,16 @@ export function AnimationsSettings(props: AnimationsSettingsProps) {
         title="Animations"
         ref={anchorRef}
         actions={
-          <Tooltip>
-            <TooltipTrigger
-              as={Button}
-              size="icon"
-              variant="ghost"
-              class="text-muted-foreground"
-              onClick={handleAppendAnimation}
-            >
-              <Icon name="plus-add" />
-            </TooltipTrigger>
-            <TooltipContent>Add animation</TooltipContent>
-          </Tooltip>
+          <Button
+            size="icon"
+            variant="ghost"
+            class="text-muted-foreground"
+            title="Add animation"
+            aria-label="Add animation"
+            onClick={handleAppendAnimation}
+          >
+            <Icon name="plus-add" />
+          </Button>
         }
       >
         <For each={animations()}>
