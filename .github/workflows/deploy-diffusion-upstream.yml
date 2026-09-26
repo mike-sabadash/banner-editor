@@ -146,6 +146,31 @@ jobs:
           console.log('inspector-add Fill', solidRows);
           if (solidRows < 1) throw new Error('Fill plus did not add a Solid fill');
           await page.keyboard.press('Escape');
+
+          await right.getByRole('button', {name:'Add stroke'}).click();
+          await page.waitForTimeout(120);
+          if (await right.getByText('Stroke', {exact:true}).count() < 2) throw new Error('Stroke plus failed');
+          await page.keyboard.press('Escape');
+
+          await right.getByRole('button', {name:'Add shadow'}).click();
+          await page.waitForTimeout(120);
+          if (await right.getByText('Shadow', {exact:true}).count() < 2) throw new Error('Shadow plus failed');
+          await page.keyboard.press('Escape');
+
+          await right.getByRole('button', {name:'Add effect'}).click();
+          await page.waitForTimeout(120);
+          if (await right.getByText('Layer Blur', {exact:true}).count() < 1) throw new Error('Effects plus failed');
+          await page.keyboard.press('Escape');
+
+          await right.getByRole('button', {name:'Add animation'}).click();
+          await page.waitForTimeout(120);
+          if (await right.getByText('IN', {exact:true}).count() < 1) throw new Error('Animations plus failed');
+          await page.keyboard.press('Escape');
+
+          await right.getByRole('button', {name:'Add mask'}).click();
+          await page.waitForTimeout(120);
+          if (await page.getByText('Mask', {exact:true}).count() < 1) throw new Error('Masks plus failed');
+          console.log('inspector-plus-controls-ok');
           console.log('body-text-sample', (await page.locator('body').innerText()).slice(0,1200));
           if (errors.length) console.log('BROWSER_ERRORS\n'+errors.join('\n'));
           if (errors.length) process.exitCode=2;
