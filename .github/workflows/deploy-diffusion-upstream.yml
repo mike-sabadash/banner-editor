@@ -23,36 +23,11 @@ jobs:
           ref: feature/diffusion-editor-upstream
           fetch-depth: 0
 
-      - name: Vendor exact Diffusion Studio editor source
-        env:
-          UPSTREAM_SHA: 666cdced1f6b97a792b63e551f45797649efb27a
+      - name: Verify vendored Diffusion Studio source
         run: |
           set -euo pipefail
-          rm -rf vendor/diffusionstudio-editor
-          git clone --filter=blob:none --no-checkout https://github.com/diffusionstudio/editor.git /tmp/diffusionstudio-editor
-          git -C /tmp/diffusionstudio-editor checkout "$UPSTREAM_SHA"
-          mkdir -p vendor/diffusionstudio-editor
-          rsync -a --exclude=.git /tmp/diffusionstudio-editor/ vendor/diffusionstudio-editor/
-          printf '%s\n' "$UPSTREAM_SHA" > vendor/diffusionstudio-editor/UPSTREAM_COMMIT
-          cat > vendor/diffusionstudio-editor/BANNERMATIC_VENDOR_NOTE.md <<'EOF'
-          # Vendored Diffusion Studio Editor
-          This directory is an unmodified source snapshot of diffusionstudio/editor at the commit recorded in UPSTREAM_COMMIT.
-          Source license: MPL-2.0. Upstream brand assets in apps/desktop/assets are excluded from MPL-2.0 by upstream; do not reuse those assets as Bannermatic branding.
-          No Bannermatic UI redesign is applied in this directory.
-          EOF
-
-      - name: Commit vendored upstream snapshot into Bannermatic
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add vendor/diffusionstudio-editor
-          if git diff --cached --quiet; then
-            echo "Vendored source already matches pinned upstream commit."
-          else
-            git commit -m "Vendor Diffusion Studio editor 0.206.0 upstream"
-            git push origin HEAD:feature/diffusion-editor-upstream
-          fi
+          test -f vendor/diffusionstudio-editor/UPSTREAM_COMMIT
+          test "$(cat vendor/diffusionstudio-editor/UPSTREAM_COMMIT)" = "666cdced1f6b97a792b63e551f45797649efb27a"
 
       - name: Install upstream dependencies
         working-directory: vendor/diffusionstudio-editor
