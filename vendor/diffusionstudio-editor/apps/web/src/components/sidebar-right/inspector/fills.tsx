@@ -55,7 +55,7 @@ export function FillsSettings(props: FillsSettingsProps) {
       <SolidPaint color={DEFAULT_FILL_COLOR} />
     ));
     const [fill] = inserted;
-    console.info("[inspector:add-fill]", { inserted: inserted.length, source: entity().get(Cache) ? "cached" : "uncached" });
+    console.error("[inspector:add-fill]", { inserted: inserted.length, source: entity().get(Cache) ? "cached" : "uncached" });
     if (fill) setPicked(fill);
   };
 
