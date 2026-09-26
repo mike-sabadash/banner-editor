@@ -90,18 +90,16 @@ export function StrokesSettings(props: StrokesSettingsProps) {
         title="Stroke"
         ref={anchorRef}
         actions={
-          <Tooltip>
-            <TooltipTrigger
-              as={Button}
-              size="icon"
-              variant="ghost"
-              class="text-muted-foreground"
-              onClick={handleAppendStroke}
-            >
-              <Icon name="plus-add" />
-            </TooltipTrigger>
-            <TooltipContent>Add stroke</TooltipContent>
-          </Tooltip>
+          <Button
+            size="icon"
+            variant="ghost"
+            class="text-muted-foreground"
+            title="Add stroke"
+            aria-label="Add stroke"
+            onClick={handleAppendStroke}
+          >
+            <Icon name="plus-add" />
+          </Button>
         }
       >
         <For each={strokes().toReversed()}>
