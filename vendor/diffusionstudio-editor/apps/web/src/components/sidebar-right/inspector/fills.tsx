@@ -4,7 +4,6 @@
 
 import { For, Show, createMemo, createSignal } from "solid-js";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Icon } from "@/components/ui/icon";
 import { PanelSection } from "@/components/ui/panel-section";
 import { SolidPaint } from "@diffusionstudio/reconciler";
