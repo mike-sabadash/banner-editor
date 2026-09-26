@@ -29,6 +29,14 @@ jobs:
           test -f vendor/diffusionstudio-editor/UPSTREAM_COMMIT
           test "$(cat vendor/diffusionstudio-editor/UPSTREAM_COMMIT)" = "666cdced1f6b97a792b63e551f45797649efb27a"
 
+      - name: Restore ignored upstream runtime package
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/diffusion-runtime vendor/diffusionstudio-editor/packages/runtime
+          git clone --filter=blob:none --no-checkout https://github.com/diffusionstudio/editor.git /tmp/diffusion-runtime
+          git -C /tmp/diffusion-runtime checkout 666cdced1f6b97a792b63e551f45797649efb27a -- packages/runtime
+          cp -a /tmp/diffusion-runtime/packages/runtime vendor/diffusionstudio-editor/packages/runtime
+
       - name: Install upstream dependencies
         working-directory: vendor/diffusionstudio-editor
         run: |
