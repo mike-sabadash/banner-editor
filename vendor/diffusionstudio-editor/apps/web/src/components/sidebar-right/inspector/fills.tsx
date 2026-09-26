@@ -55,7 +55,6 @@ export function FillsSettings(props: FillsSettingsProps) {
       <SolidPaint color={DEFAULT_FILL_COLOR} />
     ));
     const [fill] = inserted;
-    console.error("[inspector:add-fill]", { inserted: inserted.length, source: entity().get(Cache) ? "cached" : "uncached" });
     if (fill) setPicked(fill);
   };
 
@@ -90,18 +89,16 @@ export function FillsSettings(props: FillsSettingsProps) {
         title="Fill"
         ref={anchorRef}
         actions={
-          <Tooltip>
-            <TooltipTrigger
-              as={Button}
-              size="icon"
-              variant="ghost"
-              class="text-muted-foreground"
-              onClick={handleAppendFill}
-            >
-              <Icon name="plus-add" />
-            </TooltipTrigger>
-            <TooltipContent>Add fill</TooltipContent>
-          </Tooltip>
+          <Button
+            size="icon"
+            variant="ghost"
+            class="text-muted-foreground"
+            title="Add fill"
+            aria-label="Add fill"
+            onClick={handleAppendFill}
+          >
+            <Icon name="plus-add" />
+          </Button>
         }
       >
         <For each={fills().toReversed()}>
