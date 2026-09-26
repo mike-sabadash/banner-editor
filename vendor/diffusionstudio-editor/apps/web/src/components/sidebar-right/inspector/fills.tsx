@@ -51,9 +51,11 @@ export function FillsSettings(props: FillsSettingsProps) {
   );
 
   const handleAppendFill = () => {
-    const [fill] = editor.insertElement(entity(), () => (
+    const inserted = editor.insertElement(entity(), () => (
       <SolidPaint color={DEFAULT_FILL_COLOR} />
     ));
+    const [fill] = inserted;
+    console.info("[inspector:add-fill]", { inserted: inserted.length, source: entity().get(Cache) ? "cached" : "uncached" });
     if (fill) setPicked(fill);
   };
 
