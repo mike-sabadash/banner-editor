@@ -65,6 +65,13 @@ export function EditorPage(props: { standalone?: boolean } = {}) {
     if (props.standalone) {
       const mounted = mount(STANDALONE_PROJECT_BUNDLE, world);
       setInspectEntries(world, mounted.inspect);
+      // Browser standalone still needs the same edit/history bridge as a normal
+      // project. Without initializing these services the UI renders, but editor
+      // commands and controls have no active editing lifecycle.
+      getDocumentEditor(world);
+      getEditHistory(world).reset();
+      engine.resize();
+      engine.start();
       onCleanup(() => {
         mounted.dispose();
         setInspectEntries(world, []);
