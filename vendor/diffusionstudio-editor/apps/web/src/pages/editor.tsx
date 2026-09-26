@@ -70,7 +70,6 @@ export function EditorPage(props: { standalone?: boolean } = {}) {
       // commands and controls have no active editing lifecycle.
       getDocumentEditor(world);
       getEditHistory(world).reset();
-      engine.resize();
       engine.start();
       onCleanup(() => {
         mounted.dispose();
