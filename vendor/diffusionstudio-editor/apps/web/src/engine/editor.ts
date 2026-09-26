@@ -573,7 +573,14 @@ export class DocumentEditor {
 	 * written under.
 	 */
 	public insertElement(parent: Entity, element: () => unknown, anchor?: Entity): Entity[] {
-		if (!parent.get(Source)?.value) return [];
+		// Browser-hosted/standalone compositions do not have a desktop source
+		// writer, but they are still a live editable document. Give an otherwise
+		// addressless mounted parent a pending runtime source instead of silently
+		// turning every inspector "+" action into a no-op.
+		if (!parent.get(Source)?.value) {
+			parent.add(Source);
+			parent.set(Source, { value: nextPendingSource() });
+		}
 		// A child of one iteration's element, not of every iteration's.
 		this.settle(parent);
 		if (anchor) this.settle(anchor);
