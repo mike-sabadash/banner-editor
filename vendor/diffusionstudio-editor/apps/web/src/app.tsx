@@ -23,6 +23,7 @@ import { LoginPage } from '@/pages/login';
 import { AuthCallbackPage } from '@/pages/auth-callback';
 import { NotFoundPage } from '@/pages/not-found';
 import { DashboardPage } from '@/pages/dashboard';
+import { StandaloneProjectPage } from '@/pages/standalone-project';
 
 function AuthGate(props: { children: JSX.Element }) {
   const auth = useAuth();
@@ -97,8 +98,8 @@ function App() {
       )}
     >
       <Route path="/auth/callback" component={AuthCallbackPage} />
-      <Route path="/" component={() => <AuthGate><DashboardPage /></AuthGate>} />
-      <Route path="/projects/*ref" component={() => <AuthGate><ProjectPage /></AuthGate>} />
+      <Route path="/" component={StandaloneProjectPage} />
+      <Route path="/projects/*ref" component={StandaloneProjectPage} />
       <Route path="*404" component={NotFoundPage} />
     </RouterComponent>
   );
