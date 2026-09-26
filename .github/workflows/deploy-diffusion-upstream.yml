@@ -140,24 +140,26 @@ jobs:
           await page.getByText('Product', {exact:true}).last().click();
           await page.waitForTimeout(200);
           const right=page.locator('[data-right-sidebar]');
-          async function addFromSection(title, expectedText) {
+          async function addFromSection(title) {
             const heading=right.getByText(title, {exact:true}).first();
             await heading.waitFor({state:'visible'});
             const header=heading.locator('..');
+            const content=header.locator('xpath=../following-sibling::div[1]');
+            const before=await content.locator(':scope > *').count();
             const add=header.locator('button').first();
             await add.click();
-            await page.waitForTimeout(120);
-            const count=await right.getByText(expectedText, {exact:true}).count();
-            console.log('inspector-add', title, count);
-            if (count < 2) throw new Error(title+' plus did not add '+expectedText);
+            await page.waitForTimeout(150);
+            const after=await content.locator(':scope > *').count();
+            console.log('inspector-add', title, before, after);
+            if (after <= before) throw new Error(title+' plus did not add an inspector item');
             await page.keyboard.press('Escape');
           }
-          await addFromSection('Fill','Fill');
-          await addFromSection('Stroke','Stroke');
-          await addFromSection('Shadow','Shadow');
-          await addFromSection('Effects','Effects');
-          await addFromSection('Animations','Animations');
-          await addFromSection('Masks','Masks');
+          await addFromSection('Fill');
+          await addFromSection('Stroke');
+          await addFromSection('Shadow');
+          await addFromSection('Effects');
+          await addFromSection('Animations');
+          await addFromSection('Masks');
           console.log('body-text-sample', (await page.locator('body').innerText()).slice(0,1200));
           if (errors.length) console.log('BROWSER_ERRORS\n'+errors.join('\n'));
           if (errors.length) process.exitCode=2;
