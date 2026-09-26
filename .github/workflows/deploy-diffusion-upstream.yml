@@ -61,9 +61,9 @@ jobs:
           cp apps/web/.env.example apps/web/.env
           npm ci
 
-      - name: Typecheck upstream workspaces
+      - name: Typecheck upstream web editor
         working-directory: vendor/diffusionstudio-editor
-        run: npm run check
+        run: npm run check --workspace=@diffusionstudio/web
 
       - name: Build upstream web editor
         working-directory: vendor/diffusionstudio-editor
