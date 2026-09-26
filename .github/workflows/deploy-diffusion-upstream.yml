@@ -183,7 +183,7 @@ jobs:
 
           await right.getByRole('button', {name:'Add mask'}).click();
           await page.waitForTimeout(120);
-          if (await page.getByText(/^Mask/).count() < 1) throw new Error('Masks plus failed');
+          if (await right.getByRole('button', {name:'Add mask'}).count() !== 0) throw new Error('Masks plus failed to select the created mask');
           console.log('inspector-plus-controls-ok');
           console.log('body-text-sample', (await page.locator('body').innerText()).slice(0,1200));
           if (errors.length) console.log('BROWSER_ERRORS\n'+errors.join('\n'));
