@@ -66,18 +66,16 @@ export function MasksSettings(props: MasksSettingsProps) {
     <PanelSection
       title="Masks"
       actions={
-        <Tooltip>
-          <TooltipTrigger
-            as={Button}
-            size="icon"
-            variant="ghost"
-            class="text-muted-foreground"
-            onClick={handleAppendMask}
-          >
-            <Icon name="plus-add" />
-          </TooltipTrigger>
-          <TooltipContent>Add mask</TooltipContent>
-        </Tooltip>
+        <Button
+          size="icon"
+          variant="ghost"
+          class="text-muted-foreground"
+          title="Add mask"
+          aria-label="Add mask"
+          onClick={handleAppendMask}
+        >
+          <Icon name="plus-add" />
+        </Button>
       }
     >
       <For each={masks()}>
