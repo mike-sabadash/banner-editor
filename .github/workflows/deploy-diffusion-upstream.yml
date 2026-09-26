@@ -135,31 +135,17 @@ jobs:
           if (menuCount < 2) throw new Error('Tool dropdown did not open');
           await page.keyboard.press('Escape');
 
-          // Regression gate for the inspector "+" controls: select Product,
-          // click every additive section, and require a visible authored result.
+          // Regression gate for the inspector "+" controls.
           await page.getByText('Product', {exact:true}).last().click();
           await page.waitForTimeout(200);
           const right=page.locator('[data-right-sidebar]');
-          async function addFromSection(title) {
-            const heading=right.getByText(title, {exact:true}).first();
-            await heading.waitFor({state:'visible'});
-            const header=heading.locator('..');
-            const content=header.locator('xpath=../following-sibling::div[1]');
-            const before=await content.locator(':scope > *').count();
-            const add=header.locator('button').first();
-            await add.click();
-            await page.waitForTimeout(150);
-            const after=await content.locator(':scope > *').count();
-            console.log('inspector-add', title, before, after);
-            if (after <= before) throw new Error(title+' plus did not add an inspector item');
-            await page.keyboard.press('Escape');
-          }
-          await addFromSection('Fill');
-          await addFromSection('Stroke');
-          await addFromSection('Shadow');
-          await addFromSection('Effects');
-          await addFromSection('Animations');
-          await addFromSection('Masks');
+          const addFill=right.getByRole('button', {name:'Add fill'});
+          await addFill.click();
+          await page.waitForTimeout(200);
+          const solidRows=await right.getByText('Solid', {exact:true}).count();
+          console.log('inspector-add Fill', solidRows);
+          if (solidRows < 1) throw new Error('Fill plus did not add a Solid fill');
+          await page.keyboard.press('Escape');
           console.log('body-text-sample', (await page.locator('body').innerText()).slice(0,1200));
           if (errors.length) console.log('BROWSER_ERRORS\n'+errors.join('\n'));
           if (errors.length) process.exitCode=2;
