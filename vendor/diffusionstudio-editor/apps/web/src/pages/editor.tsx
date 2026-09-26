@@ -18,7 +18,8 @@ import { mount } from '@diffusionstudio/reconciler';
 import { getDocumentEditor } from '@/engine/editor';
 import { getEditHistory } from '@/engine/history';
 import { setInspectEntries } from '@/engine/inspect';
-import { attachLibrary, isLibraryFile } from '@/engine/library';
+import { attachLibrary } from '@/engine/library';
+import { isLibraryFile } from '@/engine/library';
 import { attachAi } from '@/utils/gen-ai';
 import { attachProjectConfig, isProjectConfigFile } from '@/engine/project-config';
 import { loadProjectBundle, rememberProjectBundle } from '@/lib/db';
@@ -68,10 +69,16 @@ export function EditorPage(props: { standalone?: boolean } = {}) {
       // Browser standalone still needs the same edit/history bridge as a normal
       // project. Without initializing these services the UI renders, but editor
       // commands and controls have no active editing lifecycle.
-      getDocumentEditor(world);
+      const editor = getDocumentEditor(world);
       getEditHistory(world).reset();
-      engine.start();
+      // The upstream UI assumes every opened project has an attached Library.
+      // Standalone mode has no host folder, so attach a browser-local library
+      // service before controls mount. This keeps import/drop/tool commands on
+      // the same upstream code paths instead of leaving them inert.
+      const standaloneLibrary = attachLibrary(world, '__browser_standalone__');
+      editor.clearSelection();
       onCleanup(() => {
+        standaloneLibrary.dispose();
         mounted.dispose();
         setInspectEntries(world, []);
       });
