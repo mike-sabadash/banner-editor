@@ -106,7 +106,7 @@ jobs:
         run: |
           set -euo pipefail
           html="$(curl -fsSL --max-time 30 https://studio.bannermatic.online/)"
-          asset="$(grep -oE '/assets/[^" ]+\\.js' <<<"$html" | head -1)"
+          asset="$(grep -oE '/assets/[^" ]+[.]js' <<<"$html" | head -1)"
           test -n "$asset"
           curl -fsS --max-time 30 "https://studio.bannermatic.online$asset" >/tmp/diffusion-bundle.js
           test -s /tmp/diffusion-bundle.js
