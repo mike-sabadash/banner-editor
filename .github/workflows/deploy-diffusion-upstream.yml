@@ -106,9 +106,9 @@ jobs:
         run: |
           set -euo pipefail
           html="$(curl -fsSL --max-time 30 https://studio.bannermatic.online/)"
-          asset="$(printf '%s' "$html" | grep -oE '/assets/[^" ]+\\.js' | head -1)"
+          asset="$(grep -oE '/assets/[^" ]+\\.js' <<<"$html" | head -1)"
           test -n "$asset"
           curl -fsS --max-time 30 "https://studio.bannermatic.online$asset" >/tmp/diffusion-bundle.js
           test -s /tmp/diffusion-bundle.js
-          printf '%s' "$html" | grep -q 'boot-splash'
+          grep -q 'boot-splash' <<<"$html"
           echo "DIFFUSION_UPSTREAM_DEPLOY_OK"
