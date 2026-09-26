@@ -4,7 +4,7 @@
 
 import { Router, HashRouter, Route, useLocation } from '@solidjs/router';
 import { ColorModeProvider } from '@kobalte/core';
-import { createEffect } from 'solid-js';
+import { Show, createEffect } from 'solid-js';
 import { Toaster } from "@/components/ui/sonner";
 import { AppContextMenu } from "@/components/app-context-menu";
 
