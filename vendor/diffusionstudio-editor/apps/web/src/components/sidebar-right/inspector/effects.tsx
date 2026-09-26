@@ -90,18 +90,16 @@ export function EffectsSettings(props: EffectsSettingsProps) {
         title="Effects"
         ref={anchorRef}
         actions={
-          <Tooltip>
-            <TooltipTrigger
-              as={Button}
-              size="icon"
-              variant="ghost"
-              class="text-muted-foreground"
-              onClick={handleAppendEffect}
-            >
-              <Icon name="plus-add" />
-            </TooltipTrigger>
-            <TooltipContent>Add effect</TooltipContent>
-          </Tooltip>
+          <Button
+            size="icon"
+            variant="ghost"
+            class="text-muted-foreground"
+            title="Add effect"
+            aria-label="Add effect"
+            onClick={handleAppendEffect}
+          >
+            <Icon name="plus-add" />
+          </Button>
         }
       >
         <For each={effects().toReversed()}>
