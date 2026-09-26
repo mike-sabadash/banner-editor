@@ -1,10 +1,10 @@
 {
-  "name": "Banner Campaign · TT Knowledge",
-  "id": "banner-campaign-mvp-local",
+  "name": "Bannermatic · Creative Workspace MVP12",
+  "id": "bannermatic-hero-media-fixed-mvp12-local",
   "api": "1.0.0",
-  "main": "code-v8.js",
-  "ui": "ui-v14.html",
+  "main": "mvp12-sync-code.js",
+  "ui": "mvp12-sync-ui.html",
   "editorType": ["figma"],
   "documentAccess": "dynamic-page",
-  "networkAccess": { "allowedDomains": ["https://banners.rechord.online", "https://ads.rechord.online"] }
+  "networkAccess": { "allowedDomains": ["https://ads.rechord.online"] }
 }

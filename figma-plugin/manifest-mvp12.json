@@ -1,0 +1,10 @@
+{
+  "name": "Bannermatic · Hero Media Fixed MVP12",
+  "id": "bannermatic-hero-media-fixed-mvp12-local",
+  "api": "1.0.0",
+  "main": "mvp12-sync-code.js",
+  "ui": "mvp12-sync-ui.html",
+  "editorType": ["figma"],
+  "documentAccess": "dynamic-page",
+  "networkAccess": { "allowedDomains": ["https://ads.rechord.online"] }
+}
