@@ -114,22 +114,25 @@ jobs:
           await page.waitForTimeout(1500);
           const buttons=page.locator('button');
           console.log('buttons', await buttons.count());
-          const rect=page.getByRole('button', {name:/rectangle/i}).first();
-          if (await rect.count()) {
-            await rect.click();
-            console.log('rectangle-click-ok');
-          } else {
-            // toolbar icon buttons are tooltip-labelled only after hover; click the 4th visible toolbar button
-            const visible=buttons.filter({visible:true});
-            console.log('rectangle-role-not-found');
-          }
-          const chevrons=page.locator('button').filter({has:page.locator('svg')});
-          console.log('svg-buttons', await chevrons.count());
-          // Click the small tool dropdown next to Move by coordinates from the known toolbar region.
-          await page.mouse.click(750, 563);
-          await page.waitForTimeout(300);
+          const toolbar=page.locator('div.absolute.bottom-4.left-1\\/2').first();
+          await toolbar.waitFor({state:'visible'});
+          const toolButtons=toolbar.locator('button');
+          const toolCount=await toolButtons.count();
+          console.log('toolbar-buttons', toolCount);
+          if (toolCount < 6) throw new Error('Expected Diffusion toolbar controls');
+          const rect=toolButtons.nth(3);
+          const before=await rect.getAttribute('class');
+          await rect.click();
+          await page.waitForTimeout(150);
+          const after=await rect.getAttribute('class');
+          console.log('rectangle-class-changed', before !== after);
+          if (before === after) throw new Error('Rectangle tool did not enter selected state');
+          await toolButtons.nth(1).click();
+          await page.waitForTimeout(250);
           const menuItems=page.locator('[role="menuitem"]');
-          console.log('menuitems', await menuItems.count());
+          const menuCount=await menuItems.count();
+          console.log('menuitems', menuCount);
+          if (menuCount < 2) throw new Error('Tool dropdown did not open');
           console.log('body-text-sample', (await page.locator('body').innerText()).slice(0,1200));
           if (errors.length) console.log('BROWSER_ERRORS\n'+errors.join('\n'));
           if (errors.length) process.exitCode=2;
