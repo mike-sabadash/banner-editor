@@ -4,7 +4,7 @@
 
 import { Router, HashRouter, Route, useLocation } from '@solidjs/router';
 import { ColorModeProvider } from '@kobalte/core';
-import { Show, createEffect, type JSX } from 'solid-js';
+import { createEffect } from 'solid-js';
 import { Toaster } from "@/components/ui/sonner";
 import { AppContextMenu } from "@/components/app-context-menu";
 
@@ -18,27 +18,9 @@ import { UpgradeDialog } from '@/components/upgrade-dialog';
 import { PurchaseSuccess } from '@/components/purchase-success';
 import { ScreenTooSmall } from '@/components/screen-too-small';
 import { UnsupportedBrowser } from '@/components/unsupported-browser';
-import { ProjectPage } from '@/pages/project';
-import { LoginPage } from '@/pages/login';
 import { AuthCallbackPage } from '@/pages/auth-callback';
 import { NotFoundPage } from '@/pages/not-found';
-import { DashboardPage } from '@/pages/dashboard';
 import { StandaloneProjectPage } from '@/pages/standalone-project';
-
-function AuthGate(props: { children: JSX.Element }) {
-  const auth = useAuth();
-
-  return (
-    <Show when={!auth.isLoading()}>
-      <Show when={auth.isAuthenticated()}>
-        {props.children}
-      </Show>
-      <Show when={!auth.isAuthenticated()}>
-        <LoginPage />
-      </Show>
-    </Show>
-  );
-}
 
 function BootSplash() {
   const auth = useAuth();
