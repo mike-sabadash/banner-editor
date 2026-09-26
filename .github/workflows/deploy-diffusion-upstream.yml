@@ -95,3 +95,44 @@ jobs:
           test -s /tmp/diffusion-bundle.js
           grep -q '<title>Diffusion Studio</title>' <<<"$html" || { echo "PUBLIC_HTML_NOT_DIFFUSION"; echo "$html" | head -c 1200; exit 1; }
           echo "DIFFUSION_UPSTREAM_DEPLOY_OK"
+
+      - name: Browser interaction smoke test
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/diffusion-browser-smoke && cd /tmp/diffusion-browser-smoke
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.55.0 >/dev/null 2>&1
+          npx playwright install --with-deps chromium >/dev/null 2>&1
+          cat > smoke.mjs <<'EOF'
+          import { chromium } from 'playwright';
+          const browser = await chromium.launch({headless:true});
+          const page = await browser.newPage({viewport:{width:1600,height:1000}});
+          const errors=[];
+          page.on('console', m => { if (m.type()==='error') errors.push('console: '+m.text()); });
+          page.on('pageerror', e => errors.push('pageerror: '+e.message));
+          await page.goto('https://studio.bannermatic.online/', {waitUntil:'networkidle', timeout:60000});
+          await page.waitForTimeout(1500);
+          const buttons=page.locator('button');
+          console.log('buttons', await buttons.count());
+          const rect=page.getByRole('button', {name:/rectangle/i}).first();
+          if (await rect.count()) {
+            await rect.click();
+            console.log('rectangle-click-ok');
+          } else {
+            // toolbar icon buttons are tooltip-labelled only after hover; click the 4th visible toolbar button
+            const visible=buttons.filter({visible:true});
+            console.log('rectangle-role-not-found');
+          }
+          const chevrons=page.locator('button').filter({has:page.locator('svg')});
+          console.log('svg-buttons', await chevrons.count());
+          // Click the small tool dropdown next to Move by coordinates from the known toolbar region.
+          await page.mouse.click(750, 563);
+          await page.waitForTimeout(300);
+          const menuItems=page.locator('[role="menuitem"]');
+          console.log('menuitems', await menuItems.count());
+          console.log('body-text-sample', (await page.locator('body').innerText()).slice(0,1200));
+          if (errors.length) console.log('BROWSER_ERRORS\n'+errors.join('\n'));
+          if (errors.length) process.exitCode=2;
+          await browser.close();
+          EOF
+          node smoke.mjs
