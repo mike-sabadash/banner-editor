@@ -69,22 +69,12 @@ jobs:
         working-directory: vendor/diffusionstudio-editor
         run: npm run build
 
-      - name: Prepare path-scoped deploy artifact
+      - name: Prepare pristine upstream deploy artifact
         run: |
           set -euo pipefail
           rm -rf /tmp/diffusion-dist
           cp -a vendor/diffusionstudio-editor/apps/web/dist /tmp/diffusion-dist
-          # Keep upstream source untouched. Only rewrite generated absolute Vite asset URLs
-          # so the pristine build can coexist with Bannermatic under /diffusion/.
-          python3 - <<'PY'
-          from pathlib import Path
-          p=Path('/tmp/diffusion-dist/index.html')
-          s=p.read_text()
-          s=s.replace('"/assets/', '"/diffusion/assets/')
-          s=s.replace("'/assets/", "'/diffusion/assets/")
-          p.write_text(s)
-          PY
-          grep -q '/diffusion/assets/' /tmp/diffusion-dist/index.html
+          test -f /tmp/diffusion-dist/index.html
 
       - name: Verify deploy secret exists
         run: |
@@ -97,26 +87,28 @@ jobs:
           chmod 600 ~/.ssh/bannermatic_server
           ssh-keyscan -p 2222 213.182.208.29 >> ~/.ssh/known_hosts
 
-      - name: Upload pristine Diffusion web build
+      - name: Upload pristine Diffusion web build as Studio root
         run: |
           set -euo pipefail
           tar -C /tmp/diffusion-dist -czf /tmp/diffusion-dist.tgz .
           scp -i ~/.ssh/bannermatic_server -P 2222 -o IdentitiesOnly=yes /tmp/diffusion-dist.tgz root@213.182.208.29:/tmp/diffusion-dist.tgz
           ssh -i ~/.ssh/bannermatic_server -p 2222 -o IdentitiesOnly=yes root@213.182.208.29 '
             set -euo pipefail
-            rm -rf /var/www/banner-editor/dist/diffusion
-            mkdir -p /var/www/banner-editor/dist/diffusion
-            tar -C /var/www/banner-editor/dist/diffusion -xzf /tmp/diffusion-dist.tgz
+            rm -rf /var/www/banner-editor/dist.previous-diffusion
+            if [ -d /var/www/banner-editor/dist ]; then cp -a /var/www/banner-editor/dist /var/www/banner-editor/dist.previous-diffusion; fi
+            rm -rf /var/www/banner-editor/dist
+            mkdir -p /var/www/banner-editor/dist
+            tar -C /var/www/banner-editor/dist -xzf /tmp/diffusion-dist.tgz
             rm -f /tmp/diffusion-dist.tgz
           '
 
       - name: Verify public Diffusion editor
         run: |
           set -euo pipefail
-          html="$(curl -fsSL --max-time 30 https://studio.bannermatic.online/diffusion/)"
-          printf '%s' "$html" | grep -q '/diffusion/assets/'
-          asset="$(printf '%s' "$html" | grep -oE '/diffusion/assets/[^" ]+\.js' | head -1)"
+          html="$(curl -fsSL --max-time 30 https://studio.bannermatic.online/)"
+          asset="$(printf '%s' "$html" | grep -oE '/assets/[^" ]+\\.js' | head -1)"
           test -n "$asset"
           curl -fsS --max-time 30 "https://studio.bannermatic.online$asset" >/tmp/diffusion-bundle.js
           test -s /tmp/diffusion-bundle.js
+          printf '%s' "$html" | grep -q 'boot-splash'
           echo "DIFFUSION_UPSTREAM_DEPLOY_OK"
