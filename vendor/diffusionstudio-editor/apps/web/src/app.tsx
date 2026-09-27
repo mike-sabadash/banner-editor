@@ -61,6 +61,7 @@ function App() {
   const RouterComponent = window.desktop ? HashRouter : Router;
   return (
     <RouterComponent
+      base={window.desktop ? "/" : (import.meta.env.BASE_URL.replace(/\/$/, "") || "/")}
       root={(props) => (
         <ColorModeProvider initialColorMode="dark">
           <AppContextMenu>
