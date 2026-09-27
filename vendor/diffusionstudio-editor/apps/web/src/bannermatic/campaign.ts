@@ -11,6 +11,57 @@ export function normalizeOutputType(value:unknown){const raw=String(value||'html
 export function requiredOutputs(campaign:BannermaticCampaign,format:CampaignFormat){return[...new Set(format.placementIds.map(id=>campaign.placements.find(p=>p.id===id)).filter(Boolean).map(p=>normalizeOutputType(p?.requirements?.exportType||p?.creativeType||'html5')))]}
 export function sceneName(format:CampaignFormat){return`${SCENE_PREFIX}${format.id}::${format.width}x${format.height}`}
 export function formatIdFromSceneName(value:unknown){const name=String(value||'');return name.startsWith(SCENE_PREFIX)?name.slice(SCENE_PREFIX.length).split('::')[0]:null}
-export function buildCampaignBundle(campaign:BannermaticCampaign,preferredFormatId='',saved=''){const formats=campaign.formats.length?campaign.formats:[{id:'fmt-300x600',width:300,height:600,size:'300×600',placementIds:[],creativeState:'missing'}],active=formats.some(f=>f.id===preferredFormatId)?preferredFormatId:formats[0].id,stageSource=`bannermatic:${campaign.id}:stage`,prior=decodeStandaloneBundle(saved),model:StandaloneBundleModel=prior?.campaignId===campaign.id?prior:{version:1,campaignId:campaign.id,nodes:[{source:stageSource,tag:'Stage',props:{background:'#161616',camera:[0.72,0,0,0.72,180,90]}}]};const expected=new Set(formats.map(format=>`bannermatic:${campaign.id}:${format.id}`)),oldScenes=model.nodes.filter(node=>node.tag==='Scene'&&node.parent===stageSource);for(const scene of oldScenes)if(!expected.has(scene.source)){const doomed=new Set([scene.source]);let changed=true;while(changed){changed=false;for(const node of model.nodes)if(node.parent&&doomed.has(node.parent)&&!doomed.has(node.source)){doomed.add(node.source);changed=true}}model.nodes=model.nodes.filter(node=>!doomed.has(node.source))}for(const format of formats){const source=`bannermatic:${campaign.id}:${format.id}`,durations=format.placementIds.map(id=>campaign.placements.find(p=>p.id===id)?.requirements?.maxDurationSec).filter((value):value is number=>Number(value)>0),duration=Math.max(.25,Math.min(...(durations.length?durations:[6]))),props={name:sceneName(format),width:Number(format.width),height:Number(format.height),fill:'#101114',active:format.id===active},scene=model.nodes.find(node=>node.source===source);if(scene)scene.props={...scene.props,...props};else model.nodes.push({source,tag:'Scene',parent:stageSource,props},{source:`${source}:background`,tag:'Rect',parent:source,props:{name:'Background',x:0,y:0,width:Number(format.width),height:Number(format.height),fill:'#101114',start:0,end:duration}})}return encodeStandaloneBundle(model)}
+
+const CAMPAIGN_SCENE_GAP=160;
+
+/** Campaign formats are separate top-level artboards on Diffusion's infinite canvas. */
+export function campaignFormatPositions(formats:CampaignFormat[]){
+ let x=0;
+ return new Map(formats.map(format=>{
+  const position={x,y:0};
+  x+=Number(format.width)+CAMPAIGN_SCENE_GAP;
+  return[format.id,position] as const;
+ }));
+}
+
+export function buildCampaignBundle(campaign:BannermaticCampaign,preferredFormatId='',saved=''){
+ const formats=campaign.formats.length?campaign.formats:[{id:'fmt-300x600',width:300,height:600,size:'300×600',placementIds:[],creativeState:'missing'}];
+ const active=formats.some(format=>format.id===preferredFormatId)?preferredFormatId:formats[0].id;
+ const stageSource=`bannermatic:${campaign.id}:stage`;
+ const prior=decodeStandaloneBundle(saved);
+ const model:StandaloneBundleModel=prior?.campaignId===campaign.id?prior:{version:1,campaignId:campaign.id,nodes:[{source:stageSource,tag:'Stage',props:{background:'#161616',camera:[0.72,0,0,0.72,180,90]}}]};
+ const expected=new Set(formats.map(format=>`bannermatic:${campaign.id}:${format.id}`));
+ const oldScenes=model.nodes.filter(node=>node.tag==='Scene'&&node.parent===stageSource);
+ const positions=campaignFormatPositions(formats);
+
+ for(const scene of oldScenes)if(!expected.has(scene.source)){
+  const doomed=new Set([scene.source]);
+  let changed=true;
+  while(changed){
+   changed=false;
+   for(const node of model.nodes)if(node.parent&&doomed.has(node.parent)&&!doomed.has(node.source)){
+    doomed.add(node.source);
+    changed=true;
+   }
+  }
+  model.nodes=model.nodes.filter(node=>!doomed.has(node.source));
+ }
+
+ for(const format of formats){
+  const source=`bannermatic:${campaign.id}:${format.id}`;
+  const durations=format.placementIds.map(id=>campaign.placements.find(placement=>placement.id===id)?.requirements?.maxDurationSec).filter((value):value is number=>Number(value)>0);
+  const duration=Math.max(.25,Math.min(...(durations.length?durations:[6])));
+  const position=positions.get(format.id)!;
+  const props={name:sceneName(format),x:position.x,y:position.y,width:Number(format.width),height:Number(format.height),fill:'#101114',active:format.id===active};
+  const scene=model.nodes.find(node=>node.source===source);
+  if(scene)scene.props={...scene.props,...props};
+  else model.nodes.push(
+   {source,tag:'Scene',parent:stageSource,props},
+   {source:`${source}:background`,tag:'Rect',parent:source,props:{name:'Background',x:0,y:0,width:Number(format.width),height:Number(format.height),fill:'#101114',start:0,end:duration}},
+  );
+ }
+
+ return encodeStandaloneBundle(model);
+}
 
 export async function loadCampaign(id:string):Promise<BannermaticCampaign>{const token=localStorage.getItem(TOKEN_KEY)||'';if(!token)throw new Error('Sign in to Bannermatic before opening a campaign editor.');const response=await fetch(`/api/campaigns/${encodeURIComponent(id)}`,{headers:{authorization:`Bearer ${token}`}}),data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||`Campaign request failed: ${response.status}`);return data as BannermaticCampaign}
