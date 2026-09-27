@@ -49,7 +49,7 @@ function createBrowserProjectFS(): ProjectFS {
 		readManifest: async () => browserManifest,
 		writeManifest: async (manifest) => { browserManifest = structuredClone(manifest); },
 		list: async (source) => {
-			const prefix = source ? \`\${source.replace(/\\\/$/, '')}/\` : '';
+			const prefix = source ? \`\${source.replace(/\/$/, '')}/\` : '';
 			const entries = new Map<string, { name: string; kind: 'file' | 'directory'; size: number; mtime: number }>();
 			for (const [path, blob] of browserFiles) {
 				if (!path.startsWith(prefix)) continue;
