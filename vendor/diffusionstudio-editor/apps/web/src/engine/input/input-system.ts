@@ -64,6 +64,7 @@ function dispatch(
 let hovered: HitRegion | null = null;
 let dragged: HitRegion | null = null;
 let toolCursor: CursorType | null = null;
+let lastClick: { target: string; at: number } | null = null;
 
 export function inputSystem(world: World) {
 	const panning = world.get(Tool)?.value === ToolType.HAND || (world.get(Keys)?.held.has(' ') ?? false);
@@ -143,6 +144,20 @@ export function inputSystem(world: World) {
 
 		if (region !== null) {
 			dispatch(world, region, event);
+
+			// Canvas pointer events do not reliably surface the browser's native
+			// dblclick event. Synthesize it from two quick primary-button releases
+			// on the same hit region so text and labels can enter edit mode.
+			if (event.type === 'pointerup' && event.button === 0) {
+				const key = targetKey(region)!;
+				const now = performance.now();
+				if (lastClick?.target === key && now - lastClick.at <= 450) {
+					dispatch(world, region, event, 'dblclick');
+					lastClick = null;
+				} else {
+					lastClick = { target: key, at: now };
+				}
+			}
 		}
 	}
 
