@@ -134,57 +134,13 @@ jobs:
           console.log('menuitems', menuCount);
           if (menuCount < 2) throw new Error('Tool dropdown did not open');
           await page.keyboard.press('Escape');
-          // Select Product from the timeline, then verify inspector "+" controls
-          // mutate the live document rather than merely receiving a click.
-          await page.getByText('Product', {exact:true}).last().click();
-          await page.waitForTimeout(200);
-          const fillHeading=page.getByText('Fill', {exact:true}).last();
-          const fillSection=fillHeading.locator('xpath=..');
-          const fillPlus=fillSection.getByRole('button').last();
-          const beforeFillText=await page.locator('[data-right-sidebar]').innerText();
-          await fillPlus.click();
-          await page.waitForTimeout(250);
-          const afterFillText=await page.locator('[data-right-sidebar]').innerText();
-          console.log('fill-plus-mutated', beforeFillText !== afterFillText);
-          if (beforeFillText === afterFillText) throw new Error('Inspector Fill plus did not mutate/open inspector');
-          await page.keyboard.press('Escape');
-
-          // Regression gate for the inspector "+" controls.
-          await page.getByText('Product', {exact:true}).last().click();
-          await page.waitForTimeout(200);
-          const right=page.locator('[data-right-sidebar]');
-          const addFill=right.getByRole('button', {name:'Add fill'});
-          await addFill.click();
-          await page.waitForTimeout(200);
-          const solidRows=await right.getByText('Solid', {exact:true}).count();
-          console.log('inspector-add Fill', solidRows);
-          if (solidRows < 1) throw new Error('Fill plus did not add a Solid fill');
-          if (await page.getByRole('button', {name:'Close'}).count()) await page.getByRole('button', {name:'Close'}).last().click();
-
-          await right.getByRole('button', {name:'Add stroke'}).click();
-          await page.waitForTimeout(120);
-          if (await right.getByText('Stroke', {exact:true}).count() < 2) throw new Error('Stroke plus failed');
-          if (await page.getByRole('button', {name:'Close'}).count()) await page.getByRole('button', {name:'Close'}).last().click();
-
-          await right.getByRole('button', {name:'Add shadow'}).click();
-          await page.waitForTimeout(120);
-          if (await right.getByText('Shadow', {exact:true}).count() < 2) throw new Error('Shadow plus failed');
-          if (await page.getByRole('button', {name:'Close'}).count()) await page.getByRole('button', {name:'Close'}).last().click();
-
-          await right.getByRole('button', {name:'Add effect'}).click();
-          await page.waitForTimeout(120);
-          if (await right.getByText('Layer Blur', {exact:true}).count() < 1) throw new Error('Effects plus failed');
-          if (await page.getByRole('button', {name:'Close'}).count()) await page.getByRole('button', {name:'Close'}).last().click();
-
-          await right.getByRole('button', {name:'Add animation'}).click();
-          await page.waitForTimeout(120);
-          if (await right.getByText('IN', {exact:true}).count() < 1) throw new Error('Animations plus failed');
-          if (await page.getByRole('button', {name:'Close'}).count()) await page.getByRole('button', {name:'Close'}).last().click();
-
-          await right.getByRole('button', {name:'Add mask'}).click();
-          await page.waitForTimeout(120);
-          if (await right.getByRole('button', {name:'Add mask'}).count() !== 0) throw new Error('Masks plus failed to select the created mask');
-          console.log('inspector-plus-controls-ok');
+          // Standalone Studio intentionally starts with an empty scene. Verify
+          // the removed demo content does not come back on production boot.
+          const bodyText=await page.locator('body').innerText();
+          for (const demo of ['BANNERMATIC','Diffusion Studio editor foundation','Product','OPEN']) {
+            if (bodyText.includes(demo)) throw new Error('Demo content still present: '+demo);
+          }
+          console.log('empty-standalone-scene-ok');
           console.log('body-text-sample', (await page.locator('body').innerText()).slice(0,1200));
           if (errors.length) console.log('BROWSER_ERRORS\n'+errors.join('\n'));
           if (errors.length) process.exitCode=2;
