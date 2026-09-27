@@ -44,12 +44,28 @@ export interface ImportReport extends ImportResult {
 export async function importFiles(library: AssetLibrary, files: ReadonlyArray<File>, folder: string): Promise<ImportReport> {
 	const unnamed: File[] = [];
 	const paths: string[] = [];
+	const browserFiles: File[] = [];
 	for (const file of files) {
 		const path = library.fs.pathOf?.(file) ?? null;
 		if (path) paths.push(path);
-		else unnamed.push(file);
+		else browserFiles.push(file);
 	}
-	return { ...(await library.import(paths, { folder })), unnamed };
+
+	const imported = await library.import(paths, { folder });
+	for (const file of browserFiles) {
+		try {
+			// Browsers deliberately do not expose an absolute OS path for a File.
+			// Copy the selected bytes into the project's assets directory instead
+			// of rejecting an otherwise valid local file.
+			imported.assets.push(await library.store(file, { folder, name: file.name }));
+		} catch (error) {
+			imported.failed.push({
+				source: file.name,
+				error: error instanceof Error ? error : new Error(String(error)),
+			});
+		}
+	}
+	return { ...imported, unnamed };
 }
 
 /**
