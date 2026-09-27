@@ -14,6 +14,7 @@ import {Show,createMemo,createResource} from 'solid-js';
 import {CampaignProductionPanel} from '@/bannermatic/campaign-production-panel';
 import {buildCampaignBundle,loadCampaign,type BannermaticCampaign} from '@/bannermatic/campaign';
 import '@/bannermatic/campaign.css';
+import '@/bannermatic/campaign-interactions.css';
 import '@/bannermatic/campaign-loading.css';
 import {loadProjectBundle} from '@/lib/db';
 
@@ -25,5 +26,5 @@ export function StandaloneProjectPage() {
   const campaignId=new URLSearchParams(location.search).get('campaignId')||'';
   const [campaign,{mutate}]=createResource(()=>campaignId||undefined,loadCampaign);
   if(!campaignId)return <EditorShell/>;
-  return <Show when={campaign()} keyed fallback={<main class="bm-campaign-loading"><div><b>B</b><h1>{campaign.error?'Campaign cannot be opened':'Loading campaign…'}</h1><p>{campaign.error instanceof Error?campaign.error.message:'Media plan, formats and TT requirements are being connected to Diffusion.'}</p><Show when={campaign.error}><a href="/">Back to Bannermatic</a></Show></div></main>}>{value=><EditorShell campaign={value} onCampaign={mutate}/>}</Show>;
+  return <Show when={campaign()} fallback={<main class="bm-campaign-loading"><div><b>B</b><h1>{campaign.error?'Campaign cannot be opened':'Loading campaign…'}</h1><p>{campaign.error instanceof Error?campaign.error.message:'Media plan, formats and TT requirements are being connected to Diffusion.'}</p><Show when={campaign.error}><a href="/">Back to Bannermatic</a></Show></div></main>}>{value=><EditorShell campaign={value()} onCampaign={mutate}/>}</Show>;
 }
