@@ -17,7 +17,7 @@
  */
 
 import {
-	ChildOf, Computed, Culled, Geometry, Group, Hovering,
+	ChildOf, Chars, Computed, Culled, Geometry, Group, Hovering,
 	Interactive, KeepAspectRatio, RenderSurface, Root, Scene,
 	Selected, Skew, Time,
 	computeGroupBounds, computeLocalMatrix, decompose2D, entityAnchor,
@@ -35,6 +35,7 @@ import { syncKeyframe } from '../keyframes';
 import { Hud, Keys, Pointer, SnapLines } from '../traits';
 import { getToolCursor, updateCursor, type CursorType } from './cursor';
 import { mountNameInput } from '../hud/name-input';
+import { mountTextInput } from '../hud/text-input';
 import {
 	buildSnapCandidatesFromCorners, buildSnapCandidatesFromQuad, findSnapTarget,
 	getMarqueeQuad, getSelectionMaskSnapshot, getSnapCandidatesSnapshot,
@@ -176,7 +177,9 @@ export function handleGeometryInteraction(world: World, event: DispatchedPointer
 
 	// Double-click drills into a container: its children become the things the
 	// canvas can hit, and the one under the pointer takes the selection.
-	if (event.type === 'dblclick' && event.target.kind === 'entity') {
+	if (event.type === 'dblclick' && event.target.kind === 'entity' && event.target.id.has(Chars)) {
+		mountTextInput(world, event.target.id);
+	} else if (event.type === 'dblclick' && event.target.kind === 'entity') {
 		const child = enterEntity(world, event.target.id, { x: event.clientX, y: event.clientY });
 		if (child !== null) editor.select(child);
 	}
