@@ -36,8 +36,41 @@ async function writeBlob(path: string, blob: Blob): Promise<void> {
 	}
 }
 
+const browserFiles = new Map<string, Blob>();
+let browserManifest: Manifest | null = null;
+
+function createBrowserProjectFS(): ProjectFS {
+	const fileFor = async (source: string): Promise<File> => {
+		const blob = browserFiles.get(source);
+		if (!blob) throw new Error(\`File not found: \${source}\`);
+		return new File([blob], source.split('/').pop() || 'asset', { type: blob.type });
+	};
+	return {
+		readManifest: async () => browserManifest,
+		writeManifest: async (manifest) => { browserManifest = structuredClone(manifest); },
+		list: async (source) => {
+			const prefix = source ? \`\${source.replace(/\\\/$/, '')}/\` : '';
+			const entries = new Map<string, { name: string; kind: 'file' | 'directory'; size: number; mtime: number }>();
+			for (const [path, blob] of browserFiles) {
+				if (!path.startsWith(prefix)) continue;
+				const rest = path.slice(prefix.length);
+				if (!rest) continue;
+				const [name, ...tail] = rest.split('/');
+				if (!name) continue;
+				entries.set(name, tail.length ? { name, kind: 'directory', size: 0, mtime: 0 } : { name, kind: 'file', size: blob.size, mtime: 0 });
+			}
+			return [...entries.values()];
+		},
+		stat: async (source) => { const blob = browserFiles.get(source); return blob ? { size: blob.size, mtime: 0 } : null; },
+		file: fileFor,
+		write: async (path, data) => { browserFiles.set(path, data); },
+		remove: async (path) => { for (const key of [...browserFiles.keys()]) if (key === path || key.startsWith(\`\${path}/\`)) browserFiles.delete(key); },
+	};
+}
+
 /** The `ProjectFS` of the project folder at `dir`. */
 export function createProjectFS(dir: string): ProjectFS {
+	if (!window.desktop) return createBrowserProjectFS();
 	const separator = dir.includes('\\') ? '\\' : '/';
 	const absolute = (source: string): string =>
 		isAbsoluteSource(source) ? source : `${dir}${separator}${source.split('/').join(separator)}`;
