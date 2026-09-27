@@ -2,7 +2,7 @@ import {useMemo,useRef,useState} from 'react';
 import {ArrowRight,CheckCircle2,ChevronDown,Columns3,FileSpreadsheet,RefreshCcw,Search,Upload,X} from 'lucide-react';
 import {processDeliveryInput} from '../campaign/deliveryPlan';
 import {api} from './api';
-import {compileVisualFormats,formatRequirementBadges,normalizedExportScale,type Campaign,type ExportType,type Placement,type VisualFormat} from './domain';
+import {compileVisualFormats,formatRequirementBadges,normalizeExportType,normalizedExportScale,type Campaign,type Placement,type VisualFormat} from './domain';
 import {diffMediaPlan,placementKey,preserveVisualsForPlan,type MediaPlanDiff} from './planDiff';
 import type {Locale} from './i18n';
 import ManualCampaignSetup from './ManualCampaignSetup';
@@ -15,7 +15,7 @@ const hasKnownTT=(p:Placement)=>Boolean(p.requirements.sourceUrl||p.requirements
 const formatFor=(campaign:Campaign,p:Placement)=>campaign.formats.find(f=>f.placementIds.includes(p.id));
 const creativeFilterFor=(format?:VisualFormat):CreativeFilter=>format?.creativeState==='published'?'ready':format?.creativeState==='draft'?'attention':'missing';
 
-function toPlacements(plan:any):Placement[]{return (plan.placements||[]).map((p:any)=>({id:p.id,platform:p.platform||'Unknown platform',placement:p.placement||p.source||'Placement',width:Number(p.width),height:Number(p.height),creativeType:p.creativeType,language:p.language,reviewIssues:p.reviewIssues,requirements:{...p.requirements,exportScale:normalizedExportScale(p.exportScale??p.requirements?.exportScale),exportType:(p.exportType??p.requirements?.exportType) as ExportType|undefined,sourceUrl:p.ttUrl,sourceLabel:p.source||'Imported media plan'}}));}
+function toPlacements(plan:any):Placement[]{return (plan.placements||[]).map((p:any)=>({id:p.id,platform:p.platform||'Unknown platform',placement:p.placement||p.source||'Placement',width:Number(p.width),height:Number(p.height),creativeType:p.creativeType||p.requirements?.exportType||'HTML5',language:p.language,reviewIssues:p.reviewIssues,requirements:{...p.requirements,exportScale:normalizedExportScale(p.exportScale??p.requirements?.exportScale),exportType:normalizeExportType(p.exportType??p.requirements?.exportType??p.creativeType),sourceUrl:p.ttUrl,sourceLabel:p.source||'Imported media plan'}}));}
 
 export default function MediaPlanWorkspace({campaign,locale,canEdit,onUpdated,onError,onOpenCreative}:{campaign:Campaign;locale:Locale;canEdit:boolean;onUpdated:(c:Campaign)=>void;onError:(s:string)=>void;onOpenCreative:()=>void}){
  const input=useRef<HTMLInputElement>(null);

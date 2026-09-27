@@ -36,6 +36,7 @@ beforeAll(async()=>{
  process.env.BANNERMATIC_DATA_FILE=path.join(root,'data.json');
  process.env.BANNERMATIC_BUILD_FILE=path.join(root,'builds.json');
  process.env.BANNERMATIC_CREATIVE_FILE=path.join(root,'creative.json');
+ process.env.BANNERMATIC_ARTIFACT_DIR=path.join(root,'delivery-artifacts');
  running=await start('first');
 });
 afterAll(async()=>{if(running?.server)await stop(running.server);if(root)await rm(root,{recursive:true,force:true});});
@@ -80,5 +81,26 @@ describe('vNext live HTTP campaign production',()=>{
   const renamed=await request(`${running.base}/api/campaigns/${id}`,{method:'PATCH',headers,body:JSON.stringify({name:'Renamed production proof'})});expect(renamed.response.status).toBe(200);expect((renamed.body as any).name).toBe('Renamed production proof');
   const deleted=await request(`${running.base}/api/campaigns/${id}`,{method:'DELETE',headers});expect(deleted.response.status).toBe(200);expect(deleted.body).toMatchObject({ok:true,id,name:'Renamed production proof'});
   const missing=await request(`${running.base}/api/campaigns/${id}`,{headers});expect(missing.response.status).toBe(404);
+ });
+
+ it('publishes Diffusion artifacts and downloads placement-specific HTML5, HTML5+GIF, image, GIF and video files',async()=>{
+  const auth=await request(`${running.base}/api/auth/register`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email:'diffusion-e2e@example.test',password:'correct-horse',name:'Diffusion E2E',legalVersion:'2026-09-24',termsAccepted:true,privacyAccepted:true})});
+  expect(auth.response.status).toBe(201);const token=(auth.body as any).token,headers={'content-type':'application/json',authorization:`Bearer ${token}`};
+  const created=await request(`${running.base}/api/campaigns`,{method:'POST',headers,body:JSON.stringify({name:'Diffusion delivery matrix',locale:'en'})}),id=(created.body as any).id;
+  const outputs=['html5','html5+gif','jpg','png','gif','video'];
+  const placements=outputs.map((exportType,index)=>({id:`p-${exportType}`,platform:'Network',placement:`Slot ${index+1}`,width:300,height:250,creativeType:exportType,requirements:{sourceLabel:'Approved TT',exportType,maxZipKb:1000,maxDurationSec:10,clickTag:exportType.startsWith('html5'),clickTagVariable:'clickTag',clickUrl:exportType.startsWith('html5')?'https://example.test/landing':'',tracking:exportType.startsWith('html5'),impressionUrl:exportType.startsWith('html5')?'https://example.test/pixel':''}}));
+  const formats=[{id:'fmt-300x250',width:300,height:250,size:'300×250',placementIds:placements.map(p=>p.id),creativeState:'missing',creativeVersion:0,exportType:'html5'}];
+  const updated=await request(`${running.base}/api/campaigns/${id}`,{method:'PATCH',headers,body:JSON.stringify({placements,formats,status:'media-ready',mediaPlanVersion:1})});expect(updated.response.status).toBe(200);
+  const bytes=(value:string)=>Buffer.from(value).toString('base64'),artifacts=[
+   {kind:'png',mimeType:'image/png',width:300,height:250,durationSec:6,dataBase64:bytes('png-output')},
+   {kind:'jpg',mimeType:'image/jpeg',width:300,height:250,durationSec:6,dataBase64:bytes('jpg-output')},
+   {kind:'gif',mimeType:'image/gif',width:300,height:250,durationSec:6,dataBase64:bytes('gif-output')},
+   {kind:'video',mimeType:'video/mp4',width:300,height:250,durationSec:6,dataBase64:bytes('video-output')},
+  ];
+  const published=await request(`${running.base}/api/campaigns/${id}/diffusion-publish`,{method:'POST',headers,body:JSON.stringify({formatId:'fmt-300x250',artifacts})});
+  expect(published.response.status).toBe(200);expect((published.body as any).format.deliveryArtifacts).toMatchObject({png:{mimeType:'image/png'},jpg:{mimeType:'image/jpeg'},gif:{mimeType:'image/gif'},video:{mimeType:'video/mp4'}});
+  const compliance=await request(`${running.base}/api/campaigns/${id}/compliance`,{headers});expect((compliance.body as any).summary).toEqual({ready:6,warning:0,blocked:0,total:6});
+  const built=await request(`${running.base}/api/campaigns/${id}/builds`,{method:'POST',headers});expect(built.response.status).toBe(201);const build=(built.body as any).build;expect(build.placements.map((item:any)=>item.outputType)).toEqual(outputs);
+  const downloaded=await request(`${running.base}/api/campaigns/${id}/builds/${build.id}/download`,{headers}),outer=readZip(downloaded.body as Buffer),names=[...outer.keys()];expect(downloaded.response.status).toBe(200);expect(names.some(name=>name.endsWith('.jpg'))).toBe(true);expect(names.some(name=>name.endsWith('.png'))).toBe(true);expect(names.some(name=>name.endsWith('.gif'))).toBe(true);expect(names.some(name=>name.endsWith('.mp4'))).toBe(true);const htmlPackages=[...outer.entries()].filter(([name])=>name.endsWith('.zip')).map(([,value])=>readZip(value));expect(htmlPackages).toHaveLength(2);expect(htmlPackages.some(files=>files.has('fallback.gif'))).toBe(true);expect(htmlPackages.every(files=>String(files.get('index.html')).includes('id="bm-click"'))).toBe(true);
  });
 });

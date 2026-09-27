@@ -3,7 +3,7 @@ export type AccessRole="owner"|"admin"|"designer"|"producer"|"viewer";
 export type Readiness="ready"|"warning"|"blocked"|"unknown";
 export type CreativeState="missing"|"draft"|"published";
 export type ExportScale=1|2;
-export type ExportType="html5"|"jpg"|"png"|"webp";
+export type ExportType="html5"|"html5+gif"|"jpg"|"png"|"gif"|"video"|"webp";
 export type RequirementsSource="media-plan"|"manual";
 export type ExportScaleSource="media-plan"|"manual";
 export type FormatSpec={id:string;width:number;height:number;exportScale?:ExportScale;maxBytes?:number;exportType?:ExportType;source?:RequirementsSource;requirementsSource?:string;exportScaleSource?:ExportScaleSource};
@@ -16,6 +16,7 @@ export type RequirementSet={
  exportType?:ExportType|null;
  maxDurationSec?:number|null;
  clickTag?:boolean|null;
+ clickTagVariable?:string;
  tracking?:boolean|null;
  impressionUrl?:string;
  clickUrl?:string;
@@ -28,6 +29,8 @@ export type Placement={id:string;platform:string;placement:string;width:number;h
 
 export type VisualFormat={
  exportScale?:ExportScale;maxBytes?:number;exportType?:ExportType;requirementsSource?:string;exportScaleSource?:ExportScaleSource;
+ requiredOutputTypes?:ExportType[];
+ deliveryArtifacts?:Record<string,{id:string;kind:string;mimeType:string;width:number;height:number;durationSec:number;bytes:number;sha256:string;createdAt:string}>;
  sourceType?:string;templateId?:string;familyId?:string;roleOverrides?:Record<string,Record<string,number|string>>;sourceFingerprint?:string;contentFingerprint?:string;variantRenders?:Record<string,any>;
  id:string;width:number;height:number;size:string;placementIds:string[];creativeState:CreativeState;creativeVersion:number;
  previewUrl?:string;previewHtml?:string;previewSvg?:string;previewType?:string;durationSec?:number;estimatedZipKb?:number;clickTagPresent?:boolean;publishedAt?:string;
@@ -58,6 +61,7 @@ const sizeKey=(w:number,h:number)=>`${w}x${h}`;
 export const formatId=(w:number,h:number)=>`fmt-${sizeKey(w,h)}`;
 
 export const normalizedExportScale=(value:unknown):ExportScale=>Number(value)===2?2:1;
+export const normalizeExportType=(value:unknown):ExportType=>{const raw=String(value||'html5').toLowerCase().replace(/\s+/g,'').replace(/_/g,'-');if(raw.includes('html')&&raw.includes('gif'))return'html5+gif';if(raw.includes('html'))return'html5';if(raw==='jpeg'||raw==='jpg')return'jpg';if(raw==='png')return'png';if(raw==='gif')return'gif';if(raw==='mp4'||raw==='webm'||raw==='mov'||raw.includes('video'))return'video';if(raw==='webp')return'webp';return'html5'};
 export const physicalExportSize=(format:Pick<VisualFormat,"width"|"height"|"exportScale">)=>{const scale=normalizedExportScale(format.exportScale);return {width:format.width*scale,height:format.height*scale,scale}};
 export const formatRequirementBadges=(format:Pick<VisualFormat,"exportScale"|"maxBytes"|"exportType">)=>{const scale=normalizedExportScale(format.exportScale);return [`@${scale}x`,...(format.maxBytes?[`≤${Math.ceil(format.maxBytes/1000)}KB`]:[]),...(format.exportType?[format.exportType.toUpperCase()]:[])];};
 export type AssetQualityState="ok"|"warning"|"insufficient";
@@ -69,7 +73,7 @@ export function assetQualityForCampaign(campaign:Campaign):AssetQualityResult[]{
 export function compileVisualFormats(placements:Placement[],existing:VisualFormat[]=[]):VisualFormat[]{
  const existingByKey=new Map(existing.map(f=>[sizeKey(f.width,f.height),f]));const grouped=new Map<string,Placement[]>();
  for(const p of placements){const key=sizeKey(p.width,p.height);grouped.set(key,[...(grouped.get(key)||[]),p])}
- return [...grouped.entries()].map(([key,ps])=>{const first=ps[0],old=existingByKey.get(key),planScale=ps.some(p=>normalizedExportScale(p.requirements.exportScale)===2)?2:1,planMaxKb=ps.map(p=>Number(p.requirements.maxZipKb)||0).filter(Boolean),planType=ps.map(p=>p.requirements.exportType).find(Boolean),manualScale=old?.exportScaleSource==="manual";return {...old,id:old?.id||formatId(first.width,first.height),width:first.width,height:first.height,size:`${first.width}×${first.height}`,placementIds:ps.map(p=>p.id),creativeState:old?.creativeState||"missing",creativeVersion:old?.creativeVersion||0,exportScale:manualScale?normalizedExportScale(old?.exportScale):planScale,exportScaleSource:(manualScale?"manual":"media-plan") as ExportScaleSource,maxBytes:old?.maxBytes??(planMaxKb.length?Math.min(...planMaxKb)*1000:undefined),exportType:old?.exportType??planType??"html5",requirementsSource:old?.requirementsSource??first.requirements.sourceLabel,previewUrl:old?.previewUrl,previewHtml:old?.previewHtml,previewSvg:old?.previewSvg,previewType:old?.previewType,durationSec:old?.durationSec,estimatedZipKb:old?.estimatedZipKb,clickTagPresent:old?.clickTagPresent,publishedAt:old?.publishedAt};}).sort((a,b)=>b.width*b.height-a.width*a.height);
+ return [...grouped.entries()].map(([key,ps])=>{const first=ps[0],old=existingByKey.get(key),planScale=ps.some(p=>normalizedExportScale(p.requirements.exportScale)===2)?2:1,planMaxKb=ps.map(p=>Number(p.requirements.maxZipKb)||0).filter(Boolean),explicitTypes=ps.map(p=>p.requirements.exportType||p.creativeType).filter(Boolean),preservedType=old?.exportType||old?.requiredOutputTypes?.[0]||"html5",requiredOutputTypes:ExportType[]=explicitTypes.length?[...new Set(explicitTypes.map(normalizeExportType))]:[normalizeExportType(preservedType)],planType=requiredOutputTypes[0],manualScale=old?.exportScaleSource==="manual";return {...old,id:old?.id||formatId(first.width,first.height),width:first.width,height:first.height,size:`${first.width}×${first.height}`,placementIds:ps.map(p=>p.id),creativeState:old?.creativeState||"missing",creativeVersion:old?.creativeVersion||0,exportScale:manualScale?normalizedExportScale(old?.exportScale):planScale,exportScaleSource:(manualScale?"manual":"media-plan") as ExportScaleSource,maxBytes:old?.maxBytes??(planMaxKb.length?Math.min(...planMaxKb)*1000:undefined),exportType:planType,requiredOutputTypes,requirementsSource:first.requirements.sourceLabel??old?.requirementsSource,previewUrl:old?.previewUrl,previewHtml:old?.previewHtml,previewSvg:old?.previewSvg,previewType:old?.previewType,durationSec:old?.durationSec,estimatedZipKb:old?.estimatedZipKb,clickTagPresent:old?.clickTagPresent,publishedAt:old?.publishedAt};}).sort((a,b)=>b.width*b.height-a.width*a.height);
 }
 
 export function placementReadiness(p:Placement,format?:VisualFormat):Readiness{

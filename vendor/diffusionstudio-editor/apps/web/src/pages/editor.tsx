@@ -45,7 +45,7 @@ function Project(){
 module.exports.default=Project;`;
 
 
-export function EditorPage(props: { standalone?: boolean } = {}) {
+export function EditorPage(props: { standalone?: boolean; standaloneBundle?: string } = {}) {
   const { uiVisible, timelineMinimized, timelineHeight, setTimelineHeight } = useLayout();
   const { isDesktop, isFullscreen } = useEditorApi();
   const [resizing, setResizing] = createSignal(false);
@@ -58,7 +58,12 @@ export function EditorPage(props: { standalone?: boolean } = {}) {
   // is torn down and re-attached where the project now is.
   createEffect(() => {
     if (props.standalone) {
-      const mounted = mount(STANDALONE_PROJECT_BUNDLE, world);
+      const bundle=props.standaloneBundle||STANDALONE_PROJECT_BUNDLE;
+      const mounted = mount(bundle, world);
+      // Offline image/video capture remounts the same bundle in an isolated
+      // render world. Keep the exact live Campaign bundle in IndexedDB so
+      // production exports cannot drift from the scenes visible on canvas.
+      void rememberProjectBundle(untrack(project.id),bundle);
       setInspectEntries(world, mounted.inspect);
       // Browser standalone still needs the same edit/history bridge as a normal
       // project. Without initializing these services the UI renders, but editor
@@ -70,8 +75,12 @@ export function EditorPage(props: { standalone?: boolean } = {}) {
       // service before controls mount. This keeps import/drop/tool commands on
       // the same upstream code paths instead of leaving them inert.
       const standaloneLibrary = attachLibrary(world, '__browser_standalone__');
+      const standaloneWriter = createEditWriter(`__browser_standalone__:${untrack(project.id)}`,world);
+      const stopWriting=editor.onEdit(edit=>standaloneWriter.push(edit));
       editor.clearSelection();
       onCleanup(() => {
+        stopWriting();
+        standaloneWriter.dispose();
         standaloneLibrary.dispose();
         mounted.dispose();
         setInspectEntries(world, []);

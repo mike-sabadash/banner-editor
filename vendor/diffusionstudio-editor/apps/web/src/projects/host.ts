@@ -18,6 +18,7 @@ import {
 } from '@/lib/db';
 
 import type { CompileResult, ProjectInfo, SourceEdit, WriteResult } from '@desktop/main-channels';
+import {applyStandaloneEdits} from './standalone-bundle';
 import type { ProjectRecord } from '@/lib/db';
 
 export type { CompileResult, ProjectInfo, ProjectRecord, SourceEdit, WriteResult };
@@ -282,6 +283,7 @@ export function compileProject(dir: string): Promise<CompileResult> {
  * reaching the watcher (see `noteContent` in the desktop's projects.ts).
  */
 export function writeProject(dir: string, edits: SourceEdit[]): Promise<WriteResult> {
+	if(dir.startsWith('__browser_standalone__:'))return applyStandaloneEdits(dir.slice('__browser_standalone__:'.length),edits);
 	return mainBridge.call(MAIN_CHANNELS.PROJECTS_WRITE, { dir, edits });
 }
 

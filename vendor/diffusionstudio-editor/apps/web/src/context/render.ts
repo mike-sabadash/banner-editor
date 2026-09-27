@@ -51,7 +51,7 @@ export type RenderSceneOptions = {
   /** Scene entity to encode. */
   scene: Entity;
   /** Where to write the output (a save-picker handle in the UI, a file path handle from the CLI). */
-  target: NonNullable<EncoderConfig["target"]>;
+  target?: EncoderConfig["target"];
   /** Encoder settings (resolution, codecs, format, ...). */
   config?: Partial<EncoderConfig>;
   /** The project's folder, so the encode compiles the sources as they are now. */

@@ -31,7 +31,7 @@ describe('Bannermatic modular customer journey',()=>{
   expect(delivery).not.toMatch(/figma/i);
   expect(product).not.toMatch(/FigmaImportBrowser|figmaBridge|figmaPair/i);
   expect(product).toContain("can(role,'edit-creative')");
-  expect(product).toContain('view=scene-editor&campaignId=');
+  expect(product).toContain('/editor/?campaignId=');
  });
  it('keeps campaign lifecycle actions explicit and recoverable',()=>{
   expect(product).toContain('api.deleteCampaign');
