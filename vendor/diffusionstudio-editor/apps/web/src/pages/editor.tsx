@@ -36,16 +36,10 @@ import type { EditWriter } from '@/projects/edits';
 const MIN_CANVAS_HEIGHT = 200;
 const INSPECTOR_WIDTH = 264;
 
-const STANDALONE_PROJECT_BUNDLE = String.raw`const { createElement, spread, insertNode, createTextNode } = require("@diffusionstudio/jsx");
+const STANDALONE_PROJECT_BUNDLE = String.raw`const { createElement, spread, insertNode } = require("@diffusionstudio/jsx");
 function Project(){
   const stage=createElement("Stage"); spread(stage,{__source:"standalone.tsx:stage",background:"#161616",camera:[0.72,0,0,0.72,180,90]});
   const scene=createElement("Scene"); spread(scene,{__source:"standalone.tsx:scene",name:"Banner 300×600",width:300,height:600,fill:"#101114",active:true}); insertNode(stage,scene);
-  const bg=createElement("Rect"); spread(bg,{__source:"standalone.tsx:bg",name:"Background",x:0,y:0,width:300,height:600,fill:"#15171c",start:0,end:8}); insertNode(scene,bg);
-  const hero=createElement("Rect"); spread(hero,{__source:"standalone.tsx:product",name:"Product",x:38,y:150,width:224,height:250,fill:"#242832",cornerRadius:18,start:0.4,end:7.5}); insertNode(scene,hero);
-  const title=createElement("Text"); spread(title,{__source:"standalone.tsx:headline",name:"Headline",x:28,y:48,width:244,height:90,color:"#ffffff",fontSize:34,fontWeight:"bold",textAlign:"left",start:0.2,end:6.5}); insertNode(title,createTextNode("BANNERMATIC")); insertNode(scene,title);
-  const sub=createElement("Text"); spread(sub,{__source:"standalone.tsx:copy",name:"Copy",x:28,y:105,width:244,height:44,color:"#aeb4c0",fontSize:14,start:0.7,end:6.8}); insertNode(sub,createTextNode("Diffusion Studio editor foundation")); insertNode(scene,sub);
-  const cta=createElement("Rect"); spread(cta,{__source:"standalone.tsx:cta",name:"CTA",x:28,y:500,width:150,height:48,fill:"#1688ff",cornerRadius:10,start:1.2,end:8}); insertNode(scene,cta);
-  const ct=createElement("Text"); spread(ct,{__source:"standalone.tsx:cta-label",name:"CTA label",x:28,y:500,width:150,height:48,color:"#ffffff",fontSize:14,fontWeight:"bold",textAlign:"center",textBaseline:"middle",start:1.2,end:8}); insertNode(ct,createTextNode("OPEN")); insertNode(scene,ct);
   return stage;
 }
 module.exports.default=Project;`;
