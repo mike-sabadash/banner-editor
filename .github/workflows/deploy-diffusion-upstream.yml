@@ -32,10 +32,18 @@ jobs:
       - name: Restore ignored upstream runtime package
         run: |
           set -euo pipefail
-          rm -rf /tmp/diffusion-runtime vendor/diffusionstudio-editor/packages/runtime
-          git clone --filter=blob:none --no-checkout https://github.com/diffusionstudio/editor.git /tmp/diffusion-runtime
-          git -C /tmp/diffusion-runtime checkout 666cdced1f6b97a792b63e551f45797649efb27a -- packages/runtime
-          cp -a /tmp/diffusion-runtime/packages/runtime vendor/diffusionstudio-editor/packages/runtime
+          rm -rf vendor/diffusionstudio-editor/packages/runtime
+          mkdir -p vendor/diffusionstudio-editor/packages/runtime
+          curl -fsSL --retry 3 -o /tmp/diffusion-editor.tar.gz https://codeload.github.com/diffusionstudio/editor/tar.gz/666cdced1f6b97a792b63e551f45797649efb27a
+          tar -xzf /tmp/diffusion-editor.tar.gz --strip-components=3 -C vendor/diffusionstudio-editor/packages/runtime editor-666cdced1f6b97a792b63e551f45797649efb27a/packages/runtime
+          test -f vendor/diffusionstudio-editor/packages/runtime/package.json
+
+      - name: Test and build Bannermatic Campaign shell
+        run: |
+          set -euo pipefail
+          npm ci
+          npm test
+          npm run build
 
       - name: Install upstream dependencies
         working-directory: vendor/diffusionstudio-editor
@@ -50,14 +58,17 @@ jobs:
 
       - name: Build upstream web editor
         working-directory: vendor/diffusionstudio-editor
-        run: npm run build
+        run: npm run build --workspace=@diffusionstudio/web -- --base=/editor/
 
-      - name: Prepare pristine upstream deploy artifact
+      - name: Prepare integrated Campaign and Diffusion artifact
         run: |
           set -euo pipefail
           rm -rf /tmp/diffusion-dist
-          cp -a vendor/diffusionstudio-editor/apps/web/dist /tmp/diffusion-dist
+          cp -a dist /tmp/diffusion-dist
+          mkdir -p /tmp/diffusion-dist/editor
+          cp -a vendor/diffusionstudio-editor/apps/web/dist/. /tmp/diffusion-dist/editor/
           test -f /tmp/diffusion-dist/index.html
+          test -f /tmp/diffusion-dist/editor/index.html
 
       - name: Verify deploy secret exists
         run: |
@@ -70,7 +81,7 @@ jobs:
           chmod 600 ~/.ssh/bannermatic_server
           ssh-keyscan -p 2222 213.182.208.29 >> ~/.ssh/known_hosts
 
-      - name: Upload pristine Diffusion web build as Studio root
+      - name: Upload integrated Studio release
         run: |
           set -euo pipefail
           tar -C /tmp/diffusion-dist -czf /tmp/diffusion-dist.tgz .
@@ -85,7 +96,38 @@ jobs:
             rm -f /tmp/diffusion-dist.tgz
           '
 
-      - name: Verify public Diffusion editor
+      - name: Deploy Campaign API and restart gateway
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/bannermatic_server -p 2222 -o IdentitiesOnly=yes root@213.182.208.29 "EXPECTED_SHA='$EXPECTED_SHA' bash -s" <<'REMOTE'
+          set -euo pipefail
+          cd /var/www/banner-editor
+          if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+            echo "STOP: tracked production changes found"
+            git status --short
+            exit 1
+          fi
+          export GIT_SSH_COMMAND="ssh -i /root/.ssh/banner_editor_deploy -p 443 -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
+          git fetch origin feature/diffusion-editor-upstream
+          ACTUAL_SHA="$(git rev-parse FETCH_HEAD)"
+          [ "$ACTUAL_SHA" = "$EXPECTED_SHA" ] || { echo "STOP: unexpected commit $ACTUAL_SHA"; exit 1; }
+          git switch -C feature/diffusion-editor-upstream "$EXPECTED_SHA"
+          npm ci
+          cp deploy/nginx/ads.rechord.online.conf /etc/nginx/conf.d/studio.bannermatic.online.conf
+          nginx -t
+          systemctl reload nginx
+          pm2 restart banner-openrouter-gateway
+          for attempt in {1..20}; do
+            curl -fsS --max-time 2 http://127.0.0.1:8791/healthz >/dev/null && break
+            [ "$attempt" -lt 20 ] || { pm2 describe banner-openrouter-gateway; exit 1; }
+            sleep 1
+          done
+          echo "STUDIO_API_COMMIT: $(git rev-parse --short HEAD)"
+          REMOTE
+
+      - name: Verify public Campaign shell and Diffusion editor
         run: |
           set -euo pipefail
           html="$(curl -fsSL --max-time 30 https://studio.bannermatic.online/)"
@@ -93,8 +135,14 @@ jobs:
           test -n "$asset"
           curl -fsS --max-time 30 "https://studio.bannermatic.online$asset" >/tmp/diffusion-bundle.js
           test -s /tmp/diffusion-bundle.js
-          grep -q '<title>Diffusion Studio</title>' <<<"$html" || { echo "PUBLIC_HTML_NOT_DIFFUSION"; echo "$html" | head -c 1200; exit 1; }
-          echo "DIFFUSION_UPSTREAM_DEPLOY_OK"
+          grep -q '<title>Bannermatic Studio</title>' <<<"$html" || { echo "PUBLIC_ROOT_NOT_BANNERMATIC"; echo "$html" | head -c 1200; exit 1; }
+          editor_html="$(curl -fsSL --max-time 30 https://studio.bannermatic.online/editor/)"
+          grep -q '<title>Diffusion Studio</title>' <<<"$editor_html" || { echo "PUBLIC_EDITOR_NOT_DIFFUSION"; echo "$editor_html" | head -c 1200; exit 1; }
+          editor_asset="$(grep -oE '/editor/assets/[^" ]+[.]js' <<<"$editor_html" | head -1)"
+          test -n "$editor_asset"
+          curl -fsS --max-time 30 "https://studio.bannermatic.online$editor_asset" >/tmp/diffusion-editor-bundle.js
+          test -s /tmp/diffusion-editor-bundle.js
+          echo "BANNERMATIC_CAMPAIGN_DIFFUSION_DEPLOY_OK"
 
       - name: Browser interaction smoke test
         run: |
@@ -111,6 +159,8 @@ jobs:
           page.on('console', m => { if (m.type()==='error') errors.push('console: '+m.text()); });
           page.on('pageerror', e => errors.push('pageerror: '+e.message));
           await page.goto('https://studio.bannermatic.online/', {waitUntil:'networkidle', timeout:60000});
+          await page.getByText(/Войти|Sign in/i).first().waitFor({state:'visible'});
+          await page.goto('https://studio.bannermatic.online/editor/', {waitUntil:'networkidle', timeout:60000});
           await page.waitForTimeout(1500);
           const buttons=page.locator('button');
           console.log('buttons', await buttons.count());
@@ -137,7 +187,7 @@ jobs:
           // Standalone Studio intentionally starts with an empty scene. Verify
           // the removed demo content does not come back on production boot.
           const bodyText=await page.locator('body').innerText();
-          for (const demo of ['BANNERMATIC','Diffusion Studio editor foundation','Product','OPEN']) {
+          for (const demo of ['Diffusion Studio editor foundation','Product','OPEN']) {
             if (bodyText.includes(demo)) throw new Error('Demo content still present: '+demo);
           }
           console.log('empty-standalone-scene-ok');
