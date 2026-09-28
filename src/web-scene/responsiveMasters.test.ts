@@ -2,7 +2,7 @@ import {describe,expect,it} from "vitest";
 import {
   DEFAULT_SCENES,EMPTY_RESPONSIVE_STATE,RU_CORE_10,affectedFormatsForFamily,countFormatOverrides,
   familyFor,formatInheritance,generateScene,resetFormatOverride,resetLayerOverride,resetOverrideProperty,
-  responsiveMasterScore,selectResponsiveMaster,setLayerOverride,updateResponsiveMaster,useAsResponsiveMaster,recommendedManualMasterFormats,
+  responsiveMasterScore,seedResponsiveMasters,selectResponsiveMaster,setLayerOverride,updateResponsiveMaster,useAsResponsiveMaster,recommendedManualMasterFormats,
   type OutputFormat,type ResponsiveState
 } from "./sceneModel";
 
@@ -149,6 +149,26 @@ describe("Responsive Masters end-to-end",()=>{
     let state:ResponsiveState=EMPTY_RESPONSIVE_STATE;
     for(const master of masters)state=useAsResponsiveMaster(DEFAULT_SCENES,master,state,master.family);
     for(const target of RU_CORE_10){const selected=selectResponsiveMaster(target,state);expect(selected,target.id).toBeTruthy();expect(selected!.family,target.id).toBe(target.family)}
+  });
+
+  it("seeds campaign families in one action and keeps content and motion linked to Original Master",()=>{
+    const campaignFormats=[format("240x400"),format("300x250"),format("728x90"),format("320x50")];
+    const state=seedResponsiveMasters(DEFAULT_SCENES,campaignFormats,EMPTY_RESPONSIVE_STATE,"2026-09-29T00:00:00Z");
+    expect(state.responsiveMasters.map(master=>master.sourceFormatId)).toEqual(["240x400","300x250","728x90","320x50"]);
+    const changed=structuredClone(DEFAULT_SCENES);
+    const sourceHeadline=changed[0].layers.find(layer=>layer.id==="headline-1")!;
+    sourceHeadline.text="Shared campaign update";
+    sourceHeadline.motion="from-right";
+    sourceHeadline.motionDurationMs=777;
+    for(const target of campaignFormats){
+      const rolled=generateScene(changed[0],target,state).layers.find(layer=>layer.id==="headline-1")!;
+      expect(rolled.text,target.id).toBe("Shared campaign update");
+      expect(rolled.motion,target.id).toBe("from-right");
+      expect(rolled.motionDurationMs,target.id).toBe(777);
+    }
+    const withLocal=setLayerOverride(state,"300x250","scene-1","headline-1","headline",{text:"Local exception"});
+    expect(headline("300x250",withLocal).text).toBe("Local exception");
+    expect(headline("240x400",withLocal).text).toBe("Летний запуск");
   });
 
 });
