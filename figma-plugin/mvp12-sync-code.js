@@ -27,9 +27,20 @@ function semanticRole(n){const explicit=getMeta(n,"semanticRole")||getMeta(n,"sl
 function roleFor(n,index){const existing=semanticRole(n);return existing||`custom.${slug(n.name)}.${index+1}`}
 function setRole(n,role){meta(n,"semanticRole",role);meta(n,"slotId",role)}
 function markManaged(n,source,role){setRole(n,role);meta(n,"managedBy","bannermatic");meta(n,"masterSourceId",source.id)}
-function layerForSource(root,source,role){const exact=root.findAll(n=>getMeta(n,"masterSourceId")===source.id)[0];if(exact)return exact;const candidates=root.findAll(n=>semanticRole(n)===role);if(candidates.length){const chosen=candidates.find(n=>getMeta(n,"slotId")===role)||candidates[0];markManaged(chosen,source,role);return chosen}return null}
+function layerForSource(root,source,role){
+ const children=root.children||[],exact=children.filter(n=>getMeta(n,"masterSourceId")===source.id);
+ if(exact.length>1)throw Error(`Duplicate source link for ${source.name}. Review this format before updating.`);
+ if(exact.length===1)return exact[0];
+ // Roles are local to the parent, and cannot override an established source link.
+ const candidates=children.filter(n=>!getMeta(n,"masterSourceId")&&semanticRole(n)===role&&n.type===source.type);
+ if(candidates.length!==1)return null;
+ markManaged(candidates[0],source,role);return candidates[0];
+}
 function pruneManaged(root,master){const liveIds=new Set((master.children||[]).map(n=>n.id)),liveRoles=new Set((master.children||[]).map((n,i)=>roleFor(n,i)));for(const n of [...(root.children||[])]){if(getMeta(n,"managedBy")==="bannermatic"&&getMeta(n,"masterSourceId")&&!liveIds.has(getMeta(n,"masterSourceId"))){n.remove();continue}const slot=getMeta(n,"slotId");if(slot&&slot.startsWith("custom.")&&!liveRoles.has(slot)&&!getMeta(n,"masterSourceId"))n.remove()}}
-function dedupeRole(root,source,role,keep){for(const n of root.findAll(x=>x.id!==keep.id&&semanticRole(x)===role)){if(getMeta(n,"managedBy")==="bannermatic"||getMeta(n,"slotId")===role)n.remove()}}
+function dedupeRole(root,source,role,keep){
+ const duplicates=(root.children||[]).filter(n=>n.id!==keep.id&&getMeta(n,"masterSourceId")===source.id);
+ if(duplicates.length)throw Error(`Duplicate source link for ${source.name}. No layers were deleted.`);
+}
 
 const CORE_ROLES=new Set(["headline.primary","copy.secondary","cta.primary","cta.background","legal.primary"]);
 function isLegacyGenerated(n){
@@ -52,12 +63,10 @@ function strictRoleInventory(root){
  return{ok:issues.length===0,issues};
 }
 function cleanupLegacyDuplicates(root){
- for(const role of ["headline.primary","copy.secondary","cta.primary","cta.background","legal.primary"]){
-  const nodes=root.findAll(n=>semanticRole(n)===role);
-  if(nodes.length<=1)continue;
-  let keep=nodes.find(n=>getMeta(n,"masterSourceId"))||nodes.find(n=>getMeta(n,"managedBy")==="bannermatic")||nodes[0];
-  for(const n of nodes)if(n.id!==keep.id&&isLegacyGenerated(n))n.remove();
- }
+ // A shared name or role is never sufficient evidence to delete designer artwork.
+ const seen=new Set(),duplicates=[];
+ for(const n of root.children||[]){const id=getMeta(n,"masterSourceId");if(id&&seen.has(id))duplicates.push(n.name);if(id)seen.add(id)}
+ meta(root,"duplicateLinkWarning",duplicates.join(", "));
 }
 function prepareMasterSlots(root){
  const walk=parent=>{const counts=new Map();for(const [index,n]of(parent.children||[]).entries()){let role=roleFor(n,index),seen=counts.get(role)||0;counts.set(role,seen+1);if(seen)role=`${role}.${seen+1}`;setRole(n,role);meta(n,"masterSourceId",n.id);if("children"in n)walk(n)}};
@@ -97,9 +106,14 @@ function ensureHeroRole(root){
  return hero;
 }
 function scaledLineHeight(source,targetFont){const lh=source.lineHeight;if(lh===figma.mixed||!lh)return null;if(lh.unit==="PIXELS"&&typeof lh.value==="number"&&source.fontSize!==figma.mixed&&typeof source.fontSize==="number"&&source.fontSize>0)return{unit:"PIXELS",value:Math.max(1,targetFont*(lh.value/source.fontSize))};return clone(lh)}
-async function syncText(source,target,{newLayer=false,sourceRoot,targetRoot}={}){await ensureFont(target);await normalizeTextBox(source);const existingWidth=Math.max(24,target.width);if(newLayer){const b=box(source,sourceRoot),margin=Math.max(6,Math.min(targetRoot.width,targetRoot.height)*.04),width=clamp(b.w*targetRoot.width,targetRoot.width*.28,targetRoot.width-margin*2);target.textAutoResize="HEIGHT";target.resize(width,Math.max(1,target.height));if(source.fontSize!==figma.mixed&&typeof source.fontSize==="number"){const s=Math.sqrt((targetRoot.width*targetRoot.height)/Math.max(1,sourceRoot.width*sourceRoot.height));target.fontSize=clamp(source.fontSize*clamp(s,.62,1.05),Math.max(8,source.fontSize*.58),source.fontSize*1.05)}place(source,sourceRoot,target,targetRoot)}else{target.textAutoResize="HEIGHT";target.resize(existingWidth,Math.max(1,target.height))}target.characters=source.characters;const tf=target.fontSize!==figma.mixed&&typeof target.fontSize==="number"?target.fontSize:16;const lh=scaledLineHeight(source,tf);if(lh)target.lineHeight=lh;target.textAlignHorizontal=source.textAlignHorizontal}
+async function syncText(source,target,{newLayer=false,sourceRoot,targetRoot}={}){await ensureFont(target);await normalizeTextBox(source);const existingWidth=Math.max(24,target.width);if(newLayer){const b=box(source,sourceRoot),margin=Math.max(6,Math.min(targetRoot.width,targetRoot.height)*.04),width=clamp(b.w*targetRoot.width,targetRoot.width*.28,targetRoot.width-margin*2);target.textAutoResize="HEIGHT";target.resize(width,Math.max(1,target.height));if(source.fontSize!==figma.mixed&&typeof source.fontSize==="number"){const s=Math.sqrt((targetRoot.width*targetRoot.height)/Math.max(1,sourceRoot.width*sourceRoot.height));target.fontSize=clamp(source.fontSize*clamp(s,.62,1.05),Math.max(8,source.fontSize*.58),source.fontSize*1.05)}place(source,sourceRoot,target,targetRoot)}else{target.textAutoResize="HEIGHT";target.resize(existingWidth,Math.max(1,target.height))}if(source.fontName!==figma.mixed){await figma.loadFontAsync(source.fontName);target.fontName=clone(source.fontName)}target.characters=source.characters;const tf=target.fontSize!==figma.mixed&&typeof target.fontSize==="number"?target.fontSize:16;const lh=scaledLineHeight(source,tf);if(lh)target.lineHeight=lh;target.textAlignHorizontal=source.textAlignHorizontal}
 async function adaptNewLayer(source,target,sourceRoot,targetRoot,role){if(target.type==="TEXT"){await syncText(source,target,{newLayer:true,sourceRoot,targetRoot});return}const b=box(source,sourceRoot);if(isImageLike(target,role)){const ratio=Math.max(.01,source.width/Math.max(1,source.height)),w=clamp(targetRoot.width*clamp(b.w,.14,.72),24,targetRoot.width*.92),h=w/ratio,maxH=targetRoot.height*.88;if(h>maxH)target.resize(maxH*ratio,maxH);else target.resize(w,h);place(source,sourceRoot,target,targetRoot);return}const s=Math.min(1,targetRoot.width/Math.max(1,sourceRoot.width),targetRoot.height/Math.max(1,sourceRoot.height));if(target.resize)target.resize(Math.max(1,source.width*s),Math.max(1,source.height*s));place(source,sourceRoot,target,targetRoot)}
-async function cloneInto(source,sourceRoot,targetRoot,role){const t=source.clone();targetRoot.appendChild(t);markManaged(t,source,role);await adaptNewLayer(source,t,sourceRoot,targetRoot,role);return t}
+function markClonedTree(source,target,role){
+ markManaged(target,source,role);
+ const sources=source.children||[],targets=target.children||[];
+ for(let i=0;i<sources.length;i++)if(targets[i])markClonedTree(sources[i],targets[i],roleFor(sources[i],i));
+}
+async function cloneInto(source,sourceRoot,targetRoot,role){const t=source.clone();targetRoot.appendChild(t);markClonedTree(source,t,role);await adaptNewLayer(source,t,sourceRoot,targetRoot,role);return t}
 
 const MOTION_FIELDS=["TRANSLATION_X","TRANSLATION_Y","TRANSLATION_XY","OPACITY","ROTATION","SCALE_X","SCALE_Y","SCALE_XY","WIDTH","HEIGHT"];
 const GEOM=new Set(["TRANSLATION_X","TRANSLATION_Y","TRANSLATION_XY","SCALE_X","SCALE_Y","SCALE_XY","WIDTH","HEIGHT"]);
@@ -118,18 +132,44 @@ async function syncMotion(source,target){
  }
  return tracks;
 }
-async function syncExisting(source,target,sourceRoot,targetRoot){if(source.type==="TEXT"&&target.type==="TEXT")await syncText(source,target,{newLayer:false,sourceRoot,targetRoot});else if("fills"in source&&"fills"in target&&source.fills!==figma.mixed)target.fills=clone(source.fills);for(const f of["strokes","effects"])if(f in source&&f in target&&source[f]!==figma.mixed)target[f]=clone(source[f]);if("opacity"in source&&"opacity"in target)target.opacity=source.opacity;return syncMotion(source,target)}
+// Motion must use final layout geometry, including any accepted AI correction.
+async function syncFinalMotionTree(source,target){
+ let tracks=await syncMotion(source,target);
+ for(const child of source.children||[]){
+  const linked=(target.children||[]).find(n=>getMeta(n,"masterSourceId")===child.id);
+  if(linked)tracks+=await syncFinalMotionTree(child,linked);
+ }
+ return tracks;
+}
+async function syncFinalMotion(master,root){
+ let tracks=0;
+ for(const source of master.children||[]){
+  const target=(root.children||[]).find(n=>getMeta(n,"masterSourceId")===source.id);
+  if(target)tracks+=await syncFinalMotionTree(source,target);
+ }
+ return tracks;
+}
+async function syncExisting(source,target,sourceRoot,targetRoot){if(source.type==="TEXT"&&target.type==="TEXT")await syncText(source,target,{newLayer:false,sourceRoot,targetRoot});else if("fills"in source&&"fills"in target&&source.fills!==figma.mixed)target.fills=clone(source.fills);for(const f of["strokes","effects"])if(f in source&&f in target&&source[f]!==figma.mixed)target[f]=clone(source[f]);if("opacity"in source&&"opacity"in target)target.opacity=source.opacity;return 0}
 
 
 function firstByRole(root,role){return root.findAll(n=>semanticRole(n)===role)[0]||null}
 function allText(root){return root.findAll(n=>n.type==="TEXT")}
 function allImageLike(root){const hero=heroCandidate(root),rest=root.findAll(n=>n!==root&&isImageLike(n,semanticRole(n))&&n.type!=="TEXT").filter(n=>!hero||n.id!==hero.id);return hero?[hero,...rest]:rest}
+function textRhythm(node){
+ const font=node.fontSize===figma.mixed?NaN:Number(node.fontSize),line=node.lineHeight;
+ if(line===figma.mixed||!line)return null;
+ return{font:Number.isFinite(font)&&font>0?font:16,line:clone(line)};
+}
+function applyTextRhythm(node,font,rhythm){
+ node.fontSize=font;
+ if(rhythm)node.lineHeight=rhythm.line.unit==="PIXELS"?{unit:"PIXELS",value:font*rhythm.line.value/rhythm.font}:clone(rhythm.line);
+}
 async function fitTextBox(node,{x,y,width,fontSize,minFont,lineHeight=1.05,maxHeight,align="LEFT",visible=true}){
  if(!node||node.type!=="TEXT")return false;
  await ensureFont(node);node.visible=visible;if(!visible)return true;
  node.textAutoResize="HEIGHT";node.x=x;node.y=y;node.textAlignHorizontal=align;
- const floor=Math.max(7,minFont||8);let fs=Math.max(floor,fontSize||12),fit=false;
- for(let i=0;i<80;i++){node.fontSize=fs;node.lineHeight={unit:"PIXELS",value:Math.max(1,fs*lineHeight)};node.resize(Math.max(20,width),Math.max(1,node.height));if(!maxHeight||node.height<=maxHeight+.5){fit=true;break}if(fs<=floor+.01)break;fs=Math.max(floor,fs-1)}
+ const rhythm=textRhythm(node);const floor=Math.max(7,minFont||8);let fs=Math.max(floor,fontSize||12),fit=false;
+ for(let i=0;i<80;i++){applyTextRhythm(node,fs,rhythm);node.resize(Math.max(20,width),Math.max(1,node.height));if(!maxHeight||node.height<=maxHeight+.5){fit=true;break}if(fs<=floor+.01)break;fs=Math.max(floor,fs-1)}
  return fit;
 }
 function resizeKeepRatio(node,w,h){if(!node||typeof node.resize!=="function")return;const ratio=Math.max(.01,node.width/Math.max(1,node.height));let nw=w,nh=nw/ratio;if(nh>h){nh=h;nw=nh*ratio}node.resize(Math.max(1,nw),Math.max(1,nh))}
@@ -161,15 +201,15 @@ async function fitTextBinary(node,{x,y,width,height,minFont,maxFont,maxLines=2,l
  if(!node||node.type!=="TEXT")return{ok:true,font:0,lines:0};
  await ensureFont(node);node.visible=visible;if(!visible)return{ok:true,font:0,lines:0};
  node.textAutoResize="HEIGHT";node.x=x;node.y=y;
- let lo=minFont,hi=maxFont,best=null;
+ const rhythm=textRhythm(node);let lo=minFont,hi=maxFont,best=null;
  for(let i=0;i<10;i++){
-  const fs=(lo+hi)/2;node.fontSize=fs;node.lineHeight={unit:"PIXELS",value:fs*lineHeight};node.resize(Math.max(20,width),1);
+  const fs=(lo+hi)/2;applyTextRhythm(node,fs,rhythm);node.resize(Math.max(20,width),1);
   const word=await longestWordWidth(node,fs),lines=Math.max(1,Math.round(node.height/(fs*lineHeight)));
   const ok=node.height<=height+.5&&word<=width+.5&&lines<=maxLines;
   if(ok){best={font:fs,lines,height:node.height};lo=fs}else hi=fs;
  }
- if(!best){node.fontSize=minFont;node.lineHeight={unit:"PIXELS",value:minFont*lineHeight};node.resize(Math.max(20,width),1);const word=await longestWordWidth(node,minFont),lines=Math.max(1,Math.round(node.height/(minFont*lineHeight)));return{ok:node.height<=height+.5&&word<=width+.5&&lines<=maxLines,font:minFont,lines}}
- node.fontSize=best.font;node.lineHeight={unit:"PIXELS",value:best.font*lineHeight};node.resize(Math.max(20,width),1);return{ok:true,font:best.font,lines:best.lines};
+ if(!best){applyTextRhythm(node,minFont,rhythm);node.resize(Math.max(20,width),1);const word=await longestWordWidth(node,minFont),lines=Math.max(1,Math.round(node.height/(minFont*lineHeight)));return{ok:node.height<=height+.5&&word<=width+.5&&lines<=maxLines,font:minFont,lines}}
+ applyTextRhythm(node,best.font,rhythm);node.resize(Math.max(20,width),1);return{ok:true,font:best.font,lines:best.lines};
 }
 function stripNodes(root){return{headline:firstByRole(root,"headline.primary"),copy:firstByRole(root,"copy.secondary"),ctaBg:firstByRole(root,"cta.background"),cta:firstByRole(root,"cta.primary"),hero:allImageLike(root).find(n=>!/background|cta/.test(semanticRole(n)))||null}}
 function rect(n){return n&&n.visible!==false?{l:n.x,t:n.y,r:n.x+n.width,b:n.y+n.height}:null}
@@ -240,7 +280,7 @@ async function restoreLayout(root,snap){for(const s of snap){const n=await byId(
 async function previewDataUrl(root){try{const bytes=await root.exportAsync({format:"PNG",constraint:{type:"SCALE",value:1}});return`data:image/png;base64,${figma.base64Encode(bytes)}`}catch{return undefined}}
 function aiRole(n){const r=semanticRole(n);if(r.includes("background"))return"background";if(r.includes("logo"))return"logo";if(r.includes("headline"))return"headline";if(r.includes("copy"))return"text";if(r.includes("cta"))return"cta";if(r.includes("legal"))return"legal";if(isImageLike(n,r))return"image";return"ui"}
 function aiElement(n){return{id:n.id,role:aiRole(n),kind:n.type,name:n.name||"",text:n.type==="TEXT"?n.characters:"",x:n.x,y:n.y,width:n.width,scale:1,fontSize:n.type==="TEXT"&&n.fontSize!==figma.mixed?Number(n.fontSize)||16:0,lineHeight:n.type==="TEXT"&&n.lineHeight!==figma.mixed&&n.lineHeight?.unit==="PIXELS"?Number(n.lineHeight.value)||0:0,visible:n.visible!==false}}
-async function aiPolish(master,target,token){const before=layoutScore(target),snap=snapshotLayout(target);try{const payload={phase:"review",master:{width:master.width,height:master.height,elements:(master.children||[]).map(aiElement),previewDataUrl:await previewDataUrl(master)},target:{id:getMeta(target,"formatId")||target.id,width:target.width,height:target.height,elements:(target.children||[]).map(aiElement),previewDataUrl:await previewDataUrl(target)},assets:[]};const data=await request("/api/figma/layout-review",{method:"POST",body:payload,token});for(const d of data.elements||[]){const n=await byId(d.id);if(!n||n.removed||formatRoot(n)?.id!==target.id)continue;n.x=clamp(n.x+(Number(d.dx)||0)*target.width/100,0,Math.max(0,target.width-n.width));n.y=clamp(n.y+(Number(d.dy)||0)*target.height/100,0,Math.max(0,target.height-n.height));if(typeof n.resize==="function"&&Number(d.dScale)){const f=clamp(1+(Number(d.dScale)||0)/100,.85,1.15);n.resize(Math.max(1,n.width*f),Math.max(1,n.height*f))}if(n.type==="TEXT"&&n.fontSize!==figma.mixed&&Number(d.dFontSize)){await ensureFont(n);n.fontSize=clamp(Number(n.fontSize)+(Number(d.dFontSize)||0),8,72);n.lineHeight={unit:"PIXELS",value:Number(n.fontSize)*1.06}}}if(layoutScore(target)>before+.5){await restoreLayout(target,snap);meta(target,"aiLayout","rejected");return false}meta(target,"aiLayout",data.model||data.provider||"review");return true}catch(error){await restoreLayout(target,snap);meta(target,"aiLayout",`error:${error instanceof Error?error.message:String(error)}`);return false}}
+async function aiPolish(master,target,token){const before=layoutScore(target),snap=snapshotLayout(target);try{const payload={phase:"review",master:{width:master.width,height:master.height,elements:(master.children||[]).map(aiElement),previewDataUrl:await previewDataUrl(master)},target:{id:getMeta(target,"formatId")||target.id,width:target.width,height:target.height,elements:(target.children||[]).map(aiElement),previewDataUrl:await previewDataUrl(target)},assets:[]};const data=await request("/api/figma/layout-review",{method:"POST",body:payload,token});for(const d of data.elements||[]){const n=await byId(d.id);if(!n||n.removed||formatRoot(n)?.id!==target.id)continue;n.x=clamp(n.x+(Number(d.dx)||0)*target.width/100,0,Math.max(0,target.width-n.width));n.y=clamp(n.y+(Number(d.dy)||0)*target.height/100,0,Math.max(0,target.height-n.height));if(typeof n.resize==="function"&&Number(d.dScale)){const f=clamp(1+(Number(d.dScale)||0)/100,.85,1.15);n.resize(Math.max(1,n.width*f),Math.max(1,n.height*f))}if(n.type==="TEXT"&&n.fontSize!==figma.mixed&&Number(d.dFontSize)){await ensureFont(n);const rhythm=textRhythm(n);applyTextRhythm(n,clamp(Number(n.fontSize)+(Number(d.dFontSize)||0),8,72),rhythm)}}if(layoutScore(target)>before+.5){await restoreLayout(target,snap);meta(target,"aiLayout","rejected");return false}meta(target,"aiLayout",data.model||data.provider||"review");return true}catch(error){await restoreLayout(target,snap);meta(target,"aiLayout",`error:${error instanceof Error?error.message:String(error)}`);return false}}
 
 
 async function syncMasterIntoRoot(master,root){
@@ -256,11 +296,11 @@ async function syncMasterIntoRoot(master,root){
  cleanupLegacyDuplicates(root);
  return{created,updated,tracks};
 }
-async function syncNestedSlots(source,target){let created=0,updated=0,tracks=0;if(!("children"in source)||!("children"in target)||typeof target.appendChild!=="function")return{created,updated,tracks};for(const[index,child]of(source.children||[]).entries()){const role=roleFor(child,index);setRole(child,role);meta(child,"masterSourceId",child.id);let linked=target.findAll(n=>getMeta(n,"masterSourceId")===child.id)[0]||null;if(!linked){linked=child.clone();target.appendChild(linked);markManaged(linked,child,role);await adaptNewLayer(child,linked,source,target,role);created++}else{markManaged(linked,child,role);tracks+=await syncExisting(child,linked,source,target);const nested=await syncNestedSlots(child,linked);created+=nested.created;updated+=nested.updated;tracks+=nested.tracks;updated++}}return{created,updated,tracks}}
+async function syncNestedSlots(source,target){let created=0,updated=0,tracks=0;if(!("children"in source)||!("children"in target)||typeof target.appendChild!=="function")return{created,updated,tracks};for(const[index,child]of(source.children||[]).entries()){const role=roleFor(child,index);setRole(child,role);meta(child,"masterSourceId",child.id);let linked=layerForSource(target,child,role);if(!linked){linked=child.clone();target.appendChild(linked);markClonedTree(child,linked,role);await adaptNewLayer(child,linked,source,target,role);created++}else{markManaged(linked,child,role);tracks+=await syncExisting(child,linked,source,target);const nested=await syncNestedSlots(child,linked);created+=nested.created;updated+=nested.updated;tracks+=nested.tracks;updated++}}return{created,updated,tracks}}
 async function copyVisualState(source,target){
  target.visible=source.visible;
  if(source.type==="TEXT"&&target.type==="TEXT"){
-  await ensureFont(target);target.characters=source.characters;
+  await ensureFont(target);if(source.fontName!==figma.mixed){await figma.loadFontAsync(source.fontName);target.fontName=clone(source.fontName)}target.characters=source.characters;
   if(source.fontSize!==figma.mixed)target.fontSize=source.fontSize;
   if(source.lineHeight!==figma.mixed)target.lineHeight=clone(source.lineHeight);
   target.textAutoResize=source.textAutoResize;
@@ -272,25 +312,22 @@ async function copyVisualState(source,target){
  if(typeof target.resize==="function")target.resize(Math.max(1,source.width),Math.max(1,source.height));
  target.x=source.x;target.y=source.y;
 }
-async function commitWorkingStrip(real,working,master){
- migrateLegacyRoles(real);cleanupLegacyDuplicates(real);
- const workManaged=(working.children||[]).filter(n=>getMeta(n,"masterSourceId")||CORE_ROLES.has(semanticRole(n)));
- for(const wn of workManaged){
-  const sid=getMeta(wn,"masterSourceId"),role=semanticRole(wn);
-  let rn=(sid&&real.findAll(n=>getMeta(n,"masterSourceId")===sid)[0])||real.findAll(n=>semanticRole(n)===role)[0]||null;
+async function commitWorkingChildren(real,working){
+ for(const wn of working.children||[]){
+  const sid=getMeta(wn,"masterSourceId");if(!sid)continue;
+  let rn=(real.children||[]).find(n=>getMeta(n,"masterSourceId")===sid);
+  // A first sync may be adopting one unlinked placeholder; never search other groups.
+  if(!rn){const matches=(real.children||[]).filter(n=>!getMeta(n,"masterSourceId")&&n.type===wn.type&&semanticRole(n)===semanticRole(wn));if(matches.length===1)rn=matches[0]}
   if(!rn){rn=wn.clone();real.appendChild(rn)}
   await copyVisualState(wn,rn);
-  if(sid){meta(rn,"masterSourceId",sid);meta(rn,"managedBy","bannermatic")}
-  if(role)setRole(rn,role);
+  meta(rn,"masterSourceId",sid);meta(rn,"managedBy","bannermatic");setRole(rn,semanticRole(wn));
+  if("children"in rn&&"children"in wn&&typeof rn.appendChild==="function")await commitWorkingChildren(rn,wn);
  }
- cleanupLegacyDuplicates(real);
+}
+async function commitWorkingStrip(real,working,master){
+ await commitWorkingChildren(real,working);
  const inv=strictRoleInventory(real);if(!inv.ok)throw Error(`commit inventory ${inv.issues.join(",")}`);
- // motion is committed only after visual validation passed
- for(const[sourceIndex,source]of(master.children||[]).entries()){
-  const role=roleFor(source,sourceIndex),sid=source.id;
-  const target=real.findAll(n=>getMeta(n,"masterSourceId")===sid)[0]||real.findAll(n=>semanticRole(n)===role)[0];
-  if(target)await syncMotion(source,target,["motion","timing","easing"]);
- }
+ // Motion is applied recursively only after updateResizes finishes layout and AI.
 }
 async function transactionalStrip(master,real){
  const working=real.clone();working.x=real.x+100000;working.y=real.y;
@@ -319,17 +356,17 @@ async function updateResizes({includeFormatIds=null,useAi=false}={}){if(!RUNTIME
  const master=await ensureMaster(c.spec.campaignId);if(!master)throw Error("No Master format found");
  migrateLegacyRoles(master);ensureHeroRole(master);prepareMasterSlots(master);cleanupLegacyDuplicates(master);
  let targets=canonicalRoots(c.spec,c.spec.campaignId).filter(r=>r.id!==master.id);
- if(Array.isArray(includeFormatIds)&&includeFormatIds.length){const allowed=new Set(includeFormatIds);targets=targets.filter(r=>allowed.has(getMeta(r,"formatId")))}
+ if(Array.isArray(includeFormatIds)){const allowed=new Set(includeFormatIds);targets=targets.filter(r=>allowed.has(getMeta(r,"formatId")))}
  let created=0,updated=0,tracks=0,aiReviewed=0,invalid=0,stripValid=0,stripInvalid=0;
  const stripErrors=[];
  for(const root of targets){
   if(familyFor(root.width,root.height)==="Strip"){
    const r=await transactionalStrip(master,root);
-   if(r.ok){stripValid++;if(useAi&&await aiPolish(master,root,c.token))aiReviewed++}else{stripInvalid++;invalid++;stripErrors.push(`${Math.round(root.width)}×${Math.round(root.height)}: ${r.issues.join("; ")}`)}
+   if(r.ok){stripValid++;if(useAi&&await aiPolish(master,root,c.token))aiReviewed++;tracks+=await syncFinalMotion(master,root)}else{stripInvalid++;invalid++;stripErrors.push(`${Math.round(root.width)}×${Math.round(root.height)}: ${r.issues.join("; ")}`)}
    continue;
   }
   const s=await syncMasterIntoRoot(master,root);created+=s.created;updated+=s.updated;tracks+=s.tracks;
-  await smartLayout(root);const score=layoutScore(root);if(score>1)invalid++;if(useAi&&score<=1&&await aiPolish(master,root,c.token))aiReviewed++;
+  await smartLayout(root);const score=layoutScore(root);if(score>1)invalid++;if(useAi&&score<=1&&await aiPolish(master,root,c.token))aiReviewed++;tracks+=await syncFinalMotion(master,root);
  }
  return{master:masterState(master),targets:targets.length,created,updated,tracks,aiReviewed,invalid,stripValid,stripInvalid,stripErrors};
 }
@@ -401,10 +438,22 @@ async function publish(){
  if(formats.length!==roots.length)throw Error(`Export incomplete: ${formats.length}/${roots.length} formats`);
  return request("/api/figma/creative-publish",{method:"POST",token:c.token,body:{formats}});
 }
+async function previewFormats(){
+ const connection=await currentConnection();if(!connection)throw Error("Connect a campaign first");
+ const previews=[];
+ for(const root of canonicalRoots(connection.spec,connection.spec.campaignId)){
+  let image=null,error=null;
+  try{const bytes=await root.exportAsync({format:"PNG",constraint:{type:"SCALE",value:Math.min(1,480/Math.max(root.width,root.height))}});image=`data:image/png;base64,${figma.base64Encode(bytes)}`}
+  catch(e){error=e instanceof Error?e.message:String(e)}
+  previews.push({formatId:getMeta(root,"formatId"),width:root.width,height:root.height,image,error});
+ }
+ return previews;
+}
 async function state(){const c=await currentConnection();let master=null,ms=null;if(c){master=await ensureMaster(c.spec.campaignId);ms=masterState(master);if(ms)ms.resizes=Math.max(0,canonicalRoots(c.spec,c.spec.campaignId).length-1)}return{connection:c?{campaignId:c.spec.campaignId,campaignName:c.spec.campaignName,formats:c.spec.formats||[],placements:(c.spec.formats||[]).reduce((n,f)=>n+(f.placementIds?.length||0),0),mediaPlanVersion:c.spec.mediaPlanVersion,ttSnapshotVersion:c.spec.ttSnapshotVersion,creativeVersion:c.spec.creativeVersion}:null,master:ms}}
 async function setSelectedAsMaster(){const s=figma.currentPage.selection||[];if(s.length!==1)throw Error("Select one format or a layer inside it");const r=formatRoot(s[0]);if(!r)throw Error("Selection is not inside a campaign format");const campaign=getMeta(r,"campaignId");for(const root of campaignRoots(campaign))meta(root,"isMaster",root.id===r.id?"true":"false");masterId=r.id;await ensureMaster(campaign);return masterState(r)}
 
 figma.ui.onmessage=async m=>{try{
+ if(m.type==="preview-formats"){figma.ui.postMessage({type:"format-previews",previews:await previewFormats()});return}
  if(m.type==="status"){figma.ui.postMessage({type:"status",...(await state())});return}
  if(m.type==="pair"){figma.ui.postMessage({type:"paired",result:await pair(String(m.code||"").replace(/\D/g,"")),...(await state())});return}
  if(m.type==="sync-formats"){const c=await currentConnection();if(!c)throw Error("Connect a campaign first");const result=await syncFromCloud(c.token);await ensureMaster(c.spec.campaignId);figma.ui.postMessage({type:"formats-synced",result,...(await state())});return}
