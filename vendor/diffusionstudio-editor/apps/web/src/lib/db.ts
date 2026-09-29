@@ -252,6 +252,18 @@ export async function loadProjectBundle(projectId: string): Promise<string | nul
   }
 }
 
+/** The cached bundle together with its timestamp, for server/local conflict resolution. */
+export async function loadProjectBundleRecord(projectId: string): Promise<ProjectBundle | null> {
+  if (!projectId) return null;
+  try {
+    const db = await dbPromise;
+    return (await db.get('bundles', projectId)) ?? null;
+  } catch (e) {
+    console.error('Failed to load project bundle record', e);
+    return null;
+  }
+}
+
 /** Forgets a project's bundle, for when the project itself is deleted. */
 export async function forgetProjectBundle(projectId: string): Promise<void> {
   if (!projectId) return;
