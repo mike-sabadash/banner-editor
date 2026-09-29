@@ -60,35 +60,33 @@ export function EditorPage(props: { standalone?: boolean; standaloneBundle?: str
   createEffect(() => {
     if (props.standalone) {
       const bundle=props.standaloneBundle||STANDALONE_PROJECT_BUNDLE;
-      const mounted = mount(bundle, world);
-      // Offline image/video capture remounts the same bundle in an isolated
-      // render world. Keep the exact live Campaign bundle in IndexedDB so
-      // production exports cannot drift from the scenes visible on canvas.
-      void rememberProjectBundle(untrack(project.id),bundle);
-      setInspectEntries(world, mounted.inspect);
-      // Browser standalone still needs the same edit/history bridge as a normal
-      // project. Without initializing these services the UI renders, but editor
-      // commands and controls have no active editing lifecycle.
-      const editor = getDocumentEditor(world);
-      getEditHistory(world).reset();
-      // The upstream UI assumes every opened project has an attached Library.
-      // Standalone mode has no host folder, so attach a browser-local library
-      // service before controls mount. This keeps import/drop/tool commands on
-      // the same upstream code paths instead of leaving them inert.
-      const standaloneLibrary = attachLibrary(world, `__browser_standalone__:${untrack(project.id)}`);
-      void standaloneLibrary.load().catch(error => toast.error('Could not restore campaign assets', { description: (error as Error).message }));
-      if (!getActiveEntity(world)) {
-        const firstScene = world.queryFirst(Scene);
-        if (firstScene) setActive(world, firstScene);
-      }
-      const standaloneWriter = createEditWriter(`__browser_standalone__:${untrack(project.id)}`,world);
-      const stopWriting=editor.onEdit(edit=>standaloneWriter.push(edit));
-      editor.clearSelection();
+      const projectId=untrack(project.id),dir=`__browser_standalone__:${projectId}`;
+      // Asset resolution must finish before JSX mounts. Mounting first leaves
+      // ImagePaint with an unresolved source; a late empty library load can
+      // also remove media that the user has just imported.
+      const standaloneLibrary = attachLibrary(world, dir);
+      let disposed=false,mounted:Mount|undefined,standaloneWriter:EditWriter|undefined,stopWriting:(()=>void)|undefined;
+      void standaloneLibrary.load().then(()=>{
+        if(disposed)return;
+        mounted=mount(bundle,world);
+        void rememberProjectBundle(projectId,bundle);
+        setInspectEntries(world,mounted.inspect);
+        const editor=getDocumentEditor(world);
+        getEditHistory(world).reset();
+        if(!getActiveEntity(world)){
+          const firstScene=world.queryFirst(Scene);
+          if(firstScene)setActive(world,firstScene);
+        }
+        standaloneWriter=createEditWriter(dir,world);
+        stopWriting=editor.onEdit(edit=>standaloneWriter?.push(edit));
+        editor.clearSelection();
+      }).catch(error=>toast.error('Could not restore campaign assets',{description:(error as Error).message}));
       onCleanup(() => {
-        stopWriting();
-        standaloneWriter.dispose();
+        disposed=true;
+        stopWriting?.();
+        standaloneWriter?.dispose();
         standaloneLibrary.dispose();
-        mounted.dispose();
+        mounted?.dispose();
         setInspectEntries(world, []);
       });
       return;

@@ -51,6 +51,7 @@ class EditWriter {
 	private sent: UnrollEdit[] = [];
 	private timer: ReturnType<typeof setTimeout> | undefined;
 	private disposed = false;
+	private writes = new Set<Promise<void>>();
 
 	public constructor(dir: string, world: World) {
 		this.dir = dir;
@@ -105,8 +106,19 @@ class EditWriter {
 		clearTimeout(this.timer);
 		// The last edits still belong in the file, even though the entities
 		// they came from are on their way out.
-		this.flush();
+		void this.flushNow();
 		this.disposed = true;
+	}
+
+	/** Forces the debounce and waits until every dependent standalone write lands. */
+	public async flushNow(): Promise<void> {
+		clearTimeout(this.timer);
+		this.timer = undefined;
+		for (;;) {
+			this.flush();
+			if (!this.writes.size) return;
+			await Promise.all([...this.writes]);
+		}
 	}
 
 	/**
@@ -242,11 +254,13 @@ class EditWriter {
 		this.texts = heldTexts;
 		this.removes = heldRemoves;
 
-		writeProject(this.dir, edits)
+		const write = writeProject(this.dir, edits)
 			.then((result) => this.report(result))
 			.catch((error: unknown) => {
 				toast.error('Could not write to the project', { description: message(error) });
-			});
+			})
+			.finally(() => this.writes.delete(write));
+		this.writes.add(write);
 	}
 
 	/**
@@ -385,7 +399,16 @@ const pendingsOf = (unroll: UnrollEdit): string[] => {
  * write itself may have invalidated.
  */
 export function createEditWriter(dir: string, world: World): EditWriter {
-	return new EditWriter(dir, world);
+	const writer = new EditWriter(dir, world);
+	activeWriters.set(dir, writer);
+	return writer;
+}
+
+const activeWriters = new Map<string, EditWriter>();
+
+/** Flushes the live editor writer before rollout reads its cached bundle. */
+export async function flushProjectEdits(dir: string): Promise<void> {
+	await activeWriters.get(dir)?.flushNow();
 }
 
 export type { EditWriter };
