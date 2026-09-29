@@ -77,7 +77,7 @@ describe('Diffusion campaign runtime bundle',()=>{
    {source:'master-headline',tag:'Text',parent:'master-group',props:{name:'Headline',x:18,y:32,width:180,height:48,fontSize:28,fill:'#ffffff',start:0,end:6},text:'MASTER COPY'},
   );
   const first=rolloutCampaignBundle(campaign,'fmt-240x400',encodeStandaloneBundle(initial));
-  expect(first.generated).toBe(5);expect(new Set(first.families)).toEqual(new Set(['landscape','tall','square','micro-strip']));
+  expect(first.generated).toBe(5);expect(new Set(first.families)).toEqual(new Set(['rectangle','tall','strip','micro-strip']));
   let model=decodeStandaloneBundle(first.bundle)!;
   for(const format of campaign.formats.filter(item=>item.id!=='fmt-240x400')){
    const scene=`bannermatic:campaign-1:${format.id}`;
@@ -85,7 +85,7 @@ describe('Diffusion campaign runtime bundle',()=>{
    expect(model.nodes.some(node=>node.link?.source==='master-headline'&&node.text==='MASTER COPY')).toBe(true);
   }
   const source=model.nodes.find(node=>node.source==='master-headline')!;source.text='UPDATED COPY';source.props={...source.props,x:24};
-  const target=model.nodes.find(node=>node.link?.source==='master-headline'&&node.link.family==='square')!;target.props={...target.props,x:77};
+  const target=model.nodes.find(node=>node.link?.source==='master-headline'&&node.link.family==='rectangle')!;target.props={...target.props,x:77};
   model=decodeStandaloneBundle(rolloutCampaignBundle(campaign,'fmt-240x400',encodeStandaloneBundle(model)).bundle)!;
   const updated=model.nodes.find(node=>node.source===target.source)!;
   expect(updated.text).toBe('UPDATED COPY');expect(updated.props.x).toBe(77);
