@@ -18,7 +18,7 @@ import { mount } from '@diffusionstudio/reconciler';
 import { getDocumentEditor } from '@/engine/editor';
 import { getEditHistory } from '@/engine/history';
 import { setInspectEntries } from '@/engine/inspect';
-import { attachLibrary } from '@/engine/library';
+import { attachLibrary, detachLibrary } from '@/engine/library';
 import { isLibraryFile } from '@/engine/library';
 import { attachAi } from '@/utils/gen-ai';
 import { attachProjectConfig, isProjectConfigFile } from '@/engine/project-config';
@@ -85,6 +85,7 @@ export function EditorPage(props: { standalone?: boolean; standaloneBundle?: str
         disposed=true;
         stopWriting?.();
         standaloneWriter?.dispose();
+        detachLibrary(dir, standaloneLibrary);
         standaloneLibrary.dispose();
         mounted?.dispose();
         setInspectEntries(world, []);
@@ -228,6 +229,7 @@ export function EditorPage(props: { standalone?: boolean; standaloneBundle?: str
       unwatch();
       unmount();
       config.dispose();
+      detachLibrary(dir, library);
       library.dispose();
     });
   });
