@@ -3,7 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import { useWorld } from "@diffusionstudio/koota-solid";
-import { findSceneAt, screenToWorld, worldToLocal, Library, Root } from "@diffusionstudio/runtime";
+import { findSceneAt, getActiveEntity, screenToWorld, worldToLocal, Library, Name, Root } from "@diffusionstudio/runtime";
 import { CameraController, EngineCanvas } from "@/engine";
 import { insertAsset } from "@/engine/insert-asset";
 import { droppedFiles, importFiles } from "@/engine/asset-actions";
@@ -13,6 +13,7 @@ import { DesktopAppBanner } from "./desktop-app-banner";
 import { toast } from "somoto"
 import { SceneInitOverlay } from "./scene-init-overlay";
 import { ASSET_DRAG_TYPE } from "@/components/sidebar-left/folder-item";
+import { formatIdFromSceneName } from '@/bannermatic/campaign';
 
 import type { Asset } from "@diffusionstudio/assets";
 
@@ -37,7 +38,14 @@ export function Canvas() {
 
     const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
     const worldPt = screenToWorld(world, event.clientX - rect.left, event.clientY - rect.top);
-    const scene = findSceneAt(world, worldPt.x, worldPt.y);
+    const hitScene = findSceneAt(world, worldPt.x, worldPt.y);
+    // Campaign documents are format-first: media must belong to a format so
+    // its timeline, rollout and persistence all see the same node. A drop can
+    // miss a small artboard by a few pixels (especially with an oversized
+    // image); in that case use the active campaign format instead of Stage.
+    const active = getActiveEntity(world);
+    const campaignScene = active && formatIdFromSceneName(active.get(Name)?.value) ? active : null;
+    const scene = hitScene ?? campaignScene;
     const parent = scene ?? world.get(Root)!;
     const localPt = scene ? worldToLocal(world, scene, worldPt.x, worldPt.y) : worldPt;
 
