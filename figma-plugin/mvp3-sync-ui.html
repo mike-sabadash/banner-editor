@@ -1,0 +1,60 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+*{box-sizing:border-box}body{margin:0;padding:16px;font:12px/1.45 Inter,Arial,sans-serif;background:var(--figma-color-bg);color:var(--figma-color-text)}
+h1{font-size:19px;margin:0 0 2px}.sub{color:var(--figma-color-text-secondary);margin-bottom:14px}.card{border:1px solid var(--figma-color-border);border-radius:12px;padding:13px;margin-bottom:10px}.eyebrow{font-size:9px;letter-spacing:.12em;color:var(--figma-color-text-secondary);text-transform:uppercase}.pair{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:10px}.pair input{height:42px;padding:0 10px;border:1px solid var(--figma-color-border);border-radius:9px;background:var(--figma-color-bg);color:inherit;font:700 19px/1 monospace;letter-spacing:.18em;text-align:center}.pair button,button{min-height:38px;border:1px solid var(--figma-color-border);border-radius:9px;background:var(--figma-color-bg-secondary);color:inherit;padding:0 12px;font:inherit}.primary{background:var(--figma-color-bg-brand,#0d99ff);border-color:transparent;color:#fff;font-weight:650}.status{margin-top:9px;padding:9px 10px;border-radius:9px;background:var(--figma-color-bg-secondary);color:var(--figma-color-text-secondary)}.ok{color:#14ae5c}.danger{color:#d92d20}.campaign{display:none}.campaign.on{display:block}.campaign-id{font:9px/1.3 monospace;color:var(--figma-color-text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:4px}.journey{display:flex;align-items:center;gap:6px;margin:8px 0 12px;color:var(--figma-color-text-secondary);font-size:10px}.journey b{color:var(--figma-color-text)}.journey i{font-style:normal;color:#14ae5c}.meta{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:10px 0}.meta div{border:1px solid var(--figma-color-border);border-radius:9px;padding:8px}.meta span{display:block;color:var(--figma-color-text-secondary);font-size:9px}.meta b{font-size:12px}.format-list{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 10px}.format-list span{border:1px solid var(--figma-color-border);background:var(--figma-color-bg-secondary);border-radius:999px;padding:4px 7px;font:600 10px/1 monospace}.sync-card{margin-top:10px;padding-top:12px;border-top:1px solid var(--figma-color-border)}.sync-title{display:flex;justify-content:space-between;align-items:start;gap:8px}.sync-title b{font-size:13px}.master-hero{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;margin:10px 0;padding:12px;border:1px solid var(--figma-color-border);border-radius:10px;background:var(--figma-color-bg-secondary)}.master-hero span,.master-hero small{display:block;color:var(--figma-color-text-secondary);font-size:9px}.master-hero b{display:block;font-size:13px;margin:2px 0}.linked-count{text-align:right}.linked-count b{font-size:22px}.sync-button{width:100%;min-height:42px}.note{font-size:10px;color:var(--figma-color-text-secondary);margin-top:8px}.actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}.disconnect{border:0;background:transparent;color:var(--figma-color-text-secondary);padding:0;margin-top:8px;min-height:28px}details{margin-top:12px;border-top:1px solid var(--figma-color-border);padding-top:10px}summary{cursor:pointer;color:var(--figma-color-text-secondary);font-weight:600}.advanced-body{margin-top:8px;padding:10px;border:1px solid var(--figma-color-border);border-radius:9px}.advanced-row{display:grid;grid-template-columns:1fr auto;gap:7px;align-items:center}
+</style>
+</head>
+<body>
+<h1>Bannermatic</h1><div class="sub">Figma Creative Workspace · Smart Resize</div>
+<section id="connect" class="card">
+ <div class="eyebrow">CONTINUE A CLOUD CAMPAIGN</div><b>Enter the one-time code from Bannermatic Cloud</b>
+ <div class="pair"><input id="code" maxlength="6" inputmode="numeric" autocomplete="one-time-code" placeholder="000000"><button id="pair" class="primary">Continue</button></div>
+ <div id="connect-status" class="status">Open the Campaign in Bannermatic Cloud and choose Continue in Figma.</div>
+</section>
+<section id="campaign" class="card campaign">
+ <div class="eyebrow">SAME CAMPAIGN · FIGMA WORKSPACE</div><h2 id="name" style="font-size:16px;margin:5px 0 0">Campaign</h2><div id="campaign-id" class="campaign-id"></div>
+ <div class="journey"><i>✓ Browser</i><span>→</span><b>Continue in Figma</b><span>→</span><span>Publish to Cloud</span></div>
+ <div class="meta"><div><span>Required formats</span><b id="formats">0</b></div><div><span>Placements</span><b id="placements">0</b></div><div><span>Media Plan</span><b id="plan">v0</b></div><div><span>TT snapshot</span><b id="tt">v0</b></div></div>
+ <div id="format-list" class="format-list"></div>
+ <div class="sync-card">
+  <div class="sync-title"><div><div class="eyebrow">SMART RESIZE</div><b>Master → all formats</b></div><span class="ok">Auto</span></div>
+  <div class="master-hero"><div><span>Master</span><b id="master-name">Detecting…</b><small id="master-meta">—</small></div><div class="linked-count"><b id="resize-count">0</b><span>resizes linked</span></div></div>
+  <button id="update-resizes" class="primary sync-button">Update resizes</button>
+  <div class="note">Text wraps inside its existing box. Local resize positions and sizes stay untouched. New Master layers are added automatically.</div>
+  <details><summary>Advanced</summary><div class="advanced-body"><div class="advanced-row"><div><b>Change Master</b><div class="note" style="margin-top:2px">Select another format or a layer inside it.</div></div><button id="set-master">Set selected</button></div></div></details>
+ </div>
+ <div class="actions"><button id="sync-formats">Add missing formats</button><button id="publish" class="primary">Publish to Cloud</button></div>
+ <div id="status" class="status">Ready.</div>
+ <button id="disconnect" class="disconnect">Disconnect this Figma file</button>
+</section>
+<script>
+const $=s=>document.querySelector(s),send=(type,extra={})=>parent.postMessage({pluginMessage:{type,...extra}},'*');
+let connection=null,master=null;
+function show(){const on=!!connection;$('#connect').style.display=on?'none':'block';$('#campaign').classList.toggle('on',on);if(!on)return;const fs=connection.formats||[];$('#name').textContent=connection.campaignName||'Campaign';$('#campaign-id').textContent=connection.campaignId||'';$('#formats').textContent=fs.length;$('#placements').textContent=connection.placements??0;$('#plan').textContent=`v${connection.mediaPlanVersion??0}`;$('#tt').textContent=`v${connection.ttSnapshotVersion??0}`;$('#format-list').innerHTML=fs.map(f=>`<span>${f.size||`${f.width}×${f.height}`}</span>`).join('');renderMaster()}
+function renderMaster(){if(master){$('#master-name').textContent=master.name||'Master';$('#master-meta').textContent=`${master.size||''} · ${master.layers||0} layers`;$('#resize-count').textContent=master.resizes??Math.max(0,(connection?.formats?.length||1)-1);$('#update-resizes').disabled=false}else{$('#master-name').textContent='Detecting…';$('#master-meta').textContent='Connect campaign';$('#resize-count').textContent='0';$('#update-resizes').disabled=true}}
+function status(text,kind=''){const el=$('#status');el.textContent=text;el.className=`status ${kind}`}
+$('#code').oninput=e=>e.target.value=e.target.value.replace(/\D/g,'').slice(0,6);
+$('#pair').onclick=()=>{const code=$('#code').value;if(code.length!==6){$('#connect-status').textContent='Enter the 6-digit code.';return}$('#pair').disabled=true;$('#connect-status').textContent='Opening campaign…';send('pair',{code})};
+$('#update-resizes').onclick=()=>{$('#update-resizes').disabled=true;status('Updating all resizes…');send('update-resizes')};
+$('#sync-formats').onclick=()=>{status('Checking Cloud formats…');send('sync-formats')};
+$('#set-master').onclick=()=>{status('Changing Master…');send('set-master')};
+$('#publish').onclick=()=>{status('Publishing…');send('publish')};
+$('#disconnect').onclick=()=>send('disconnect');
+window.onmessage=e=>{const m=e.data.pluginMessage;if(!m)return;
+ if(m.connection!==undefined){connection=m.connection;master=m.master||master;show()}
+ if(m.type==='status')return;
+ if(m.type==='paired'){$('#pair').disabled=false;connection=m.connection;master=m.master;show();status(`Campaign connected · ${m.result.synced?.created||0} missing format(s) created.`,'ok');return}
+ if(m.type==='formats-synced'){connection=m.connection;master=m.master;show();status(m.result.created?`${m.result.created} missing format(s) added.`:'All required formats already exist.','ok');return}
+ if(m.type==='resizes-updated'){connection=m.connection;master=m.master||m.result.master;show();$('#update-resizes').disabled=false;status(`Updated ${m.result.targets} resizes · ${m.result.created} new layer(s) added · local layouts preserved.`,'ok');return}
+ if(m.type==='master-set'){master=m.master;renderMaster();status(`${master.name} is now the Master.`,'ok');return}
+ if(m.type==='published'){status('Published to Cloud.','ok');return}
+ if(m.type==='disconnected'){connection=null;master=null;$('#code').value='';$('#connect-status').textContent='Disconnected. Enter a new campaign code.';show();return}
+ if(m.type==='error'){$('#pair').disabled=false;$('#update-resizes').disabled=!master;$('#connect-status').textContent=m.message;status(m.message,'danger')}
+};
+send('status');
+</script>
+</body>
+</html>
