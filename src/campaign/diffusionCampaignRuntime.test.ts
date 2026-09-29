@@ -51,7 +51,22 @@ describe('Diffusion campaign runtime bundle',()=>{
    {source:'text',tag:'text',parent:'scene',props:{}},
   ]};
   const marker=`/* BANNERMATIC_STANDALONE_MODEL:${btoa(JSON.stringify(legacy))} */`;
-  expect(decodeStandaloneBundle(marker)?.nodes.map(node=>node.tag)).toEqual(['Stage','Scene','Rect','Text']);
+ expect(decodeStandaloneBundle(marker)?.nodes.map(node=>node.tag)).toEqual(['Stage','Scene','Rect','Text']);
+ });
+
+ it('keeps imported media bytes and manifest through rebuild and rollout',()=>{
+  const initial=decodeStandaloneBundle(buildCampaignBundle(campaign,'fmt-240x400'))!;
+  initial.assets={manifest:{version:1,assets:[{path:'persist.png'}]},files:[{path:'assets/persist.png',mimeType:'image/png',dataBase64:'aW1hZ2UtYnl0ZXM='}]};
+  const master='bannermatic:campaign-1:fmt-240x400';
+  initial.nodes.push(
+   {source:'media-box',tag:'Rect',parent:master,props:{name:'persist',width:120,height:80,start:0,end:6}},
+   {source:'media-paint',tag:'ImagePaint',parent:'media-box',props:{src:'persist.png'}},
+  );
+  const rebuilt=decodeStandaloneBundle(buildCampaignBundle(campaign,'fmt-240x400',encodeStandaloneBundle(initial)))!;
+  expect(rebuilt.assets).toEqual(initial.assets);
+  const rolled=decodeStandaloneBundle(rolloutCampaignBundle(campaign,'fmt-240x400',encodeStandaloneBundle(rebuilt)).bundle)!;
+  expect(rolled.assets).toEqual(initial.assets);
+  expect(rolled.nodes.some(node=>node.tag==='ImagePaint'&&node.props.src==='persist.png')).toBe(true);
  });
 
  it('rolls one completed master into all close format families, propagates shared edits and retains target overrides',()=>{

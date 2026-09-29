@@ -29,6 +29,7 @@ import { compileProject, isWindowsDesktop, refreshProject, watchProject } from '
 import { captureProjectCover } from '@/projects/cover';
 import { useProject } from "@/context/project";
 import { useEngineContext } from "@/engine";
+import { Scene, getActiveEntity, setActive } from '@diffusionstudio/runtime';
 
 import type { Mount } from '@diffusionstudio/reconciler';
 import type { EditWriter } from '@/projects/edits';
@@ -74,7 +75,12 @@ export function EditorPage(props: { standalone?: boolean; standaloneBundle?: str
       // Standalone mode has no host folder, so attach a browser-local library
       // service before controls mount. This keeps import/drop/tool commands on
       // the same upstream code paths instead of leaving them inert.
-      const standaloneLibrary = attachLibrary(world, '__browser_standalone__');
+      const standaloneLibrary = attachLibrary(world, `__browser_standalone__:${untrack(project.id)}`);
+      void standaloneLibrary.load().catch(error => toast.error('Could not restore campaign assets', { description: (error as Error).message }));
+      if (!getActiveEntity(world)) {
+        const firstScene = world.queryFirst(Scene);
+        if (firstScene) setActive(world, firstScene);
+      }
       const standaloneWriter = createEditWriter(`__browser_standalone__:${untrack(project.id)}`,world);
       const stopWriting=editor.onEdit(edit=>standaloneWriter.push(edit));
       editor.clearSelection();
