@@ -817,7 +817,7 @@ export default function Editor() {
   return (
     <div className={`v2-app theme-${theme}`}>
       <header className="v2-top">
-        <div className="v2-logo">B</div>
+        <div className="v2-logo"><img src="/bannermatic-logo.png" alt="Bannermatic" /></div>
         <div>
           <b>Untitled campaign</b>
           <small>Local draft</small>
@@ -1609,4 +1609,3 @@ export default function Editor() {
     </div>
   );
 }
-

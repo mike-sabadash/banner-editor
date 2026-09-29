@@ -364,7 +364,7 @@ export default function EditorCoreV2() {
     >
       <header className="core-topbar">
         <div className="core-brand">
-          <b>B</b>
+          <b><img src="/bannermatic-logo.png" alt="Bannermatic" /></b>
           <button
             className="core-back"
             onClick={() => {
