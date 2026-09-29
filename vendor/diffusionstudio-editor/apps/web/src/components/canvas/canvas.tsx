@@ -3,7 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import { useWorld } from "@diffusionstudio/koota-solid";
-import { findSceneAt, getActiveEntity, screenToWorld, worldToLocal, Library, Name, Root } from "@diffusionstudio/runtime";
+import { findSceneAt, getActiveEntity, screenToWorld, worldToLocal, Library, Name, Root, setActive } from "@diffusionstudio/runtime";
 import { CameraController, EngineCanvas } from "@/engine";
 import { insertAsset } from "@/engine/insert-asset";
 import { droppedFiles, importFiles } from "@/engine/asset-actions";
@@ -48,6 +48,7 @@ export function Canvas() {
     const scene = hitScene ?? campaignScene;
     const parent = scene ?? world.get(Root)!;
     const localPt = scene ? worldToLocal(world, scene, worldPt.x, worldPt.y) : worldPt;
+    if (scene) setActive(world, scene);
 
     const place = (asset: Asset) => {
       const size = 'width' in asset && 'height' in asset ? { width: asset.width, height: asset.height } : { width: 500, height: 150 };
