@@ -13,26 +13,53 @@ export function requiredOutputs(campaign:BannermaticCampaign,format:CampaignForm
 export function sceneName(format:CampaignFormat){return`${SCENE_PREFIX}${format.id}::${format.width}x${format.height}`}
 export function formatIdFromSceneName(value:unknown){const name=String(value||'');return name.startsWith(SCENE_PREFIX)?name.slice(SCENE_PREFIX.length).split('::')[0]:null}
 
-export type LayoutFamily='micro-strip'|'landscape'|'square'|'portrait'|'tall';
+export type LayoutFamily='micro-strip'|'strip'|'wide'|'rectangle'|'portrait'|'tall';
 export function layoutFamily(format:Pick<CampaignFormat,'width'|'height'>):LayoutFamily{
  const ratio=Number(format.width)/Math.max(1,Number(format.height));
- if(ratio>=4.5)return'micro-strip';
- if(ratio>=1.25)return'landscape';
- if(ratio>=.8)return'square';
- if(ratio>=.55)return'portrait';
- return'tall';
+ if(format.height<=60)return'micro-strip';
+ if(format.height<=120||ratio>=5)return'strip';
+ if(ratio>=2.3)return'wide';
+ if(format.height/format.width>=1.7)return'tall';
+ if(format.height>format.width)return'portrait';
+ return'rectangle';
 }
 
 const finite=(value:unknown)=>typeof value==='number'&&Number.isFinite(value);
-const geometryKeys=new Set(['x','y','width','height','fontSize','strokeWidth','cornerRadius','radius']);
-function adaptedProps(props:Record<string,unknown>,source:CampaignFormat,target:CampaignFormat){
- const sx=target.width/source.width,sy=target.height/source.height,uniform=Math.min(sx,sy),next={...props};
- for(const key of geometryKeys){
-  const value=props[key];
-  if(!finite(value))continue;
-  const scale=key==='x'||key==='width'?sx:key==='y'||key==='height'?sy:uniform;
-  next[key]=Math.round(Number(value)*scale*1000)/1000;
- }
+type LayerRole='background'|'hero'|'logo'|'headline'|'copy'|'cta'|'legal'|'graphic'|'decor'|'unknown';
+type Box={x:number;y:number;w:number;h:number};
+const B=(x:number,y:number,w:number,h:number):Box=>({x,y,w,h});
+const clamp=(value:number,min:number,max:number)=>Math.min(max,Math.max(min,value));
+const templates:Record<LayoutFamily,Partial<Record<LayerRole,Box>>>=
+ {rectangle:{background:B(0,0,100,100),logo:B(6,6,22,10),headline:B(6,12,42,24),copy:B(6,40,38,18),hero:B(52,4,44,72),graphic:B(54,10,40,64),cta:B(6,76,30,14),legal:B(6,84,88,10)},portrait:{background:B(0,0,100,100),logo:B(7,5,28,9),headline:B(7,14,86,18),copy:B(7,34,80,12),hero:B(6,48,88,34),graphic:B(14,44,72,34),cta:B(7,84,42,10),legal:B(7,84,86,10)},tall:{background:B(0,0,100,100),logo:B(8,4,32,7),headline:B(8,12,84,16),copy:B(8,29,78,10),hero:B(6,42,88,38),graphic:B(14,42,72,36),cta:B(8,84,50,8),legal:B(8,84,84,9)},wide:{background:B(0,0,100,100),logo:B(4,8,15,12),headline:B(4,24,38,28),copy:B(4,56,34,15),hero:B(45,3,36,94),graphic:B(48,8,32,82),cta:B(83,34,14,28),legal:B(4,80,72,12)},strip:{background:B(0,0,100,100),logo:B(2,16,10,68),headline:B(14,15,34,34),copy:B(14,55,32,24),hero:B(50,5,25,90),graphic:B(52,8,22,84),cta:B(78,24,20,52),legal:B(14,72,58,18)},'micro-strip':{background:B(0,0,100,100),logo:B(2,15,10,70),headline:B(14,18,40,64),copy:B(0,0,0,0),hero:B(57,4,20,92),graphic:B(59,8,18,84),cta:B(80,18,18,64),legal:B(14,24,62,52)}};
+const roleWords:Record<Exclude<LayerRole,'unknown'>,RegExp>={background:/background|\bbg\b|фон/i,hero:/hero|product|image|photo|visual|товар|фото|изображ/i,logo:/logo|brand|логотип|бренд/i,headline:/headline|title|heading|заголов/i,copy:/copy|description|body|описан|текст/i,cta:/\bcta\b|button|кнопк|action/i,legal:/legal|disclaimer|terms|услов|дисклеймер/i,graphic:/graphic|illustration|art|график|иллюстр/i,decor:/decor|shape|декор/i};
+function roleOf(node:StandaloneBundleModel['nodes'][number],model:StandaloneBundleModel):LayerRole{
+ const name=String(node.props.name||'');
+ for(const [role,pattern] of Object.entries(roleWords) as [Exclude<LayerRole,'unknown'>,RegExp][])if(pattern.test(name))return role;
+ if(node.tag==='Text'||node.tag==='TextRange')return'headline';
+ if(model.nodes.some(child=>child.parent===node.source&&(child.tag==='ImagePaint'||child.tag==='VideoPaint')))return'hero';
+ return node.tag==='Rect'?'decor':'unknown';
+}
+function boxOf(props:Record<string,unknown>,format:CampaignFormat):Box{
+ return{x:Number(props.x||0)/format.width*100,y:Number(props.y||0)/format.height*100,w:Number(props.width||0)/format.width*100,h:Number(props.height||0)/format.height*100};
+}
+function roleBox(role:LayerRole,sourceBox:Box,sourceFamily:LayoutFamily,targetFamily:LayoutFamily):Box{
+ if(role==='background')return B(0,0,100,100);
+ const from=templates[sourceFamily][role],to=templates[targetFamily][role];
+ if(!from||!to)return sourceBox;
+ if(to.w<=0||to.h<=0)return B(0,0,0,0);
+ const rx=(sourceBox.x-from.x)/Math.max(.01,from.w),ry=(sourceBox.y-from.y)/Math.max(.01,from.h),rw=sourceBox.w/Math.max(.01,from.w),rh=sourceBox.h/Math.max(.01,from.h),bleed=role==='hero'||role==='graphic';
+ const w=clamp(to.w*rw,Math.min(4,to.w),bleed?to.w*1.45:to.w),h=clamp(to.h*rh,Math.min(4,to.h),bleed?to.h*1.45:to.h);
+ const minX=bleed?to.x-to.w*.18:to.x,maxX=bleed?to.x+to.w*1.18-w:to.x+to.w-w,minY=bleed?to.y-to.h*.18:to.y,maxY=bleed?to.y+to.h*1.18-h:to.y+to.h-h;
+ return B(clamp(to.x+to.w*rx,minX,maxX),clamp(to.y+to.h*ry,minY,maxY),w,h);
+}
+const round=(value:number)=>Math.round(value*1000)/1000;
+function adaptedProps(node:StandaloneBundleModel['nodes'][number],model:StandaloneBundleModel,source:CampaignFormat,target:CampaignFormat,singleVisual:string|undefined){
+ const next={...node.props},parent=model.nodes.find(candidate=>candidate.source===node.parent),direct=parent?.tag==='Scene',role=roleOf(node,model),sourceFamily=layoutFamily(source),targetFamily=layoutFamily(target);
+ if(node.tag==='ImagePaint'||node.tag==='VideoPaint')next.objectFit='cover';
+ if(!direct||!finite(node.props.width)||!finite(node.props.height))return next;
+ const box=singleVisual===node.source?B(0,0,100,100):roleBox(role,boxOf(node.props,source),sourceFamily,targetFamily);
+ next.x=round(box.x/100*target.width);next.y=round(box.y/100*target.height);next.width=round(box.w/100*target.width);next.height=round(box.h/100*target.height);
+ if(finite(node.props.fontSize))next.fontSize=round(Number(node.props.fontSize)*clamp(Math.sqrt(target.width*target.height/(source.width*source.height)),.72,1.35));
  return next;
 }
 function descendants(model:StandaloneBundleModel,parent:string){
@@ -57,6 +84,8 @@ export function rolloutCampaignBundle(campaign:BannermaticCampaign,sourceFormatI
  if(!sourceFormat||!sourceScene)throw new Error('Select the completed master format first.');
  const sourceNodes=descendants(model,sourceScene.source);
  if(!sourceNodes.some(node=>String(node.props.name||'').toLowerCase()!=='background'))throw new Error('Add the campaign design to the selected master before rollout.');
+ const directVisuals=sourceNodes.filter(node=>node.parent===sourceScene.source&&String(node.props.name||'').toLowerCase()!=='background'&&finite(node.props.width)&&finite(node.props.height));
+ const singleVisual=directVisuals.length===1&&roleOf(directVisuals[0]!,model)==='hero'?directVisuals[0]!.source:undefined;
  const families=new Set<LayoutFamily>();let generated=0;
  for(const targetFormat of campaign.formats){
   if(targetFormat.id===sourceFormatId)continue;
@@ -67,7 +96,7 @@ export function rolloutCampaignBundle(campaign:BannermaticCampaign,sourceFormatI
   const mapped=new Map<string,string>([[sourceScene.source,targetScene.source]]);
   for(const sourceNode of sourceNodes){
    const parent=mapped.get(sourceNode.parent||sourceScene.source)||targetScene.source;
-   const nextProps=adaptedProps(sourceNode.props,sourceFormat,targetFormat);
+   const nextProps=adaptedProps(sourceNode,model,sourceFormat,targetFormat,singleVisual);
    const existing=byLink.get(sourceNode.source)||targetNodes.find(node=>String(node.props.name||'')==='Background'&&String(sourceNode.props.name||'')==='Background');
    if(existing){
     const previous=existing.link?.inheritedProps||{};
