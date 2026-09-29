@@ -1,6 +1,7 @@
 export type StandaloneNodeLink={source:string;family:string;inheritedProps:Record<string,unknown>;inheritedText?:string};
 export type StandaloneNode={source:string;tag:string;props:Record<string,unknown>;parent?:string;text?:string;link?:StandaloneNodeLink};
-export type StandaloneBundleModel={version:1;campaignId?:string;nodes:StandaloneNode[]};
+export type StandaloneAssetSnapshot={manifest:unknown;files:{path:string;mimeType:string;dataBase64:string}[]};
+export type StandaloneBundleModel={version:1;campaignId?:string;nodes:StandaloneNode[];assets?:StandaloneAssetSnapshot};
 
 const MARKER='/* BANNERMATIC_STANDALONE_MODEL:';
 const COMPOSITION_TAGS=new Set([
