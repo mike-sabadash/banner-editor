@@ -48,7 +48,7 @@ export default function App(){
  const dragKeyframe=(event:React.PointerEvent,elementId:string,id:string)=>{event.stopPropagation();const startX=event.clientX;const frame=(formatKeyframes[elementId]??[]).find(item=>item.id===id)!;const move=(pointer:PointerEvent)=>setKeyframesByFormat(all=>({...all,[activeFormat]:{...(all[activeFormat]??{}),[elementId]:moveKeyframe(all[activeFormat]?.[elementId]??[],id,frame.time+(pointer.clientX-startX)/440*6)}}));const up=()=>{window.removeEventListener("pointermove",move);window.removeEventListener("pointerup",up)};window.addEventListener("pointermove",move);window.addEventListener("pointerup",up)};
  return <main className="app-shell">
   <header className="topbar">
-   <div className="brand-mark">B</div><button className="icon-button" aria-label="Back"><ArrowLeft size={18}/></button>
+   <div className="brand-mark"><img src="/bannermatic-logo.png" alt="Bannermatic"/></div><button className="icon-button" aria-label="Back"><ArrowLeft size={18}/></button>
    <div className="project-name"><strong>Summer Product Launch</strong><span>Saved just now</span></div>
    <div className="topbar-actions"><button className="icon-button"><Undo2 size={17}/></button><button className="icon-button muted"><Redo2 size={17}/></button><div className="separator"/><button className="preview-button"><Play size={15} fill="currentColor"/> Preview</button><button className="export-button"><Download size={16}/> Export</button><button className="icon-button"><MoreHorizontal size={19}/></button></div>
   </header>
@@ -79,4 +79,3 @@ export default function App(){
   </section>
  </main>
 }
-
