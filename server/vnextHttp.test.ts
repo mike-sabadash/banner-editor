@@ -36,6 +36,7 @@ beforeAll(async()=>{
  process.env.BANNERMATIC_DATA_FILE=path.join(root,'data.json');
  process.env.BANNERMATIC_BUILD_FILE=path.join(root,'builds.json');
  process.env.BANNERMATIC_CREATIVE_FILE=path.join(root,'creative.json');
+ process.env.BANNERMATIC_DOCUMENT_FILE=path.join(root,'documents.json');
  process.env.BANNERMATIC_ARTIFACT_DIR=path.join(root,'delivery-artifacts');
  running=await start('first');
 });
@@ -91,6 +92,9 @@ describe('vNext live HTTP campaign production',()=>{
   const placements=outputs.map((exportType,index)=>({id:`p-${exportType}`,platform:'Network',placement:`Slot ${index+1}`,width:300,height:250,creativeType:exportType,requirements:{sourceLabel:'Approved TT',exportType,maxZipKb:1000,maxDurationSec:10,clickTag:exportType.startsWith('html5'),clickTagVariable:'clickTag',clickUrl:exportType.startsWith('html5')?'https://example.test/landing':'',tracking:exportType.startsWith('html5'),impressionUrl:exportType.startsWith('html5')?'https://example.test/pixel':''}}));
   const formats=[{id:'fmt-300x250',width:300,height:250,size:'300×250',placementIds:placements.map(p=>p.id),creativeState:'missing',creativeVersion:0,exportType:'html5'}];
   const updated=await request(`${running.base}/api/campaigns/${id}`,{method:'PATCH',headers,body:JSON.stringify({placements,formats,status:'media-ready',mediaPlanVersion:1})});expect(updated.response.status).toBe(200);
+  const diffusionBundle='/* BANNERMATIC_STANDALONE_MODEL:dGVzdA== */\nconst campaign=true;';
+  const savedDocument=await request(`${running.base}/api/campaigns/${id}/diffusion-document`,{method:'PATCH',headers,body:JSON.stringify({bundle:diffusionBundle})});expect(savedDocument.response.status).toBe(200);
+  const restoredDocument=await request(`${running.base}/api/campaigns/${id}/diffusion-document`,{headers});expect(restoredDocument.response.status).toBe(200);expect((restoredDocument.body as any).bundle).toBe(diffusionBundle);
   const bytes=(value:string)=>Buffer.from(value).toString('base64'),artifacts=[
    {kind:'png',mimeType:'image/png',width:300,height:250,durationSec:6,dataBase64:bytes('png-output')},
    {kind:'jpg',mimeType:'image/jpeg',width:300,height:250,durationSec:6,dataBase64:bytes('jpg-output')},
