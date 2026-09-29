@@ -137,7 +137,7 @@ jobs:
           test -s /tmp/diffusion-bundle.js
           grep -q '<title>Bannermatic Studio</title>' <<<"$html" || { echo "PUBLIC_ROOT_NOT_BANNERMATIC"; echo "$html" | head -c 1200; exit 1; }
           editor_html="$(curl -fsSL --max-time 30 https://studio.bannermatic.online/editor/)"
-          grep -q '<title>Diffusion Studio</title>' <<<"$editor_html" || { echo "PUBLIC_EDITOR_NOT_DIFFUSION"; echo "$editor_html" | head -c 1200; exit 1; }
+          grep -q '<title>Bannermatic Studio</title>' <<<"$editor_html" || { echo "PUBLIC_EDITOR_NOT_BANNERMATIC"; echo "$editor_html" | head -c 1200; exit 1; }
           editor_asset="$(grep -oE '/editor/assets/[^" ]+[.]js' <<<"$editor_html" | head -1)"
           test -n "$editor_asset"
           curl -fsS --max-time 30 "https://studio.bannermatic.online$editor_asset" >/tmp/diffusion-editor-bundle.js
