@@ -20,6 +20,8 @@ import type { Asset } from '@diffusionstudio/assets';
 import type { AssetInput } from '@diffusionstudio/jsx';
 import type { World } from 'koota';
 
+const attachedLibraries = new Map<string, AssetLibrary>();
+
 /**
  * Creates the library of the project at `dir`, attaches it to the world and
  * starts loading it. Renames in the library are written through to every
@@ -31,10 +33,21 @@ export function attachLibrary(world: World, dir: string) {
 		onRename: (asset, from) => followRename(world, asset, from),
 		onRelink: (asset, from) => followRelink(world, asset, from),
 	});
+	attachedLibraries.set(dir, library);
 
 	world.set(Library, library);
 
 	return library;
+}
+
+/** Makes the browser asset manifest durable before a campaign bundle snapshots it. */
+export async function flushAttachedLibrary(dir: string): Promise<void> {
+	await attachedLibraries.get(dir)?.flush();
+}
+
+/** Stops a disposed editor from being used as the source of a later snapshot. */
+export function detachLibrary(dir: string, library: AssetLibrary): void {
+	if (attachedLibraries.get(dir) === library) attachedLibraries.delete(dir);
 }
 
 /** Whether a changed project file is the library's business rather than the JSX's. */
