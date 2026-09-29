@@ -12,15 +12,15 @@ import { TimelineProvider } from '@/context/timeline';
 import { EngineProvider } from '@/engine';
 import {Show,createMemo,createResource} from 'solid-js';
 import {CampaignProductionPanel} from '@/bannermatic/campaign-production-panel';
-import {buildCampaignBundle,loadCampaign,type BannermaticCampaign} from '@/bannermatic/campaign';
+import {buildCampaignBundle,loadCampaign,loadCampaignBundle,saveCampaignBundle,type BannermaticCampaign} from '@/bannermatic/campaign';
 import '@/bannermatic/campaign.css';
 import '@/bannermatic/campaign-interactions.css';
 import '@/bannermatic/campaign-loading.css';
-import {loadProjectBundle} from '@/lib/db';
+import {loadProjectBundle,rememberProjectBundle} from '@/lib/db';
 
 const projectFor=(campaign?:BannermaticCampaign)=>({id:campaign?`bannermatic-campaign-${campaign.id}`:'bannermatic-diffusion-browser',name:campaign?.name||'Bannermatic',displayName:campaign?.name||'Bannermatic',dir:'__browser_standalone__',entry:'index.tsx',modifiedAt:new Date(0).toISOString(),createdAt:new Date(0).toISOString()});
 
-function EditorShell(props:{campaign?:BannermaticCampaign;onCampaign?:(value:BannermaticCampaign)=>void}){const preferred=new URLSearchParams(location.search).get('formatId')||'',project=createMemo(()=>projectFor(props.campaign)),[bundle]=createResource(()=>props.campaign?.id,async()=>buildCampaignBundle(props.campaign!,preferred,(await loadProjectBundle(project().id))||''));const content=()=>props.campaign?bundle():undefined;return <Show when={!props.campaign||content()} fallback={<main class="bm-campaign-loading"><div><b>B</b><h1>Opening creative…</h1><p>Restoring the editable campaign document.</p></div></main>}><ProjectProvider project={project()}><EngineProvider projectId={project().id}><EditorApiProvider><TimelineProvider><ExportProvider><PromptInputProvider><LayoutProvider><EditorPage standalone standaloneBundle={content()}/><Show when={props.campaign}>{campaign=><CampaignProductionPanel campaign={campaign()} onCampaign={value=>props.onCampaign?.(value)}/>}</Show></LayoutProvider></PromptInputProvider></ExportProvider></TimelineProvider></EditorApiProvider></EngineProvider></ProjectProvider></Show>}
+function EditorShell(props:{campaign?:BannermaticCampaign;onCampaign?:(value:BannermaticCampaign)=>void}){const preferred=new URLSearchParams(location.search).get('formatId')||'',project=createMemo(()=>projectFor(props.campaign)),[bundle]=createResource(()=>props.campaign?.id,async()=>{const local=(await loadProjectBundle(project().id))||'',remote=await loadCampaignBundle(props.campaign!.id).catch(()=>''),next=buildCampaignBundle(props.campaign!,preferred,remote||local);await rememberProjectBundle(project().id,next);await saveCampaignBundle(props.campaign!.id,next);return next});const content=()=>props.campaign?bundle():undefined;return <Show when={!props.campaign||content()} fallback={<main class="bm-campaign-loading"><div><b>B</b><h1>Opening creative…</h1><p>Restoring the editable campaign document.</p></div></main>}><ProjectProvider project={project()}><EngineProvider projectId={project().id}><EditorApiProvider><TimelineProvider><ExportProvider><PromptInputProvider><LayoutProvider><EditorPage standalone standaloneBundle={content()}/><Show when={props.campaign}>{campaign=><CampaignProductionPanel campaign={campaign()} projectId={project().id} onCampaign={value=>props.onCampaign?.(value)}/>}</Show></LayoutProvider></PromptInputProvider></ExportProvider></TimelineProvider></EditorApiProvider></EngineProvider></ProjectProvider></Show>}
 
 export function StandaloneProjectPage() {
   const campaignId=new URLSearchParams(location.search).get('campaignId')||'';
