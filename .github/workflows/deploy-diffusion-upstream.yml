@@ -88,11 +88,28 @@ jobs:
           scp -i ~/.ssh/bannermatic_server -P 2222 -o IdentitiesOnly=yes /tmp/diffusion-dist.tgz root@213.182.208.29:/tmp/diffusion-dist.tgz
           ssh -i ~/.ssh/bannermatic_server -p 2222 -o IdentitiesOnly=yes root@213.182.208.29 '
             set -euo pipefail
+            release_dir="$(mktemp -d /var/www/banner-editor/dist.release.XXXXXX)"
+            cleanup() { rm -rf "$release_dir"; }
+            trap cleanup EXIT
+
+            # Keep hashed assets from the two previous releases. A browser can
+            # still have an older index.html in memory while a deployment is
+            # happening; removing its referenced chunks produces a white SPA.
+            # The new artifact is extracted last so it always wins.
+            if [ -d /var/www/banner-editor/dist.previous-diffusion ]; then
+              cp -a /var/www/banner-editor/dist.previous-diffusion/. "$release_dir/"
+            fi
+            if [ -d /var/www/banner-editor/dist ]; then
+              cp -a /var/www/banner-editor/dist/. "$release_dir/"
+            fi
+            tar -C "$release_dir" -xzf /tmp/diffusion-dist.tgz
+
             rm -rf /var/www/banner-editor/dist.previous-diffusion
-            if [ -d /var/www/banner-editor/dist ]; then cp -a /var/www/banner-editor/dist /var/www/banner-editor/dist.previous-diffusion; fi
-            rm -rf /var/www/banner-editor/dist
-            mkdir -p /var/www/banner-editor/dist
-            tar -C /var/www/banner-editor/dist -xzf /tmp/diffusion-dist.tgz
+            if [ -d /var/www/banner-editor/dist ]; then
+              mv /var/www/banner-editor/dist /var/www/banner-editor/dist.previous-diffusion
+            fi
+            mv "$release_dir" /var/www/banner-editor/dist
+            trap - EXIT
             rm -f /tmp/diffusion-dist.tgz
           '
 
