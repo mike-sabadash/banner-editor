@@ -4,39 +4,13 @@ import { layoutDirectorMiddleware } from "./server/layoutDirector";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
-
-  const serverEnvKeys = [
-    "OPENROUTER_API_KEY",
-    "OPENROUTER_LAYOUT_MODEL",
-    "OPENROUTER_SITE_URL",
-    "OPENROUTER_APP_NAME",
-    "GEMINI_API_KEY",
-    "GEMINI_LAYOUT_MODEL",
-  ] as const;
-
-  for (const key of serverEnvKeys) {
-    if (env[key]) process.env[key] = env[key];
-  }
-
+  const serverEnvKeys = ["OPENROUTER_API_KEY","OPENROUTER_LAYOUT_MODEL","OPENROUTER_SITE_URL","OPENROUTER_APP_NAME","GEMINI_API_KEY","GEMINI_LAYOUT_MODEL"] as const;
+  for (const key of serverEnvKeys) if (env[key]) process.env[key] = env[key];
+  const gateway=env.BANNERMATIC_DEV_GATEWAY || process.env.BANNERMATIC_DEV_GATEWAY || "http://127.0.0.1:8791";
   return {
-    test: {
-      exclude: ["vendor/**", "node_modules/**", "dist/**"],
-    },
-    server: {host: "0.0.0.0", allowedHosts: ["terminal.local"], proxy: {"/api": {target: env.BANNERMATIC_DEV_GATEWAY || process.env.BANNERMATIC_DEV_GATEWAY || "http://127.0.0.1:8791", changeOrigin: true}}},
-    preview: {
-      allowedHosts: ["banners.rechord.online"],
-    },
-    plugins: [
-      react(),
-      {
-        name: "layout-director-api",
-        configureServer(server) {
-          server.middlewares.use(layoutDirectorMiddleware());
-        },
-        configurePreviewServer(server) {
-          server.middlewares.use(layoutDirectorMiddleware());
-        },
-      },
-    ],
+    test:{exclude:["vendor/**","node_modules/**","dist/**"]},
+    server:{host:"0.0.0.0",allowedHosts:["terminal.local","resize-lab.bannermatic.online"],proxy:{"/api":{target:gateway,changeOrigin:true}}},
+    preview:{allowedHosts:["banners.rechord.online","resize-lab.bannermatic.online"],proxy:{"/api":{target:gateway,changeOrigin:true}}},
+    plugins:[react(),{name:"layout-director-api",configureServer(server){server.middlewares.use(layoutDirectorMiddleware())},configurePreviewServer(server){server.middlewares.use(layoutDirectorMiddleware())}}],
   };
 });
