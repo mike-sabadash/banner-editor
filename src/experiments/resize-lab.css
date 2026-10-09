@@ -7,3 +7,14 @@
 
 /* Preview is available only after the selected size has a generated HTML composition. */
 .rl-card-actions{display:flex;align-items:center;gap:10px}.rl-preview-button{display:grid;place-items:center;width:28px;height:28px;border:1px solid #434653;border-radius:7px;background:#252831;color:#e9eaff;font-size:17px;cursor:pointer}.rl-preview-button:hover:not(:disabled){border-color:#a1a5ff;background:#343751}.rl-preview-button:disabled{opacity:.3;cursor:not-allowed}.rl-canvas.derived .rl-headline{overflow-wrap:anywhere;line-height:1.05}.rl-canvas.derived .rl-cta{padding-left:3px!important;padding-right:3px!important;overflow:hidden;text-overflow:ellipsis}
+
+/* Resize Lab immutable format canvas: pixels are real export dimensions; only the outer viewport scales. */
+.rl-preview-viewport{overflow:hidden;flex:none}
+.rl-auto-canvas{position:relative;overflow:hidden;isolation:isolate;background-position:center;background-size:cover;background-repeat:no-repeat;color:#fff;font-family:Inter,Arial,sans-serif}
+.rl-auto-canvas::before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(0,0,0,.28),rgba(0,0,0,.06) 48%,transparent 70%);z-index:0}
+.rl-auto-copy{position:absolute;z-index:1;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;min-width:0;overflow:hidden}
+.rl-auto-logo{font-weight:900;letter-spacing:0;line-height:1.12;white-space:pre;max-width:100%;overflow:hidden;text-overflow:clip;text-shadow:0 1px 5px #000a}
+.rl-auto-headline{font-weight:800;line-height:1.12;overflow-wrap:anywhere;text-shadow:0 1px 6px #000a}
+.rl-auto-subline{font-weight:400;line-height:1.18;overflow-wrap:anywhere;text-shadow:0 1px 5px #000a}
+.rl-auto-button{position:absolute;z-index:1;display:flex;align-items:center;justify-content:center;white-space:nowrap;overflow:hidden;border-radius:5px;padding:0 5px;background:#fff;color:#111;font-weight:700;line-height:1.1}
+.rl-format-card>header .rl-card-actions{display:flex;flex-direction:row;align-items:center;flex:none}
