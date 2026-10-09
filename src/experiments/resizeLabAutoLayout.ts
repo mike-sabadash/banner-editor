@@ -36,7 +36,7 @@ export function formatAutoLayout(format:Pick<MarketFormat,"width"|"height"|"fami
 export function fitCopy(layout:AutoLayout,logo:string,headline:string,subline:string,cta:string){
  const estimate=(text:string,size:number,weight=700)=>{const ctx=typeof document!=="undefined"?document.createElement("canvas").getContext("2d"):null;if(ctx){ctx.font=`${weight} ${size}px Arial`;return ctx.measureText(text).width;}return text.length*size*.6;};
  const lines=(text:string,size:number,width:number)=>{let count=0;for(const paragraph of text.split("\n")){let row="";for(const word of paragraph.split(/\s+/)){const next=row?row+" "+word:word;if(row&&estimate(next,size,800)>width){count++;row=word;}else row=next;}count+=Math.max(1,Math.ceil(estimate(row,size,800)/width));}return count;};
- const logoSize=(()=>{let size=layout.logoSize;while(size>6&&Math.max(...logo.split("\n").map(line=>estimate(line,size,900)))>layout.copy.width)size--;return size;})();
+ const logoSize=(()=>{let size=layout.logoSize;while(size>1&&Math.max(...logo.split("\n").map(line=>estimate(line,size,900)))>layout.copy.width)size--;return size;})();
  const logoHeight=logo.split("\n").length*logoSize*1.12;
  const button=layout.button?{...layout.button,fontSize:Math.max(8,Math.min(layout.ctaSize,Math.floor((layout.button.width-10)/Math.max(1,cta.length*.57))))}:null;
  let headlineSize=layout.headlineSize,sublineSize=layout.sublineSize,showSubline=layout.showSubline;
