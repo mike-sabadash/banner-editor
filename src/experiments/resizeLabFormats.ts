@@ -59,17 +59,19 @@ export function formatPolicy(format: Pick<MarketFormat,"width"|"height"|"family"
   let note="Full hierarchy";
 
   if(family==="micro"){
-    hidden.push("subline","cta");note="Compact hierarchy: logo + headline";
-    layout={logo:{x,y,w:18},headline:{x:24,y:30,w:72,fontSize:clamp(Math.round(height*.3),12,17)},subline:{x,y:0,w:0,fontSize:0,visible:false},cta:{x,y:0,w:0,fontSize:0,visible:false}};
+    hidden.push("subline");note="Compact hierarchy: small logo above headline, centered CTA on the right";
+    // Reserve 104px for CTA, 12px gutters and a minimum 8px inter-element gap.
+    const logoWidth=width<=320?15:14;
+    layout={logo:{x,y:10,w:logoWidth},headline:{x,y:51,w:width<=320?55:60,fontSize:clamp(Math.round(height*.19),9,12)},subline:{x,y:0,w:0,fontSize:0,visible:false},cta:{x:pct(width-104,width),y:25,w:pct(92,width),fontSize:10,visible:true}};
   }else if(family==="strip"){
     const showSubline=width>=600&&height>=90,showCta=width>=600&&height>=80;
     if(!showSubline)hidden.push("subline");if(!showCta)hidden.push("cta");
     note=showSubline&&showCta?"Single-row hierarchy":"Reduced strip hierarchy";
-    layout={logo:{x,y,w:14},headline:{x,y:47,w:showSubline?40:showCta?55:72,fontSize:clamp(Math.round(height*.28),16,28)},subline:{x:47,y:54,w:20,fontSize:clamp(Math.round(height*.14),11,14),visible:showSubline},cta:{x:showCta?75:right-22,y:36,w:showCta?right-75:0,fontSize:13,visible:showCta}};
+    layout={logo:{x,y,w:width>=600?11:14},headline:{x,y:47,w:showCta?33:65,fontSize:clamp(Math.round(height*.17),12,18)},subline:{x:showCta?39:x,y:57,w:showCta?17:0,fontSize:11,visible:showSubline},cta:{x:showCta?82:right-22,y:34,w:showCta?right-82:0,fontSize:12,visible:showCta}};
   }else if(family==="landscape"){
     layout={logo:{x,y,w:16},headline:{x,y:30,w:43,fontSize:clamp(baseFont,22,34)},subline:{x,y:57,w:38,fontSize:clamp(Math.round(baseFont*.5),12,17),visible:true},cta:{x:72,y:68,w:right-72,fontSize:clamp(Math.round(baseFont*.48),12,16),visible:true}};
   }else if(family==="square"){
-    layout={logo:{x,y,w:28},headline:{x,y:25,w:76,fontSize:clamp(baseFont,22,32)},subline:{x,y:50,w:68,fontSize:clamp(Math.round(baseFont*.5),12,16),visible:true},cta:{x:56,y:72,w:right-56,fontSize:clamp(Math.round(baseFont*.48),12,16),visible:true}};
+    layout={logo:{x,y,w:24},headline:{x,y:26,w:58,fontSize:clamp(baseFont*.75,17,25)},subline:{x,y:47,w:53,fontSize:clamp(Math.round(baseFont*.45),11,14),visible:true},cta:{x:55,y:78,w:right-55,fontSize:12,visible:true}};
   }else if(family==="portrait"){
     layout={logo:{x,y,w:30},headline:{x,y:20,w:76,fontSize:clamp(baseFont,24,34)},subline:{x,y:42,w:70,fontSize:clamp(Math.round(baseFont*.5),12,16),visible:true},cta:{x:55,y:79,w:right-55,fontSize:clamp(Math.round(baseFont*.46),12,15),visible:true}};
   }else{

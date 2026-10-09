@@ -4,3 +4,6 @@
 /* Resize Lab: keep the editor viewport bounded and independently scrollable. */
 @media(min-width:901px){.resize-lab{height:100dvh;overflow:hidden;display:flex;flex-direction:column}.resize-lab>header{flex:none}.rl-body{flex:1;min-height:0;height:0}.rl-body aside{min-height:0;overflow-y:auto;overscroll-behavior:contain}.rl-stage{min-height:0;overflow:auto}}
 .rl-format-options label{align-items:center}.rl-format-options label>span{min-width:0}.rl-only{margin-left:auto;flex:none;border:1px solid #454957;border-radius:5px;background:#242731;color:#e3e4ff;font-size:10px;padding:5px 7px;cursor:pointer}.rl-only:hover,.rl-only:focus-visible{border-color:#a1a5ff;background:#343751}
+
+/* Preview is available only after the selected size has a generated HTML composition. */
+.rl-card-actions{display:flex;align-items:center;gap:10px}.rl-preview-button{display:grid;place-items:center;width:28px;height:28px;border:1px solid #434653;border-radius:7px;background:#252831;color:#e9eaff;font-size:17px;cursor:pointer}.rl-preview-button:hover:not(:disabled){border-color:#a1a5ff;background:#343751}.rl-preview-button:disabled{opacity:.3;cursor:not-allowed}.rl-canvas.derived .rl-headline{overflow-wrap:anywhere;line-height:1.05}.rl-canvas.derived .rl-cta{padding-left:3px!important;padding-right:3px!important;overflow:hidden;text-overflow:ellipsis}
