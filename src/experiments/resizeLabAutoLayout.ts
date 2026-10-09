@@ -27,11 +27,11 @@ export function formatAutoLayout(format:Pick<MarketFormat,"width"|"height"|"fami
    return{safe,gap,logoSize,headlineSize,sublineSize,ctaSize,copy:{x:safe,y:safe,width:copyWidth,maxHeight:h-2*safe},button,showSubline:false};
  }
  const square=family==="square";
- const buttonWidth=between(Math.round(w*(square?.34:.38)),76,180);
+ const buttonWidth=between(Math.round(w*(square ? .34 : .38)),76,180);
  const buttonHeight=between(Math.round(h*.12),30,46);
  const button={x:w-safe-buttonWidth,y:h-safe-buttonHeight,width:buttonWidth,height:buttonHeight};
  const copyWidth=square?Math.min(w-2*safe,Math.round(w*.58)):w-2*safe;
- return{safe,gap,logoSize,headlineSize,sublineSize,ctaSize,copy:{x:safe,y:safe,width:copyWidth,maxHeight:Math.max(20,button.y-safe-gap-safe)},button,showSubline:true};
+ return{safe,gap,logoSize,headlineSize,sublineSize,ctaSize,copy:{x:safe,y:safe,width:copyWidth,maxHeight:Math.max(20,button.y-safe-gap)},button,showSubline:true};
 }
 export function fitCopy(layout:AutoLayout,logo:string,headline:string,subline:string,cta:string){
  const estimate=(text:string,size:number,weight=700)=>{const ctx=typeof document!=="undefined"?document.createElement("canvas").getContext("2d"):null;if(ctx){ctx.font=`${weight} ${size}px Arial`;return ctx.measureText(text).width;}return text.length*size*.6;};
