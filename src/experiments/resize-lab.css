@@ -18,3 +18,24 @@
 .rl-auto-subline{font-weight:400;line-height:1.18;overflow-wrap:anywhere;text-shadow:0 1px 5px #000a}
 .rl-auto-button{position:absolute;z-index:1;display:flex;align-items:center;justify-content:center;white-space:nowrap;overflow:hidden;border-radius:5px;padding:0 5px;background:#fff;color:#111;font-weight:700;line-height:1.1}
 .rl-format-card>header .rl-card-actions{display:flex;flex-direction:row;align-items:center;flex:none}
+
+/* Cards are responsive tiles: each preview is bounded by its card's content width. */
+.rl-results{min-width:0!important;width:100%;flex:1 1 0}
+.rl-derived-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:18px;align-items:start;min-width:0}
+.rl-format-card{min-width:0;overflow:hidden}
+.rl-derived-preview{max-width:100%;overflow:hidden;position:relative;justify-content:flex-start}
+.rl-preview-viewport{max-width:100%;overflow:hidden}
+.rl-format-card>header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.rl-format-card>header .rl-card-actions{flex-direction:row!important;align-items:center;gap:8px}
+.rl-format-tools{display:flex;justify-content:space-between;gap:8px;margin-top:12px}
+.rl-format-tools button,.rl-ai-actions button{border:1px solid #383b48;border-radius:7px;padding:7px 9px;background:#22252f;color:#e6e7ed;cursor:pointer;font-size:11px}
+.rl-format-tools .rl-ai-trigger,.rl-ai-actions button:last-child{background:#343259;border-color:#6d6baa;color:#f1edff}
+.rl-ai-panel{margin-top:10px;padding:12px;background:#191a24;border:1px solid #484263;border-radius:10px}
+.rl-ai-panel label{display:block;font-size:11px;color:#ddd7ff;margin:0 0 8px}
+.rl-ai-panel textarea{display:block;width:100%;min-height:78px;resize:vertical;padding:10px;background:#101118;color:#fff;border:1px solid #47445e;border-radius:8px;font:12px/1.5 Inter,Arial,sans-serif}
+.rl-ai-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
+.rl-ai-panel p{font-size:11px;color:#ff9696}
+.rl-auto-drag{cursor:grab!important;touch-action:none}
+.rl-auto-drag:active{cursor:grabbing!important}
+.rl-auto-drag:hover{outline:1px dashed #c1b8ff;outline-offset:2px}
+@media(max-width:1100px){.rl-stage.families{flex-direction:column}.master-block{position:static}.rl-results{width:100%;min-width:0}}
