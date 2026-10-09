@@ -35,7 +35,8 @@ export default function ResizeLab(){
   const layer=(key:keyof Layout,content:string,extra="")=>{const box=result.layout[key];if("visible" in box&&!box.visible)return"";return `<div style="position:absolute;left:${box.x}%;top:${box.y}%;width:${box.w}%;${extra}">${escapeHtml(content)}</div>`};
   const html=`<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>${format.id} — Resize Lab</title><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;background:#1b1c20;display:grid;place-items:center;min-height:100vh"><div style="position:relative;flex:none;width:${format.width}px;height:${format.height}px;background:#222 center/cover no-repeat url('${result.image}');overflow:hidden;color:white;font-family:Inter,Arial,sans-serif">${layer("logo",logo,"font-size:14px;font-weight:900;letter-spacing:.05em")}${layer("headline",headline,`font-size:${result.layout.headline.fontSize}px;font-weight:800;line-height:1.05;overflow-wrap:anywhere`)}${layer("subline",subline,`font-size:${result.layout.subline.fontSize}px;line-height:1.15`)}${layer("cta",cta,`font-size:${result.layout.cta.fontSize}px;font-weight:700;text-align:center;background:white;color:#111;border-radius:5px;padding:5px 3px;box-sizing:border-box;white-space:nowrap`)}</div></body></html>`;
   const url=URL.createObjectURL(new Blob([html],{type:"text/html"}));
-  const tab=window.open(url,"_blank","noopener,noreferrer");
+  const tab=window.open(url,"_blank");
+  if(tab)tab.opener=null;
   if(!tab){URL.revokeObjectURL(url);setStatus("Браузер заблокировал новую вкладку. Разрешите всплывающие окна для Resize Lab.");}
   else setTimeout(()=>URL.revokeObjectURL(url),60000);
  };
