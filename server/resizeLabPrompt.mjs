@@ -7,17 +7,10 @@ const directions={
   skyscraper:"Create a tall narrow composition with a strong vertical visual path. Keep the subject centered below the headline zone, avoid side detail that will be cropped, and preserve clear top and bottom overlay areas."
 };
 
-const compositionGuides={
-  "320x50":"Composition 1: reserve the left 60% for a small logo above a short headline; reserve the rightmost 104px for a vertically centered CTA. Keep all important visual subjects out of both zones. Focus the remaining imagery in the center-right gap; simplify aggressively.",
-  "728x90":"Composition 1: reserve a 32px outer margin, a clean left 35% for logo/headline, and the far-right 18% for the CTA. Position the principal subject in the middle-right visual zone, clearly to the LEFT of the CTA, without covering face/product details. Keep the text and button zones low-detail.",
-  "300x300":"Composition 1: place the principal subject slightly right of center, preferably in the middle-right open visual zone. Keep the upper-left 60% quiet for logo/headline/subline, using softer background or a subtle natural gradient; reserve the lower-right corner for the CTA. Do not hide the subject under the CTA."
-};
-const compositionGuide=(target,composition)=>composition==="composition-1"?(compositionGuides[`${target.width}x${target.height}`]||"Composition 1: reserve left/top negative space for logo and copy, and a separate right/bottom CTA zone. Place the key subject outside these zones. Preserve safe margins and avoid collisions."):"";
-
-export function buildResizeLabPrompt({target,userPrompt="",family="landscape",composition="composition-1"}){
+export function buildResizeLabPrompt({target,userPrompt="",family="landscape"}){
   const direction=directions[family]||directions.landscape;
   const custom=String(userPrompt).trim();
-  return `Adapt the supplied advertising visual into ${target.width}×${target.height}. ${direction} ${compositionGuide(target,composition)} Identify the key subject (face, character or product) and reposition it into the largest available non-text/non-CTA area whenever possible; protect it from overlay occlusion. Preserve the same subject, product identity, lighting, palette and campaign mood. Recompose the scene rather than stretching it. Keep important product and face details intact. Do NOT render words, logos, CTA buttons, letters or fake text into the image; all typography and UI are separate HTML layers.${custom?` Additional user art direction: ${custom}`:""}`;
+  return `Adapt the supplied advertising visual into ${target.width}×${target.height}. ${direction} Preserve the same subject, product identity, lighting, palette and campaign mood. Recompose the scene rather than stretching it. Keep important product and face details intact. Do NOT render words, logos, CTA buttons, letters or fake text into the image; all typography and UI are separate HTML layers.${custom?` Additional user art direction: ${custom}`:""}`;
 }
 
 export function imageAspectRatio(family){
