@@ -133,6 +133,15 @@ jobs:
           git switch -C feature/diffusion-editor-upstream "$EXPECTED_SHA"
           npm ci
           cp deploy/nginx/ads.rechord.online.conf /etc/nginx/conf.d/studio.bannermatic.online.conf
+          for nginx_dir in /etc/nginx/conf.d /etc/nginx/sites-enabled; do
+            [ -d "$nginx_dir" ] || continue
+            while IFS= read -r -d '' nginx_conf; do
+              [ "$nginx_conf" = /etc/nginx/conf.d/resize-lab.bannermatic.online.conf ] && continue
+              if grep -qE 'server_name[[:space:]]+resize-lab[.]bannermatic[.]online([[:space:];]|$)' "$nginx_conf"; then
+                rm -f "$nginx_conf"
+              fi
+            done < <(find "$nginx_dir" -maxdepth 1 \( -type f -o -type l \) -print0)
+          done
           cp deploy/nginx/resize-lab.bannermatic.online.conf /etc/nginx/conf.d/resize-lab.bannermatic.online.conf
           nginx -t
           systemctl reload nginx
@@ -163,6 +172,7 @@ jobs:
           resize_html="$(curl -fsSL --max-time 30 https://resize-lab.bannermatic.online/)"
           resize_asset="$(grep -oE '/assets/[^" ]+[.]js' <<<"$resize_html" | head -1)"
           test -n "$resize_asset"
+          [ "$resize_asset" = "$asset" ] || { echo "PUBLIC_RESIZE_LAB_WRONG_RELEASE: $resize_asset != $asset"; exit 1; }
           curl -fsS --max-time 30 "https://resize-lab.bannermatic.online$resize_asset" >/tmp/resize-lab-bundle.js
           grep -q 'Resize Lab' /tmp/resize-lab-bundle.js || { echo "PUBLIC_RESIZE_LAB_NOT_DEPLOYED"; exit 1; }
           echo "BANNERMATIC_CAMPAIGN_DIFFUSION_DEPLOY_OK"
@@ -217,6 +227,12 @@ jobs:
           console.log('body-text-sample', (await page.locator('body').innerText()).slice(0,1200));
           if (errors.length) console.log('BROWSER_ERRORS\n'+errors.join('\n'));
           if (errors.length) process.exitCode=2;
+          await page.goto('https://resize-lab.bannermatic.online/', {waitUntil:'networkidle', timeout:60000});
+          await page.getByText('MVP-2', {exact:true}).waitFor({state:'visible'});
+          await page.getByText('AI ADAPTATION', {exact:true}).waitFor({state:'visible'});
+          if ((await page.getByText(/С возвращением|Sign in/i).count()) > 0) {
+            throw new Error('Resize Lab hostname still renders the authentication shell');
+          }
           await browser.close();
           EOF
           node smoke.mjs
