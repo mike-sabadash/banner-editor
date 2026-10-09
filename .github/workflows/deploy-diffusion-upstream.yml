@@ -229,7 +229,11 @@ jobs:
           if (errors.length) process.exitCode=2;
           await page.goto('https://resize-lab.bannermatic.online/', {waitUntil:'networkidle', timeout:60000});
           await page.getByText('MVP-2', {exact:true}).waitFor({state:'visible'});
-          await page.getByText('AI ADAPTATION', {exact:true}).waitFor({state:'visible'});
+          await page.getByText('FAMILY OUTPUT', {exact:true}).waitFor({state:'visible'});
+          await page.getByText('Composition 1', {exact:true}).first().waitFor({state:'visible'});
+          await page.getByText('320x50', {exact:true}).first().waitFor({state:'visible'});
+          await page.getByText('728x90', {exact:true}).first().waitFor({state:'visible'});
+          await page.getByText(/Smart rollout/).first().waitFor({state:'visible'});
           if ((await page.getByText(/С возвращением|Sign in/i).count()) > 0) {
             throw new Error('Resize Lab hostname still renders the authentication shell');
           }

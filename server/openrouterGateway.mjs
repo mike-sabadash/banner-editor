@@ -1,6 +1,7 @@
 import http from "node:http";
 import {listTTKnowledge,refreshTTKnowledge,kbItemsAsDocuments} from "./ttKnowledgeService.mjs";
 import {handleMvp2Api} from "./mvp2Api.mjs";
+import {buildResizeLabPrompt,imageAspectRatio} from "./resizeLabPrompt.mjs";
 
 const PORT=Number(process.env.BANNER_GATEWAY_PORT||8791);
 const MODEL=process.env.OPENROUTER_MODEL||"google/gemini-2.5-flash";
@@ -30,8 +31,9 @@ async function runResizeLab(input){
  if(!/^data:image\/(png|jpeg|jpg|webp);base64,/i.test(imageDataUrl))throw new Error("Upload a PNG, JPEG or WebP visual");
  const userPrompt=String(input?.prompt||"").slice(0,4000);
  const target=input?.target||{width:728,height:90};
- const artPrompt=`Adapt the supplied advertising visual into a very wide horizontal banner composition for ${target.width}×${target.height}. Preserve the same subject, product identity, lighting, palette and campaign mood. Recompose the scene rather than stretching it. Keep important product/face details intact. Create useful negative space for separate HTML typography and UI. Do NOT render any words, logos, CTA buttons, letters or fake text into the image; those will be overlaid as real HTML. User art direction: ${userPrompt}`;
- const imageResponse=await fetch("https://openrouter.ai/api/v1/images",{method:"POST",headers:{Authorization:`Bearer ${API_KEY}`,"Content-Type":"application/json","HTTP-Referer":"https://studio.bannermatic.online","X-Title":"Bannermatic Resize Lab"},body:JSON.stringify({model:IMAGE_MODEL,prompt:artPrompt,aspect_ratio:"21:9",resolution:"1K",output_format:"jpeg",input_references:[{type:"image_url",image_url:{url:imageDataUrl}}]})});
+ const family=String(input?.family||"landscape");
+ const artPrompt=buildResizeLabPrompt({target,userPrompt,family});
+ const imageResponse=await fetch("https://openrouter.ai/api/v1/images",{method:"POST",headers:{Authorization:`Bearer ${API_KEY}`,"Content-Type":"application/json","HTTP-Referer":"https://studio.bannermatic.online","X-Title":"Bannermatic Resize Lab"},body:JSON.stringify({model:IMAGE_MODEL,prompt:artPrompt,aspect_ratio:imageAspectRatio(family),resolution:"1K",output_format:"jpeg",input_references:[{type:"image_url",image_url:{url:imageDataUrl}}]})});
  if(!imageResponse.ok)throw new Error(`OpenRouter Image API ${imageResponse.status}: ${(await imageResponse.text()).slice(0,900)}`);
  const imageResult=await imageResponse.json();
  const first=imageResult?.data?.[0]; if(!first?.b64_json)throw new Error("Image API returned no image");
