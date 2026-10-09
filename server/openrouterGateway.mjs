@@ -32,7 +32,7 @@ async function runResizeLab(input){
  const userPrompt=String(input?.prompt||"").slice(0,4000);
  const target=input?.target||{width:728,height:90};
  const family=String(input?.family||"landscape");
- const artPrompt=buildResizeLabPrompt({target,userPrompt,family,composition:String(input?.composition||"composition-1")});
+ const artPrompt=input?.editMode?`Edit the supplied existing banner artwork at ${target.width}×${target.height}. Apply ONLY this user instruction: ${userPrompt}. Preserve the existing subject identity, lighting, scene and campaign style unless explicitly requested. Extend the scene naturally when moving the subject; avoid visible crop boundaries or seams. Keep the same aspect ratio. Do not render logos, buttons or any typography; HTML layers are handled separately.`:buildResizeLabPrompt({target,userPrompt,family,composition:String(input?.composition||"composition-1")});
  const imageResponse=await fetch("https://openrouter.ai/api/v1/images",{method:"POST",headers:{Authorization:`Bearer ${API_KEY}`,"Content-Type":"application/json","HTTP-Referer":"https://studio.bannermatic.online","X-Title":"Bannermatic Resize Lab"},body:JSON.stringify({model:IMAGE_MODEL,prompt:artPrompt,aspect_ratio:imageAspectRatio(family),resolution:"1K",output_format:"jpeg",input_references:[{type:"image_url",image_url:{url:imageDataUrl}}]})});
  if(!imageResponse.ok)throw new Error(`OpenRouter Image API ${imageResponse.status}: ${(await imageResponse.text()).slice(0,900)}`);
  const imageResult=await imageResponse.json();
