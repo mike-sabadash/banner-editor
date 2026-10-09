@@ -69,12 +69,12 @@ export function formatPolicy(format: Pick<MarketFormat,"width"|"height"|"family"
   }else if(family==="landscape"){
     layout={logo:{x,y,w:16},headline:{x,y:30,w:43,fontSize:clamp(baseFont,22,34)},subline:{x,y:57,w:38,fontSize:clamp(Math.round(baseFont*.5),12,17),visible:true},cta:{x:72,y:68,w:right-72,fontSize:clamp(Math.round(baseFont*.48),12,16),visible:true}};
   }else if(family==="square"){
-    layout={logo:{x,y,w:28},headline:{x,y:25,w:76,fontSize:clamp(baseFont,22,32)},subline:{x,y:50,w:68,fontSize:clamp(Math.round(baseFont*.5),12,16),visible:true},cta:{x:56,y:76,w:right-56,fontSize:clamp(Math.round(baseFont*.48),12,16),visible:true}};
+    layout={logo:{x,y,w:28},headline:{x,y:25,w:76,fontSize:clamp(baseFont,22,32)},subline:{x,y:50,w:68,fontSize:clamp(Math.round(baseFont*.5),12,16),visible:true},cta:{x:56,y:72,w:right-56,fontSize:clamp(Math.round(baseFont*.48),12,16),visible:true}};
   }else if(family==="portrait"){
-    layout={logo:{x,y,w:30},headline:{x,y:20,w:76,fontSize:clamp(baseFont,24,34)},subline:{x,y:42,w:70,fontSize:clamp(Math.round(baseFont*.5),12,16),visible:true},cta:{x:55,y:83,w:right-55,fontSize:clamp(Math.round(baseFont*.46),12,15),visible:true}};
+    layout={logo:{x,y,w:30},headline:{x,y:20,w:76,fontSize:clamp(baseFont,24,34)},subline:{x,y:42,w:70,fontSize:clamp(Math.round(baseFont*.5),12,16),visible:true},cta:{x:55,y:79,w:right-55,fontSize:clamp(Math.round(baseFont*.46),12,15),visible:true}};
   }else{
     const narrow=width<200;if(narrow)hidden.push("subline");note=narrow?"Narrow hierarchy: subline removed":"Vertical hierarchy";
-    layout={logo:{x,y,w:narrow?55:42},headline:{x,y:18,w:right-x,fontSize:clamp(baseFont,18,28)},subline:{x,y:42,w:right-x,fontSize:12,visible:!narrow},cta:{x,y:84,w:right-x,fontSize:12,visible:true}};
+    layout={logo:{x,y,w:narrow?55:42},headline:{x,y:18,w:right-x,fontSize:clamp(baseFont,18,28)},subline:{x,y:42,w:right-x,fontSize:12,visible:!narrow},cta:{x,y:80,w:right-x,fontSize:12,visible:true}};
   }
   return{layout,safeX,safeY,hidden,note};
 }
