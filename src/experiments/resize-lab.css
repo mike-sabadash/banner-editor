@@ -35,7 +35,10 @@
 .rl-ai-panel textarea{display:block;width:100%;min-height:78px;resize:vertical;padding:10px;background:#101118;color:#fff;border:1px solid #47445e;border-radius:8px;font:12px/1.5 Inter,Arial,sans-serif}
 .rl-ai-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
 .rl-ai-panel p{font-size:11px;color:#ff9696}
-.rl-auto-drag{cursor:grab!important;touch-action:none}
-.rl-auto-drag:active{cursor:grabbing!important}
-.rl-auto-drag:hover{outline:1px dashed #c1b8ff;outline-offset:2px}
+.rl-auto-drag{cursor:inherit;touch-action:auto}
+.rl-layout-editing .rl-auto-drag{cursor:grab;touch-action:none}
+.rl-layout-editing .rl-auto-drag:active{cursor:grabbing}
+.rl-layout-editing .rl-auto-drag:hover{outline:1px dashed #c1b8ff;outline-offset:2px}
+.rl-format-tools .rl-layout-active{border-color:#a49aff;background:#363258;color:#fff}
+.rl-format-tools button:disabled{opacity:.35;cursor:not-allowed}
 @media(max-width:1100px){.rl-stage.families{flex-direction:column}.master-block{position:static}.rl-results{width:100%;min-width:0}}
