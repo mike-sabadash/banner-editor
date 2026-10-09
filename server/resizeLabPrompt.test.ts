@@ -5,7 +5,7 @@ describe("Resize Lab smart art direction",()=>{
   it("bakes family direction into a one-click rollout",()=>{
     const prompt=buildResizeLabPrompt({target:{width:728,height:90},family:"strip"});
     expect(prompt).toContain("HORIZONTAL DESIGN RE-LAYOUT");
-    expect(prompt).toContain("SIDE BY SIDE");
+    expect(prompt).toContain("left-to-right panorama");
     expect(prompt).toContain("728×90");
   });
   it("keeps custom prompt optional and additive",()=>{
