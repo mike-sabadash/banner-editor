@@ -133,6 +133,7 @@ jobs:
           git switch -C feature/diffusion-editor-upstream "$EXPECTED_SHA"
           npm ci
           cp deploy/nginx/ads.rechord.online.conf /etc/nginx/conf.d/studio.bannermatic.online.conf
+          cp deploy/nginx/resize-lab.bannermatic.online.conf /etc/nginx/conf.d/resize-lab.bannermatic.online.conf
           nginx -t
           systemctl reload nginx
           pm2 restart banner-openrouter-gateway
@@ -159,6 +160,11 @@ jobs:
           test -n "$editor_asset"
           curl -fsS --max-time 30 "https://studio.bannermatic.online$editor_asset" >/tmp/diffusion-editor-bundle.js
           test -s /tmp/diffusion-editor-bundle.js
+          resize_html="$(curl -fsSL --max-time 30 https://resize-lab.bannermatic.online/)"
+          resize_asset="$(grep -oE '/assets/[^" ]+[.]js' <<<"$resize_html" | head -1)"
+          test -n "$resize_asset"
+          curl -fsS --max-time 30 "https://resize-lab.bannermatic.online$resize_asset" >/tmp/resize-lab-bundle.js
+          grep -q 'Resize Lab' /tmp/resize-lab-bundle.js || { echo "PUBLIC_RESIZE_LAB_NOT_DEPLOYED"; exit 1; }
           echo "BANNERMATIC_CAMPAIGN_DIFFUSION_DEPLOY_OK"
 
       - name: Browser interaction smoke test
