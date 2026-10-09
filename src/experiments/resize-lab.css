@@ -45,4 +45,4 @@
 
 /* Only the explicit editor mode shows layer affordances; standalone HTML is clean. */
 .rl-preview-viewport:not(.rl-layout-editing) .rl-auto-drag{outline:none!important;cursor:default!important;touch-action:auto!important}
-.rl-auto-canvas .rl-auto-drag:focus{outline:none}\n
+.rl-auto-canvas .rl-auto-drag:focus{outline:none}
