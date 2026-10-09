@@ -11,7 +11,7 @@ describe("Resize Lab smart art direction",()=>{
   it("keeps custom prompt optional and additive",()=>{
     const prompt=buildResizeLabPrompt({target:{width:300,height:600},family:"skyscraper",userPrompt:"Keep the red product visible"});
     expect(prompt).toContain("Faithful tall adaptation");
-    expect(prompt).toContain("Additional user art direction: Keep the red product visible");
+    expect(prompt).toContain("Additional user instruction: Keep the red product visible");
   });
   it("protects original square artwork from creative drift",()=>{
     const prompt=buildResizeLabPrompt({target:{width:300,height:300},family:"square"});
