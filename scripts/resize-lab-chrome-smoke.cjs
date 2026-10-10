@@ -10,7 +10,7 @@ const assert=require('node:assert/strict');
  assert.equal(await page.locator('.rl-typography').evaluate(el=>el.open),false);
  assert.equal(await page.locator('.rl-format-settings').first().evaluate(el=>el.open),false);
  await page.locator('.rl-typography>summary').click();assert.equal(await page.locator('.rl-typography input[type=range]').first().isVisible(),true);
- await page.locator('.rl-format-settings>summary').first().click();const exact=page.getByLabel('300x300 visual scale exact value');await exact.fill('1.5');assert.equal(await page.getByLabel('300x300 visual scale',{exact:true}).inputValue(),'1.5');
+ await page.locator('.rl-format-card').filter({has:page.locator('header strong',{hasText:'300x300'})}).locator('.rl-format-settings>summary').click();const exact=page.getByLabel('300x300 visual scale exact value');await exact.fill('1.5');assert.equal(await page.getByLabel('300x300 visual scale',{exact:true}).inputValue(),'1.5');
  const header=await page.locator('.resize-lab>header').boundingBox();const account=await page.locator('.rl-account-bar').boundingBox();assert(account.y>=header.y&&account.y+account.height<=header.y+header.height);
  await page.getByRole('button',{name:'Расходы OpenRouter'}).click();const popover=page.locator('.rl-cost-popover');await popover.waitFor();
  for(const width of [1600,900,390,320]){
