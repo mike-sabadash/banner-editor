@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest';
-import {initialLayers,resolveScenes,layerSequenceMarkup,restoreLayers} from './resizeLabSceneLayers';
+import {initialLayers,resolveScenes,layerSequenceMarkup,restoreLayers,cloneLayers} from './resizeLabSceneLayers';
 import {createScene,restoreScenes} from './resizeLabScenes';
 import {defaultMotion} from './resizeLabEditing';
 const base={headline:'Base',subline:'Stable sub',cta:'Stable button'};
@@ -12,4 +12,9 @@ describe('independent scene layers',()=>{
  it('restores valid layer controls, discards unsafe images and clamps invalid timing',()=>{const layers=initialLayers();layers.overlay={...layers.overlay,action:'change',image:'javascript:alert(1)',x:Infinity,width:200,motion:{...defaultMotion,delay:-1}};const restored=restoreLayers(layers,defaultMotion)!;expect(restored.overlay.image).toBeUndefined();expect(restored.overlay.x).toBe(50);expect(restored.overlay.width).toBe(100);expect(restored.overlay.motion.delay).toBe(0);expect(restoreScenes([{...first(),layers}])[0].layers).toEqual(restored)});
  it('preserves legacy scene configuration until the user edits layer controls',()=>{const scene=createScene(base,0,{...defaultMotion,preset:'fade'});expect(restoreScenes([scene])[0].layers).toBeUndefined();expect(resolveScenes([scene],base,'')[0].layers.cta.motion.preset).toBe('fade')});
  it('bounds long delays in short scenes and holds the final frame',()=>{const a=first();a.layers.headline.action='change';a.layers.headline.motion={...defaultMotion,preset:'fade',delay:10000,duration:2000,exit:'fade'};const html=layerSequenceMarkup([a],resolveScenes([a],base,''),()=>'<span/>',{time:1000});expect([...html.matchAll(/([\d.]+)%\{/g)].every(m=>Number(m[1])<=100)).toBe(true);expect(html).toContain('100%{visibility:visible;opacity:1;translate:0 0;scale:1}');});
+});
+
+describe('scene background adaptations',()=>{
+ it('persists safe adaptations by format and discards unsafe assets',()=>{const s=first();s.layers.background.image='data:image/png;base64,AAAA';s.layers.background.adaptations={'300x250':{image:'/api/resize-lab/assets/'+ 'a'.repeat(64)+'.png'},'336x280':{image:'javascript:bad'},'bad-key':{image:'data:image/png;base64,AAAA'}};const result=restoreScenes([s])[0].layers!.background.adaptations!;expect(result['300x250'].image).toContain('/api/resize-lab/assets/');expect(result['336x280'].image).toBe('');expect(result['bad-key']).toBeUndefined();});
+ it('inherits adapted backgrounds without sharing mutable duplicate state',()=>{const a=first(),b=first();a.layers.background={...a.layers.background,action:'change',image:'scene-source',adaptations:{'300x250':{image:'adapted'}}};const result=resolveScenes([a,b],base,'base-bg');expect(result[1].layers.background.adaptations!['300x250'].image).toBe('adapted');const duplicate=cloneLayers(result[1].layers);duplicate.background.adaptations!['300x250'].image='edited';expect(a.layers.background.adaptations!['300x250'].image).toBe('adapted');});
 });

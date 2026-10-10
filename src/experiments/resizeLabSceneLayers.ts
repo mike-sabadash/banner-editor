@@ -2,18 +2,21 @@ import {defaultMotion,type MotionSettings} from './resizeLabEditing';
 import {type BannerScene,type SceneCopy,sequenceDuration} from './resizeLabScenes';
 export const sceneLayerKeys=['background','logo','headline','subline','cta','overlay'] as const;
 export type SceneLayerKey=typeof sceneLayerKeys[number];
-export type SceneLayer={action:'keep'|'change'|'hide';image?:string;x:number;y:number;width:number;motion:MotionSettings};
+export type SceneAdaptation={image:string;error?:string};
+export type SceneLayer={adaptations?:Record<string,SceneAdaptation>;action:'keep'|'change'|'hide';image?:string;x:number;y:number;width:number;motion:MotionSettings};
 export type SceneLayers=Record<SceneLayerKey,SceneLayer>;
 export type ResolvedScene=BannerScene&{layers:SceneLayers;visible:Record<SceneLayerKey,boolean>;background:string;overlay:string};
 export const stillMotion={...defaultMotion};
 export function initialLayers():SceneLayers{return Object.fromEntries(sceneLayerKeys.map(key=>[key,{action:key==='overlay'?'hide':'keep',x:50,y:50,width:40,motion:{...stillMotion}}])) as SceneLayers;}
-export function cloneLayers(layers:SceneLayers):SceneLayers{return Object.fromEntries(sceneLayerKeys.map(key=>[key,{...layers[key],motion:{...layers[key].motion}}])) as SceneLayers;}
+export function cloneLayers(layers:SceneLayers):SceneLayers{return Object.fromEntries(sceneLayerKeys.map(key=>[key,{...layers[key],motion:{...layers[key].motion},adaptations:layers[key].adaptations?Object.fromEntries(Object.entries(layers[key].adaptations!).map(([id,result])=>[id,{...result}])):undefined}])) as SceneLayers;}
 export function restoreLayers(value:unknown,motion:MotionSettings):SceneLayers|undefined{
  if(!value||typeof value!=='object')return undefined;
  const source=value as Partial<SceneLayers>,layers=initialLayers();
  for(const key of sceneLayerKeys){const s=source[key];if(!s||typeof s!=='object')continue;const safe=(n:unknown,fallback:number,min:number,max:number)=>typeof n==='number'&&Number.isFinite(n)?Math.max(min,Math.min(max,n)):fallback;
+ const validImage=(v:unknown):v is string=>typeof v==='string'&&/^(data:image\/(png|jpe?g|webp|svg\+xml);base64,|\/api\/resize-lab\/assets\/[a-f0-9]{64}\.(png|jpg|webp|svg)$)/.test(v);
+ const adaptations=s.adaptations&&typeof s.adaptations==='object'?Object.fromEntries(Object.entries(s.adaptations).filter(([id,r])=>/^\d{1,4}x\d{1,4}$/.test(id)&&r&&typeof r==='object').map(([id,r])=>[id,{image:validImage(r.image)?r.image:'',error:typeof r.error==='string'?r.error.slice(0,500):undefined}])):undefined;
  const m=s.motion||motion;const presets=['none','fade','slide-up','slide-side','scale'];
- layers[key]={action:['keep','change','hide'].includes(s.action)?s.action:'keep',image:typeof s.image==='string'&&(/^(data:image\/(png|jpe?g|webp|svg\+xml);base64,|\/api\/resize-lab\/assets\/[a-f0-9]{64}\.(png|jpg|webp|svg)$)/.test(s.image))?s.image:undefined,x:safe(s.x,50,0,100),y:safe(s.y,50,0,100),width:safe(s.width,40,1,100),motion:{...stillMotion,preset:presets.includes(m.preset)?m.preset:'none',exit:presets.includes(m.exit)?m.exit:'none',duration:safe(m.duration,600,100,2000),exitDuration:safe(m.exitDuration,500,100,2000),delay:safe(m.delay,0,0,10000),distance:safe(m.distance,20,0,100),easing:['ease-out','ease-in-out','cubic-bezier(0.22, 1, 0.36, 1)'].includes(m.easing)?m.easing:'ease-out'}};
+ layers[key]={adaptations,action:['keep','change','hide'].includes(s.action)?s.action:'keep',image:typeof s.image==='string'&&(/^(data:image\/(png|jpe?g|webp|svg\+xml);base64,|\/api\/resize-lab\/assets\/[a-f0-9]{64}\.(png|jpg|webp|svg)$)/.test(s.image))?s.image:undefined,x:safe(s.x,50,0,100),y:safe(s.y,50,0,100),width:safe(s.width,40,1,100),motion:{...stillMotion,preset:presets.includes(m.preset)?m.preset:'none',exit:presets.includes(m.exit)?m.exit:'none',duration:safe(m.duration,600,100,2000),exitDuration:safe(m.exitDuration,500,100,2000),delay:safe(m.delay,0,0,10000),distance:safe(m.distance,20,0,100),easing:['ease-out','ease-in-out','cubic-bezier(0.22, 1, 0.36, 1)'].includes(m.easing)?m.easing:'ease-out'}};
  }return layers;
 }
 export function effectiveLayers(s:BannerScene){if(s.layers)return cloneLayers(s.layers);const layers=initialLayers();for(const key of ['logo','headline','subline','cta'] as const)layers[key]={...layers[key],action:'change',motion:{...s.motion,delay:s.motion.delay+['logo','headline','subline','cta'].indexOf(key)*s.motion.stagger}};return layers;}
