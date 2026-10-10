@@ -20,7 +20,7 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm test
-      - run: npm install --no-save playwright
+      - run: npm install --no-save playwright@1.55.0
       - run: npx playwright install --with-deps chromium
       - name: Verify existing editing scenarios and UI layout
         run: |
@@ -28,8 +28,11 @@ jobs:
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:5173/ >/dev/null && break; sleep 1; done
           RESIZE_LAB_UI_SCREENSHOT=resize-lab-ui.png node scripts/resize-lab-family-smoke.cjs
           node scripts/resize-lab-assets-smoke.cjs
+          RESIZE_LAB_CHROME_SCREENSHOT=resize-lab-chrome.png node scripts/resize-lab-chrome-smoke.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: resize-lab-ui-review
-          path: resize-lab-ui.png
+          path: |
+            resize-lab-ui.png
+            resize-lab-chrome.png
