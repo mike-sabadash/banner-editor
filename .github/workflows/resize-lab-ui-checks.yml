@@ -29,6 +29,7 @@ jobs:
           RESIZE_LAB_UI_SCREENSHOT=resize-lab-ui.png node scripts/resize-lab-family-smoke.cjs
           node scripts/resize-lab-assets-smoke.cjs
           RESIZE_LAB_CHROME_SCREENSHOT=resize-lab-chrome.png node scripts/resize-lab-chrome-smoke.cjs
+          RESIZE_LAB_SCENES_SCREENSHOT=resize-lab-scenes.png node scripts/resize-lab-scenes-smoke.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -36,3 +37,4 @@ jobs:
           path: |
             resize-lab-ui.png
             resize-lab-chrome.png
+            resize-lab-scenes.png
