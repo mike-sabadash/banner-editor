@@ -57,9 +57,9 @@ function CanvasObject({ element, setGuides }: { element: BannerElement; setGuide
   useEffect(() => () => editorRef.current?.remove(), []);
 
   const commitPosition = (node: any) => editorActions.updateElement(element.id, {
-    x: (node.x() / format.width) * 100,
-    y: (node.y() / format.height) * 100,
-  });
+    x: ((node.x() - motionX) / format.width) * 100,
+    y: ((node.y() - motionY) / format.height) * 100,
+  }, false);
 
   const commitTransform = (node: any) => {
     if (element.kind !== "image") {
