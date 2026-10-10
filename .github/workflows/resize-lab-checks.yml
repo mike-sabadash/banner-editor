@@ -1,0 +1,25 @@
+name: Resize Lab PR checks
+on:
+  push:
+    branches:
+      - feature/resize-lab-persistence-current-20261010
+  pull_request:
+    paths:
+      - 'src/experiments/ResizeLab.tsx'
+      - 'server/resizeLabProjects.mjs'
+      - 'server/openrouterGateway.mjs'
+      - '.github/workflows/resize-lab-checks.yml'
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm test -- --run
+      - run: node --check server/resizeLabProjects.mjs
+      - run: node --check server/openrouterGateway.mjs

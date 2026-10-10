@@ -1,6 +1,7 @@
 import http from "node:http";
 import {listTTKnowledge,refreshTTKnowledge,kbItemsAsDocuments} from "./ttKnowledgeService.mjs";
 import {handleMvp2Api} from "./mvp2Api.mjs";
+import {handleResizeLabProjects} from "./resizeLabProjects.mjs";
 import {buildResizeLabPrompt,imageAspectRatio} from "./resizeLabPrompt.mjs";
 
 const PORT=Number(process.env.BANNER_GATEWAY_PORT||8791);
@@ -50,6 +51,7 @@ async function reviewFigmaLayout(input,scope){const allowed=new Set((input?.targ
 export const server=http.createServer(async(req,res)=>{try{
  if(req.method==="OPTIONS"){cors(req,res);res.writeHead(204);return res.end();}
  cors(req,res);
+ if(await handleResizeLabProjects(req,res,{json,readBody}) || res.writableEnded)return;
  if(await handleMvp2Api(req,res,{json,readBody,layoutReview:reviewFigmaLayout,aiDirector:runAIDirector,semanticMapper:mapFigmaSemantics}) || res.writableEnded)return;
  if(req.method==="POST"&&req.url==="/api/resize-lab/adapt")return json(req,res,200,await runResizeLab(await readBody(req)));
  if(req.method==="GET"&&req.url==="/healthz")return json(req,res,200,{ok:true,service:"banner-openrouter-gateway",model:MODEL,keyConfigured:Boolean(API_KEY),aiTT:true,ttKnowledge:true,bannermaticMvp2:true});
