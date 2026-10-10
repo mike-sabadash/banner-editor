@@ -87,7 +87,7 @@ export default function ResizeLab(){
  const openFormatPreview=(format:MarketFormat,result?:Result)=>{
   if(!result||result.status!=="ready")return;
   const style=Array.from(document.styleSheets).flatMap(sheet=>{try{return Array.from(sheet.cssRules).filter(rule=>rule.cssText.includes("rl-auto-")&&!rule.cssText.includes("rl-auto-drag")).map(rule=>rule.cssText)}catch{return []}}).join("\n");
-  const html=`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${format.id} — Resize Lab</title><style>*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#15161a;font-family:Inter,Arial,sans-serif;color:white}${style}</style></head><body>${formatMarkup(format,result)}</body></html>`;
+  const html=`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${format.id} — Resize Lab</title><link rel="stylesheet" href="${fontUrl(typeStyle.font)}"><style>*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#15161a;font-family:Inter,Arial,sans-serif;color:white}${style}</style></head><body>${formatMarkup(format,result)}</body></html>`;
   const url=URL.createObjectURL(new Blob([html],{type:"text/html"}));
   const tab=window.open(url,"_blank");if(tab)tab.opener=null;
   if(!tab){URL.revokeObjectURL(url);setStatus("Разрешите всплывающие окна для Resize Lab.");}else setTimeout(()=>URL.revokeObjectURL(url),60000);
