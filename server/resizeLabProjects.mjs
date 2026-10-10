@@ -10,7 +10,7 @@ export async function handleResizeLabProjects(req,res,{json,readBody}){
  if(!url.pathname.startsWith("/api/resize-lab/projects"))return false;
  const auth=await bannermaticStore.authenticate(bearer(req));
  if(!auth){json(req,res,401,{error:"Sign in to save projects"});return true;}
- const dir=path.join(root,auth.workspace.id);
+ const dir=path.join(root,auth.workspace.id,auth.user.id);
  const match=url.pathname.match(/^\/api\/resize-lab\/projects\/([\w-]+)$/);
  if(req.method==="GET"&&url.pathname==="/api/resize-lab/projects"){
   await fs.mkdir(dir,{recursive:true});
