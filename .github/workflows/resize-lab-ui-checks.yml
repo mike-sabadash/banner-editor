@@ -1,0 +1,31 @@
+name: Resize Lab UI review
+on:
+  pull_request:
+    paths:
+      - 'src/experiments/ResizeLab.tsx'
+      - 'src/experiments/resize-lab*.css'
+      - '.github/workflows/resize-lab-ui-checks.yml'
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+      - run: npm install --no-save playwright
+      - run: npx playwright install --with-deps chromium
+      - name: Verify existing editing scenarios and UI layout
+        run: |
+          npm run dev -- --port 5173 > /tmp/resize-vite.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://127.0.0.1:5173/ >/dev/null && break; sleep 1; done
+          RESIZE_LAB_UI_SCREENSHOT=resize-lab-ui.png node scripts/resize-lab-family-smoke.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: resize-lab-ui-review
+          path: resize-lab-ui.png
