@@ -43,30 +43,30 @@ jobs:
                summary[label]={'status':response.status,'headersMs':headers_ms,'totalMs':round((time.monotonic()-t)*1000,2),'wireBytes':len(payload),'encoding':response.headers.get('Content-Encoding','identity')}
              except Exception as e:summary[label]={'errorType':type(e).__name__,'elapsedMs':round((time.monotonic()-t)*1000,2)}
            if session:
-           try:
-            request=urllib.request.Request('https://resize-lab.bannermatic.online/api/resize-lab/projects/'+p.stem,headers={'Authorization':'Bearer '+session['token']})
-            with urllib.request.urlopen(request,timeout=30) as response: state=json.loads(response.read()).get('state',{})
-            jobs=[]
-            if str(state.get('image','')).startswith('/api/resize-lab/assets/'):jobs.append(state['image']+'?w=480&h=800')
-            if str(state.get('logoImage','')).startswith('/api/resize-lab/assets/'):jobs.append(state['logoImage'])
-            for format_id in state.get('selected',[]):
-             source=state.get('results',{}).get(format_id,{}).get('image','')
-             if source.startswith('/api/resize-lab/assets/'):
-              w,h=map(int,format_id.split('x'));jobs.append(source+'?w='+str(w*2)+'&h='+str(h*2))
-            measurements=[]
-            for url in dict.fromkeys(jobs):
-             t=time.monotonic()
-             request=urllib.request.Request('https://resize-lab.bannermatic.online'+url,headers={'Authorization':'Bearer '+session['token']})
-             with urllib.request.urlopen(request,timeout=30) as response:
-              payload=response.read();etag=response.headers.get('ETag')
-              measurements.append({'bytes':len(payload),'totalMs':round((time.monotonic()-t)*1000,2),'cache':response.headers.get('Cache-Control'),'type':response.headers.get('Content-Type')})
-             request=urllib.request.Request('https://resize-lab.bannermatic.online'+url,headers={'Authorization':'Bearer '+session['token'],'If-None-Match':etag or ''})
-             try:
-              with urllib.request.urlopen(request,timeout=30) as response:measurements[-1]['conditionalStatus']=response.status
-             except urllib.error.HTTPError as e:measurements[-1]['conditionalStatus']=e.code
-            summary['visibleAssets']=measurements
-            summary['visibleAssetBytes']=sum(x['bytes'] for x in measurements)
-           except Exception as e:summary['assetErrorType']=type(e).__name__
-          print(json.dumps(summary))
+            try:
+             request=urllib.request.Request('https://resize-lab.bannermatic.online/api/resize-lab/projects/'+p.stem,headers={'Authorization':'Bearer '+session['token']})
+             with urllib.request.urlopen(request,timeout=30) as response: state=json.loads(response.read()).get('state',{})
+             jobs=[]
+             if str(state.get('image','')).startswith('/api/resize-lab/assets/'):jobs.append(state['image']+'?w=480&h=800')
+             if str(state.get('logoImage','')).startswith('/api/resize-lab/assets/'):jobs.append(state['logoImage'])
+             for format_id in state.get('selected',[]):
+              source=state.get('results',{}).get(format_id,{}).get('image','')
+              if source.startswith('/api/resize-lab/assets/'):
+               w,h=map(int,format_id.split('x'));jobs.append(source+'?w='+str(w*2)+'&h='+str(h*2))
+             measurements=[]
+             for url in dict.fromkeys(jobs):
+              t=time.monotonic()
+              request=urllib.request.Request('https://resize-lab.bannermatic.online'+url,headers={'Authorization':'Bearer '+session['token']})
+              with urllib.request.urlopen(request,timeout=30) as response:
+               payload=response.read();etag=response.headers.get('ETag')
+               measurements.append({'bytes':len(payload),'totalMs':round((time.monotonic()-t)*1000,2),'cache':response.headers.get('Cache-Control'),'type':response.headers.get('Content-Type')})
+              request=urllib.request.Request('https://resize-lab.bannermatic.online'+url,headers={'Authorization':'Bearer '+session['token'],'If-None-Match':etag or ''})
+              try:
+               with urllib.request.urlopen(request,timeout=30) as response:measurements[-1]['conditionalStatus']=response.status
+              except urllib.error.HTTPError as e:measurements[-1]['conditionalStatus']=e.code
+             summary['visibleAssets']=measurements
+             summary['visibleAssetBytes']=sum(x['bytes'] for x in measurements)
+            except Exception as e:summary['assetErrorType']=type(e).__name__
+           print(json.dumps(summary))
           
           PY
