@@ -15,3 +15,7 @@
 - aa10e53: use compiled preview in UI checks; e8942c0: account for editing mode reset on reload.
 - Workflow 38074135575 passed editing, family inheritance, numeric input and viewport checks; screenshot inspected.
 - Visual follow-up: put local property labels, sliders and values on one baseline; prevent native number spinner from clipping values. Pending follow-up deploy.
+
+## 2026-10-10 — Sidebar numeric entry placement
+- CSS only: move numeric entries to the label row, keep range full width below, widen values to 72px for 1900/10000.
+- No handlers, animation settings or family logic changed. User requested no further manual browser review; existing automated delivery checks remain in workflow.
