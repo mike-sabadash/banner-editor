@@ -240,3 +240,5 @@ jobs:
           await browser.close();
           EOF
           node smoke.mjs
+
+          NODE_PATH=/tmp/diffusion-browser-smoke/node_modules RESIZE_LAB_URL=https://resize-lab.bannermatic.online/ node "$GITHUB_WORKSPACE/scripts/resize-lab-family-smoke.cjs"
