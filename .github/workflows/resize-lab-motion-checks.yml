@@ -1,0 +1,21 @@
+name: Resize Lab 2.1 checks
+on:
+  push:
+    branches:
+      - feature/resize-lab-assets-motion-20261010
+  pull_request:
+    paths:
+      - 'src/experiments/ResizeLab.tsx'
+      - '.github/workflows/resize-lab-motion-checks.yml'
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
