@@ -1,6 +1,6 @@
 const {chromium}=require('playwright');
 (async()=>{
- const browser=await chromium.launch({headless:true});const page=await browser.newPage({viewport:{width:1600,height:1000}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ const browser=await chromium.launch({headless:true});const page=await browser.newPage({viewport:{width:1600,height:1000}});const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.text().startsWith('motion-check'))console.log(m.text())});
  const image='data:image/svg+xml;base64,'+Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="250"><rect width="300" height="250" fill="purple"/></svg>').toString('base64');
  const logo='data:image/svg+xml;base64,'+Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="30"><rect width="120" height="30" fill="red"/></svg>').toString('base64');
  const state={image,logoImage:logo,logoWidth:100,selected:['300x250','336x280','728x90'],results:Object.fromEntries(['300x250','336x280','728x90'].map(id=>[id,{image,layout:{},status:'ready'}]))};let saved;
@@ -15,7 +15,7 @@ const {chromium}=require('playwright');
  const other=await card('728x90').locator('[data-edit-layer="logo"] img').evaluate(el=>parseFloat(el.style.width));if(other!==100)throw Error('Unrelated family changed');
  await a.locator('input[type=file]').setInputFiles({name:'replacement.svg',mimeType:'image/svg+xml',buffer:Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="250"><rect width="300" height="250" fill="blue"/></svg>')});
  await page.getByLabel('Exit animation').selectOption('fade');await page.waitForTimeout(1400);if(!saved?.families?.square||saved.motion.exit!=='fade')throw Error('Settings not saved');
- await page.waitForTimeout(1600);const opacity=await b.locator('[data-edit-layer="logo"]').evaluate(el=>getComputedStyle(el).opacity);if(Number(opacity)>.01)throw Error('Exit animation did not hide logo: '+opacity);
+ await page.getByRole('button',{name:/Replay animation/}).click();await b.locator('[data-edit-layer="logo"]').evaluate(async el=>{const animations=el.getAnimations();console.log('motion-check',JSON.stringify({count:animations.length,name:getComputedStyle(el).animationName,delay:getComputedStyle(el).animationDelay,duration:getComputedStyle(el).animationDuration,reduced:matchMedia('(prefers-reduced-motion:reduce)').matches}));if(!animations.length)throw Error('Exit animation missing: '+el.closest('.rl-auto-canvas').outerHTML.slice(0,300));await Promise.all(animations.map(a=>a.finished));if(Number(getComputedStyle(el).opacity)>.01)throw Error('Exit animation did not hide logo: '+getComputedStyle(el).opacity)});
  await page.reload();await page.waitForTimeout(200);if(await page.getByLabel('Exit animation').inputValue()!=='fade')throw Error('Motion did not restore');if(errors.length)throw Error(errors.join('\n'));
  console.log('PASS: PNG left drag, family proportional logo/visual inheritance, unrelated family isolation, per-format upload, autosave and reload, exit animation');await browser.close();
 })().catch(e=>{console.error(e);process.exit(1)});
