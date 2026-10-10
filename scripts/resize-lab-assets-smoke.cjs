@@ -1,0 +1,20 @@
+const {chromium}=require('playwright');
+(async()=>{
+ const browser=await chromium.launch({headless:true});const page=await browser.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ const ref=n=>'/api/resize-lab/assets/'+String(n).repeat(64)+'.png';
+ const state={image:ref(1),logoImage:ref(2),selected:['300x250','336x280'],families:{square:{image:ref(5),sourceId:'300x250'}},results:{'300x250':{image:ref(3),layout:{},status:'ready'},'336x280':{image:ref(4),layout:{},status:'ready'},'728x90':{image:ref(6),layout:{},status:'ready'}}};
+ const requests=[];let puts=0;
+ await page.addInitScript(()=>localStorage.setItem('rl-token','test-token'));
+ await page.route('**/api/resize-lab/projects/default',async route=>{if(route.request().method()==='PUT'){puts++;await route.fulfill({json:{ok:true}})}else await route.fulfill({json:{state}})});
+ await page.route('**/api/resize-lab/assets/**',async route=>{const request=route.request();if(request.headers().authorization!=='Bearer test-token')throw Error('Missing authentication');const url=new URL(request.url());requests.push(url.pathname+url.search);await route.fulfill({contentType:'image/svg+xml',headers:{'cache-control':'private, max-age=31536000, immutable'},body:'<svg xmlns="http://www.w3.org/2000/svg" width="600" height="500"><rect width="600" height="500" fill="purple"/></svg>'})});
+ await page.goto(process.env.RESIZE_LAB_URL||'http://127.0.0.1:5173/?view=resize-lab');
+ await page.waitForFunction(()=>document.querySelectorAll('.rl-format-card .rl-visual[style*="blob:"]').length===2);
+ await page.waitForTimeout(1300);
+ const expected=[ref(1)+'?w=480&h=800',ref(2),ref(3)+'?w=600&h=500',ref(4)+'?w=672&h=560'];
+ if(JSON.stringify([...requests].sort())!==JSON.stringify(expected.sort()))throw Error('Unexpected initial image requests: '+JSON.stringify(requests));
+ if(puts!==0)throw Error('Restored project was unnecessarily saved');
+ const canvas=page.locator('.rl-format-card .rl-auto-canvas').first();if(await canvas.evaluate(el=>el.style.width+'x'+el.style.height)!=='300pxx250px')throw Error('Logical format size changed');
+ await page.reload();await page.waitForFunction(()=>document.querySelectorAll('.rl-format-card .rl-visual[style*="blob:"]').length===2);
+ if(errors.length)throw Error(errors.join('\n'));
+ console.log('PASS: compact metadata restore; authenticated X2 previews; only selected formats, master and logo fetched; no family/unselected image downloads; logical canvas dimensions preserved; no redundant restore save; reload');await browser.close();
+})().catch(e=>{console.error(e);process.exit(1)});
