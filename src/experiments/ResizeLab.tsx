@@ -118,9 +118,9 @@ export default function ResizeLab(){
   const dx=offset?.x||0,dy=offset?.y||0;
   return `<div class="rl-auto-drag" data-edit-layer="${key}" style="transform:translate(${dx}px,${dy}px);position:relative;min-width:0"><div class="${style}">${body}</div></div>`;
  };
- const formatFrame=(format:MarketFormat,result:Result,originals?:{image:string;logoImage:string},copy:SceneCopy={headline,subline,cta},staticFrame=false,sharedVisual=false)=>{
+ const formatFrame=(format:MarketFormat,result:Result,originals?:{image:string;logoImage:string},copy:SceneCopy={headline,subline,cta},staticFrame=false,sharedVisual=false,lockedFit?:ReturnType<typeof fitCopy>)=>{
   const {headline,subline,cta}=copy;
-  const grid=formatAutoLayout(format),fit=fitCopy(grid,logo,headline,subline,cta);
+  const grid=formatAutoLayout(format),fit=lockedFit||fitCopy(grid,logo,headline,subline,cta);
   const esc=(value:string)=>value.replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]!));
   const content=(value:string)=>esc(value).replace(/\n/g,"<br>");
   const family=families[format.family];const visual=result.visual||family?.visual||defaultVisual;const offsets={...inheritOffsets(family,format),...result.overrides};const localLogoWidth=result.logoWidth??(family?family.logoRatio*format.width:logoWidth);const logoMarkup=logoImage?`<img src="${escapeHtml(originals?.logoImage??displayImage(logoImage))}" alt="${escapeHtml(logo)}" style="width:${localLogoWidth}px;max-width:none;height:auto;object-fit:contain">`:content(logo);
@@ -136,7 +136,7 @@ export default function ResizeLab(){
   const geometryKey=sceneLogoRatio+template;let geometry=layerGeometry.current.get(geometryKey);
   if(!geometry){const probe=document.createElement('div');probe.style.cssText='position:fixed;left:-100000px;top:0;visibility:hidden;pointer-events:none';probe.innerHTML=template;if(sceneLogoRatio)for(const img of probe.querySelectorAll('img'))img.style.height=(parseFloat(img.style.width)*sceneLogoRatio)+'px';document.body.appendChild(probe);try{const bounds=probe.querySelector('.rl-auto-canvas')!.getBoundingClientRect();geometry={};for(const name of ['logo','headline','subline','cta'] as const){const node=probe.querySelector<HTMLElement>(`[data-edit-layer="${name}"]`);if(node){const rect=node.getBoundingClientRect();geometry[name]={x:rect.left-bounds.left,y:rect.top-bounds.top,width:rect.width,height:rect.height};}}if(layerGeometry.current.size>50)layerGeometry.current.clear();layerGeometry.current.set(geometryKey,geometry);}finally{probe.remove();}}
   const box=geometry[key];if(!box)return '';
-  const doc=new DOMParser().parseFromString(formatFrame(format,result,originals,scene.copy,true),'text/html');const node=doc.querySelector<HTMLElement>(`[data-edit-layer="${key}"]`);if(!node)return '';
+  const grid=formatAutoLayout(format),baseFit=fitCopy(grid,logo,headline,subline,cta),copyFit=fitCopy(grid,logo,scene.copy.headline,scene.copy.subline,scene.copy.cta);const lockedFit={...baseFit,headlineSize:copyFit.headlineSize,button:copyFit.button};const doc=new DOMParser().parseFromString(formatFrame(format,result,originals,scene.copy,true,false,lockedFit),'text/html');const node=doc.querySelector<HTMLElement>(`[data-edit-layer="${key}"]`);if(!node)return '';
   node.style.transform='none';node.style.position='absolute';node.style.left=box.x+'px';node.style.top=box.y+'px';node.style.width=box.width+'px';if(key==='cta')node.style.height=box.height+'px';
   return node.outerHTML;
  };
