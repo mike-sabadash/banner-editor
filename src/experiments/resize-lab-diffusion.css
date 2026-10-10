@@ -106,3 +106,33 @@
 .resize-lab .rl-scene-image-tools small{font-size:10px;color:var(--rl-muted);line-height:1.4}
 .resize-lab .rl-scene-image-tools button[aria-pressed=true]{border-color:var(--rl-accent);background:hsl(207 99% 22%)}
 .resize-lab .rl-scene-preview{width:100%;margin-bottom:8px}
+
+/* Contextual layer selection and In/Out preset panels follow Adobe Express. */
+.resize-lab .rl-scene-list button{align-items:center}
+.resize-lab .rl-scene-list img{width:30px;height:36px;object-fit:cover;border-radius:3px;flex:none}
+.resize-lab .rl-scene-list button span{flex:1}
+.resize-lab .rl-scene-meta{display:grid;grid-template-columns:minmax(0,1fr) 80px;gap:8px}
+.resize-lab .rl-scene-layers{display:grid;gap:2px;margin-bottom:14px}
+.resize-lab .rl-scene-layer-row{display:flex;min-width:0}
+.resize-lab .rl-scene-layer-row button:first-child{flex:1;display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;min-width:0;border-radius:4px 0 0 4px}
+.resize-lab .rl-scene-layer-row small{font-size:9px;color:var(--rl-muted)}
+.resize-lab .rl-scene-layer-row button:last-child{width:32px;flex:none;border-radius:0 4px 4px 0}
+.resize-lab .rl-scene-layer-row button:first-child[aria-pressed=true]{background:hsl(207 99% 22%);border-color:var(--rl-accent)}
+.resize-lab .rl-layer-panel-tabs,.resize-lab .rl-motion-phases{display:flex;gap:4px;margin:10px 0}
+.resize-lab .rl-layer-panel-tabs button,.resize-lab .rl-motion-phases button{flex:1;min-width:0}
+.resize-lab .rl-layer-panel-tabs button[aria-selected=true],.resize-lab .rl-motion-phases button[aria-selected=true]{background:#333;border-color:#888}
+.resize-lab .rl-scene-layer-properties{padding:12px;margin:0;border-color:var(--rl-border);background:transparent}
+.resize-lab .rl-scene-layer-properties h3{margin:0 0 12px;font-size:12px}
+.resize-lab .rl-scene-layer-properties>button{width:100%;margin:6px 0}
+.resize-lab .rl-scene-layer-properties>small{display:block;margin:8px 0}
+.resize-lab .rl-scene-image-preview{height:140px;display:grid;place-items:center;background:#111;border:1px solid var(--rl-border);border-radius:4px;overflow:hidden;margin-bottom:8px}
+.resize-lab .rl-scene-image-preview img{width:100%;height:100%;object-fit:contain}
+.resize-lab .rl-scene-image-preview span{font-size:11px;color:var(--rl-muted)}
+.resize-lab .rl-motion-presets{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:12px 0}
+.resize-lab .rl-motion-presets button{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:10px;padding:10px 4px;min-width:0}
+.resize-lab .rl-motion-presets button[aria-pressed=true]{border-color:var(--rl-accent);background:hsl(207 99% 22%)}
+.resize-lab .rl-preset-icon{font-size:23px;height:28px;line-height:28px}
+.resize-lab .rl-scene-adapt{margin-top:16px;padding-top:14px;border-top:1px solid var(--rl-border)}
+.resize-lab .rl-scene-adapt button{width:100%}
+.resize-lab .rl-scene-adapt ul{padding:0;list-style:none;margin:10px 0;display:grid;gap:6px}
+.resize-lab .rl-scene-adapt li{display:flex;justify-content:space-between;gap:8px;font-size:10px;color:var(--rl-muted)}
