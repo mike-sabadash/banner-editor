@@ -35,3 +35,10 @@
 .resize-lab .rl-ai-panel{background:var(--rl-canvas);border-color:var(--rl-border);border-radius:6px}.resize-lab .rl-results-head{gap:8px;flex-wrap:wrap}.resize-lab .rl-rule-legend{flex-wrap:wrap}.resize-lab .rl-rule-legend span{padding:3px 6px;border-radius:4px;border-color:var(--rl-border)}
 @media(min-width:901px){.resize-lab .rl-body{min-height:0;height:0;flex:1}.resize-lab .rl-body aside,.resize-lab .rl-stage{min-height:0;overflow:auto}}
 @media(max-width:900px){.resize-lab .rl-body{grid-template-columns:1fr}.resize-lab .rl-stage.families{padding:16px}.resize-lab>header small{display:none}}
+
+/* One compact property row: name, slider and precise value on the same baseline. */
+.resize-lab .rl-manual-controls label{display:grid;grid-template-columns:minmax(110px,.8fr) minmax(0,1fr);align-items:center;gap:8px;margin:2px 0;min-height:28px}
+.resize-lab .rl-manual-controls .rl-range-pair{margin-top:0}
+.resize-lab .rl-range-pair input[type=number]{appearance:textfield;-moz-appearance:textfield}
+.resize-lab .rl-range-pair input[type=number]::-webkit-inner-spin-button,.resize-lab .rl-range-pair input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+@media(max-width:600px){.resize-lab .rl-manual-controls label{grid-template-columns:110px minmax(0,1fr)}}
