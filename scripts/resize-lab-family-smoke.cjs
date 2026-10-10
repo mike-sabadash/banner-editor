@@ -17,5 +17,15 @@ const {chromium}=require('playwright');
  await page.getByLabel('Exit animation').selectOption('fade');await page.waitForTimeout(1400);if(!saved?.families?.square||saved.motion.exit!=='fade')throw Error('Settings not saved');
  await page.getByRole('button',{name:/Replay animation/}).click();await b.locator('[data-edit-layer="logo"]').evaluate(async el=>{const animations=el.getAnimations();console.log('motion-check',JSON.stringify({count:animations.length,name:getComputedStyle(el).animationName,delay:getComputedStyle(el).animationDelay,duration:getComputedStyle(el).animationDuration,reduced:matchMedia('(prefers-reduced-motion:reduce)').matches}));if(!animations.length)throw Error('Exit animation missing: '+el.closest('.rl-auto-canvas').outerHTML.slice(0,300));await Promise.all(animations.map(a=>a.finished));if(Number(getComputedStyle(el).opacity)>.01)throw Error('Exit animation did not hide logo: '+getComputedStyle(el).opacity)});
  await page.reload();await page.waitForTimeout(200);if(await page.getByLabel('Exit animation').inputValue()!=='fade')throw Error('Motion did not restore');if(errors.length)throw Error(errors.join('\n'));
+ if(process.env.RESIZE_LAB_UI_SCREENSHOT){
+ await page.getByLabel('Exit animation').selectOption('none');
+ await a.getByRole('button',{name:'Завершить правку'}).click();
+ const top=await page.locator('.rl-body').boundingBox();const account=await page.locator('.rl-account-bar').boundingBox();
+ if(top.y<account.y+account.height-1)throw Error('Account bar overlaps workspace');
+ const exact=a.getByLabel('300x250 visual scale exact value');await exact.fill('2');
+ if(await a.getByLabel('300x250 visual scale',{exact:true}).inputValue()!=='2')throw Error('Precise value does not update range');
+ await exact.fill('1.5');
+ await page.screenshot({path:process.env.RESIZE_LAB_UI_SCREENSHOT});
+}
  console.log('PASS: PNG left drag, family proportional logo/visual inheritance, unrelated family isolation, per-format upload, autosave and reload, exit animation');await browser.close();
 })().catch(e=>{console.error(e);process.exit(1)});
