@@ -1,7 +1,7 @@
 import {restoreLayers,type SceneLayers} from './resizeLabSceneLayers';
-import {defaultMotion,type MotionSettings,type MotionPreset} from './resizeLabEditing';
+import {defaultMotion,restoreEasing,type MotionSettings,type MotionPreset} from './resizeLabEditing';
 export type SceneCopy={headline:string;subline:string;cta:string};
-export type BannerScene={id:string;name:string;copy:SceneCopy;duration:number;motion:MotionSettings;layers?:SceneLayers};
+export type BannerScene={id:string;name:string;copy:SceneCopy;duration:number;motion:MotionSettings;layerOrder?:import("./resizeLabSceneLayers").SceneLayerKey[];layers?:SceneLayers};
 const presets:MotionPreset[]=['none','fade','slide-up','slide-side','scale'];
 const finite=(value:unknown,fallback:number,min:number,max:number)=>typeof value==='number'&&Number.isFinite(value)?Math.max(min,Math.min(max,value)):fallback;
 export function restoreScenes(value:unknown):BannerScene[]{
@@ -11,7 +11,7 @@ export function restoreScenes(value:unknown):BannerScene[]{
   const id=typeof s.id==='string'&&/^[\w-]{1,80}$/.test(s.id)&&!ids.has(s.id)?s.id:`restored-${index}`;ids.add(id);
   const m=s.motion||{};
   const layerSettings=restoreLayers(s.layers,{...defaultMotion,...m});
-  return {layers:layerSettings,id,name:typeof s.name==='string'?s.name.slice(0,80):`Сцена ${index+1}`,copy:{headline:String(s.copy?.headline??''),subline:String(s.copy?.subline??''),cta:String(s.copy?.cta??'')},duration:finite(s.duration,4000,500,30000),motion:{...defaultMotion,preset:presets.includes(m.preset)?m.preset:'fade',exit:presets.includes(m.exit)?m.exit:'fade',duration:finite(m.duration,600,100,2000),exitDuration:finite(m.exitDuration,500,100,2000),stagger:finite(m.stagger,150,0,400),distance:finite(m.distance,20,0,100),delay:finite(m.delay,0,0,10000),hold:finite(m.hold,2000,0,30000),easing:['ease-out','ease-in-out','cubic-bezier(0.22, 1, 0.36, 1)'].includes(m.easing)?m.easing:'ease-out'}};
+  return {layerOrder:Array.isArray(s.layerOrder)?[...new Set(s.layerOrder.filter((k:unknown)=>["background","logo","headline","subline","cta","overlay"].includes(String(k))))] as import("./resizeLabSceneLayers").SceneLayerKey[]:undefined,layers:layerSettings,id,name:typeof s.name==='string'?s.name.slice(0,80):`Сцена ${index+1}`,copy:{headline:String(s.copy?.headline??''),subline:String(s.copy?.subline??''),cta:String(s.copy?.cta??'')},duration:finite(s.duration,4000,500,30000),motion:{...defaultMotion,preset:presets.includes(m.preset)?m.preset:'fade',exit:presets.includes(m.exit)?m.exit:'fade',duration:finite(m.duration,600,100,2000),exitDuration:finite(m.exitDuration,500,100,2000),stagger:finite(m.stagger,150,0,400),distance:finite(m.distance,20,0,100),delay:finite(m.delay,0,0,10000),hold:finite(m.hold,2000,0,30000),easing:restoreEasing(m.easing),exitEasing:restoreEasing(m.exitEasing??m.easing)}};
  });
 }
 export function sequenceDuration(scenes:BannerScene[]){return scenes.reduce((sum,s)=>sum+s.duration,0)}

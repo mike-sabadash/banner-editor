@@ -1,7 +1,7 @@
 import {describe,it,expect} from 'vitest';
-import {initialLayers,resolveScenes,layerSequenceMarkup,restoreLayers,cloneLayers} from './resizeLabSceneLayers';
+import {initialLayers,resolveScenes,layerSequenceMarkup,restoreLayers,cloneLayers,layerOrder} from './resizeLabSceneLayers';
 import {createScene,restoreScenes} from './resizeLabScenes';
-import {defaultMotion} from './resizeLabEditing';
+import {defaultMotion,restoreEasing} from './resizeLabEditing';
 const base={headline:'Base',subline:'Stable sub',cta:'Stable button'};
 const first=()=>({...createScene(base,0),duration:1000,layers:initialLayers()});
 describe('independent scene layers',()=>{
@@ -17,4 +17,11 @@ describe('independent scene layers',()=>{
 describe('scene background adaptations',()=>{
  it('persists safe adaptations by format and discards unsafe assets',()=>{const s=first();s.layers.background.image='data:image/png;base64,AAAA';s.layers.background.adaptations={'300x250':{image:'/api/resize-lab/assets/'+ 'a'.repeat(64)+'.png'},'336x280':{image:'javascript:bad'},'bad-key':{image:'data:image/png;base64,AAAA'}};const result=restoreScenes([s])[0].layers!.background.adaptations!;expect(result['300x250'].image).toContain('/api/resize-lab/assets/');expect(result['336x280'].image).toBe('');expect(result['bad-key']).toBeUndefined();});
  it('inherits adapted backgrounds without sharing mutable duplicate state',()=>{const a=first(),b=first();a.layers.background={...a.layers.background,action:'change',image:'scene-source',adaptations:{'300x250':{image:'adapted'}}};const result=resolveScenes([a,b],base,'base-bg');expect(result[1].layers.background.adaptations!['300x250'].image).toBe('adapted');const duplicate=cloneLayers(result[1].layers);duplicate.background.adaptations!['300x250'].image='edited';expect(a.layers.background.adaptations!['300x250'].image).toBe('adapted');});
+});
+
+describe('editable layer stack and easing',()=>{
+ it('keeps legacy stack and persists a new top image stack',()=>{const s=first();expect(layerOrder(s)).toEqual(['background','overlay','logo','headline','subline','cta']);s.layerOrder=['background','logo','headline','subline','cta','overlay'];expect(layerOrder(restoreScenes([s])[0])).toEqual(s.layerOrder);});
+ it('uses scene-specific stack changes for continuing tracks during playback',()=>{const a=first(),b=first();b.layerOrder=['background','logo','headline','subline','cta','overlay'];const html=layerSequenceMarkup([a,b],resolveScenes([a,b],base,''),()=>'<span/>');expect(html).toContain('50.000000%{z-index:4}');expect(html).toContain('-stack 2000ms');});
+ it('validates custom curves and restores independent In/Out easing',()=>{const a=first();a.layers.headline.motion={...defaultMotion,easing:'cubic-bezier(0.32,0,0.58,1)',exitEasing:'ease-in'};const restored=restoreScenes([a])[0];expect(restored.layers!.headline.motion.easing).toBe(a.layers.headline.motion.easing);expect(restored.layers!.headline.motion.exitEasing).toBe('ease-in');expect(restoreEasing('cubic-bezier(2,0,0,1)')).toBe('ease-out');expect(restoreEasing('linear;opacity:0')).toBe('ease-out');});
+ it('deep-clones format overrides and visual settings',()=>{const a=first();a.layers.background.adaptations={'300x250':{image:'source',visual:{x:12,y:0,scale:1},overrides:{headline:{x:5,y:3}}}};const b=cloneLayers(a.layers);b.background.adaptations!['300x250'].visual!.x=50;b.background.adaptations!['300x250'].overrides!.headline!.x=50;expect(a.layers.background.adaptations['300x250'].visual!.x).toBe(12);expect(a.layers.background.adaptations['300x250'].overrides!.headline!.x).toBe(5);});
 });

@@ -17,7 +17,7 @@ const curveFor=(preset:EasingPreset,custom?:BezierCurve):BezierCurve=>preset==="
 type Mode="in"|"out";
 type Props={layer:SceneLayer;patch:(patch:Partial<SceneLayer>)=>void;checkpoint?:()=>void};
 
-function BezierEditor({mode,layer,patch}:{mode:Mode;layer:SceneLayer;patch:Props["patch"]}){
+export function BezierEditor({mode,layer,patch}:{mode:Mode;layer:Pick<SceneLayer,"easing"|"outEasing"|"easingBezier"|"outEasingBezier">;patch:Props["patch"]}){
  const preset:EasingPreset=mode==="in"?layer.easing:(layer.outEasing??layer.easing);
  const curve=useMemo(()=>curveFor(preset,mode==="in"?layer.easingBezier:layer.outEasingBezier),[preset,mode,layer.easingBezier,layer.outEasingBezier]);
  const apply=(next:BezierCurve)=>patch(mode==="in"?{easing:"cubic-bezier",easingBezier:next}:{outEasing:"cubic-bezier",outEasingBezier:next});
