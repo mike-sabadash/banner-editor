@@ -19,7 +19,6 @@ const {chromium}=require('playwright');
  await page.reload();await page.waitForTimeout(200);if(await page.getByLabel('Exit animation').inputValue()!=='fade')throw Error('Motion did not restore');if(errors.length)throw Error(errors.join('\n'));
  if(process.env.RESIZE_LAB_UI_SCREENSHOT){
  await page.getByLabel('Exit animation').selectOption('none');
- await a.getByRole('button',{name:'Завершить правку'}).click();
  const top=await page.locator('.rl-body').boundingBox();const account=await page.locator('.rl-account-bar').boundingBox();
  if(top.y<account.y+account.height-1)throw Error('Account bar overlaps workspace');
  const exact=a.getByLabel('300x250 visual scale exact value');await exact.fill('2');
