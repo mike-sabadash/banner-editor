@@ -1,0 +1,47 @@
+name: Resize Lab load diagnostics
+on:
+  push:
+    branches: [diagnostics/resize-lab-load-20261010]
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read-only project load measurements
+        env:
+          SSH_KEY: ${{ secrets.BANNERMATIC_SERVER_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/bannermatic_server
+          chmod 600 ~/.ssh/bannermatic_server
+          ssh-keyscan -p 2222 213.182.208.29 >> ~/.ssh/known_hosts
+          ssh -i ~/.ssh/bannermatic_server -p 2222 -o IdentitiesOnly=yes root@213.182.208.29 'python3 -' <<'PY'
+          import json,time,urllib.request,gzip
+          from pathlib import Path
+          root=Path('/var/www/banner-editor/runtime/resize-lab-projects')
+          db=json.loads(Path('/var/www/banner-editor/runtime/bannermatic.json').read_text())
+          for p in sorted(root.glob('*/*/*.json'),key=lambda p:p.stat().st_mtime,reverse=True)[:5]:
+           t=time.monotonic(); raw=p.read_bytes(); read_ms=round((time.monotonic()-t)*1000,2)
+           t=time.monotonic(); record=json.loads(raw); parse_ms=round((time.monotonic()-t)*1000,2)
+           images=[]
+           def visit(v):
+            if isinstance(v,str) and v.startswith('data:image/'): images.append(v)
+            elif isinstance(v,dict):
+             for x in v.values():visit(x)
+            elif isinstance(v,list):
+             for x in v:visit(x)
+           visit(record)
+           summary={'bytes':len(raw),'inlineImages':len(images),'uniqueImages':len(set(images)),'duplicateImageBytes':sum(map(len,images))-sum(map(len,set(images))),'gzipBytes':len(gzip.compress(raw)),'readMs':read_ms,'parseMs':parse_ms,'formats':len(record.get('state',{}).get('results',{}))}
+           session=next((s for s in reversed(db.get('sessions',[])) if s.get('userId')==p.parent.name and s.get('workspaceId')==p.parent.parent.name),None)
+           if session:
+            for label,base in [('local','http://127.0.0.1:8791'),('public','https://resize-lab.bannermatic.online')]:
+             t=time.monotonic()
+             try:
+              request=urllib.request.Request(base+'/api/resize-lab/projects/'+p.stem,headers={'Authorization':'Bearer '+session['token'],'Accept-Encoding':'gzip'})
+              with urllib.request.urlopen(request,timeout=30) as response:
+               headers_ms=round((time.monotonic()-t)*1000,2); payload=response.read()
+               summary[label]={'status':response.status,'headersMs':headers_ms,'totalMs':round((time.monotonic()-t)*1000,2),'wireBytes':len(payload),'encoding':response.headers.get('Content-Encoding','identity')}
+             except Exception as e:summary[label]={'errorType':type(e).__name__,'elapsedMs':round((time.monotonic()-t)*1000,2)}
+           print(json.dumps(summary))
+          
+          PY
