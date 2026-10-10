@@ -99,3 +99,10 @@
 .rl-scene-layer-properties input[type=file]{width:100%;max-width:100%;font-size:11px}
 .rl-scene-layer-properties p,.rl-scene-layer-properties small{font-size:11px;line-height:1.5;color:#a4abb7}
 .rl-preview-viewport .rl-scene-static [data-edit-layer],.rl-preview-viewport .rl-layer-sequence [data-edit-layer],.rl-animation-master [data-edit-layer]{pointer-events:auto!important;cursor:pointer}
+
+.resize-lab .rl-scene-image-tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:12px 0}
+.resize-lab .rl-scene-image-tools button{min-width:0;display:flex;flex-direction:column;gap:5px;text-align:left;white-space:normal}
+.resize-lab .rl-scene-image-tools strong{font-size:11px}
+.resize-lab .rl-scene-image-tools small{font-size:10px;color:var(--rl-muted);line-height:1.4}
+.resize-lab .rl-scene-image-tools button[aria-pressed=true]{border-color:var(--rl-accent);background:hsl(207 99% 22%)}
+.resize-lab .rl-scene-preview{width:100%;margin-bottom:8px}
