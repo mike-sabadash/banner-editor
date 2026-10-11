@@ -180,3 +180,38 @@
 .resize-lab .rl-scene-rollout .rl-property-group{margin:0}
 .resize-lab .rl-scene-rollout .rl-primary{width:100%;margin:0}
 .resize-lab .rl-scene-rollout .rl-status{margin:0}
+/* Editor navigation / canvas / contextual properties: separate scrolling surfaces. */
+@media(min-width:901px){.resize-lab .rl-body{grid-template-columns:220px minmax(0,1fr) 280px}.resize-lab .rl-body>aside{padding:12px}.resize-lab .rl-inspector-dock{border-left:1px solid var(--rl-border);border-right:0}.resize-lab .rl-stage.families{padding:22px;gap:22px}.resize-lab .rl-results{min-width:0}.resize-lab .rl-derived-grid{grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr))}}
+.resize-lab [hidden]{display:none!important}
+.resize-lab .rl-context-inspector>header,.resize-lab .rl-context-inspector>div>header{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px 0;border-bottom:1px solid var(--rl-border);margin-bottom:12px}
+.resize-lab .rl-context-inspector header strong{font-size:12px;overflow-wrap:anywhere}.resize-lab .rl-context-inspector header small{flex-basis:100%;font-size:10px;color:var(--rl-muted)}
+.resize-lab .rl-context-inspector h3{display:flex;align-items:center;gap:6px;margin:12px 0 8px;font-size:11px}
+.resize-lab .rl-context-inspector label{margin:8px 0;font-size:10px}
+.resize-lab .rl-context-inspector input,.resize-lab .rl-context-inspector select,.resize-lab .rl-context-inspector textarea{padding:6px 8px;min-height:30px;border-radius:5px}
+.resize-lab .rl-context-inspector section{border-bottom:1px solid var(--rl-border);padding-bottom:12px}
+.resize-lab .rl-property-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;align-items:end}
+.resize-lab .rl-property-grid label{min-width:0}.resize-lab .rl-property-grid input[type=color]{width:100%;height:30px;padding:3px}
+.resize-lab .rl-segmented{display:flex;gap:3px}.resize-lab .rl-segmented button{flex:1;padding:6px 2px;font-size:10px}.resize-lab .rl-segmented button[aria-pressed=true]{background:var(--rl-selected);border-color:var(--rl-accent)}
+.resize-lab .rl-design-layer-list{display:grid;gap:3px;margin-top:8px}.resize-lab .rl-design-layer-list button{display:flex;gap:8px;align-items:center;text-align:left;padding:9px}.resize-lab .rl-design-layer-list button[aria-pressed=true]{background:var(--rl-selected);border-color:var(--rl-accent)}
+.resize-lab .rl-layer-panel-tabs{margin:12px 0 8px;gap:3px}.resize-lab .rl-layer-panel-tabs button{display:flex;gap:5px;align-items:center;justify-content:center;font-size:10px;padding:7px 4px}
+.resize-lab .rl-scene-editor h2{font-size:12px;display:inline-block;margin:12px 8px 8px 0}.resize-lab .rl-scene-editor>button{font-size:10px;padding:6px}
+.resize-lab .rl-scene-list{max-height:148px;overflow:auto;margin:8px 0}.resize-lab .rl-scene-list button{min-height:44px;padding:6px}.resize-lab .rl-scene-list img{width:26px;height:34px}.resize-lab .rl-scene-list span{font-size:10px}
+.resize-lab .rl-sequence-controls{gap:4px;margin:8px 0}.resize-lab .rl-sequence-controls button{font-size:10px;padding:6px}.resize-lab .rl-sequence-controls output{font-size:9px}
+.resize-lab .rl-scene-editor>label{margin:6px 0;font-size:9px}.resize-lab .rl-scene-time{font-size:9px}
+.resize-lab .rl-rollout-toolbar{display:grid;gap:6px;margin-bottom:10px}.resize-lab .rl-rollout-toolbar .rl-primary,.resize-lab .rl-rollout-action{margin:0;padding:9px;font-size:11px}.resize-lab .rl-repeat-rollout{display:flex;gap:6px;align-items:center;justify-content:center;font-size:10px;padding:5px}.resize-lab .rl-rollout-scope{font-size:9px;color:var(--rl-muted)}
+.resize-lab .rl-scene-rollout{margin:0;border-top:0}.resize-lab .rl-scene-image-preview{height:100px}.resize-lab .rl-scene-image-preview img{max-height:100px;object-fit:contain}
+.resize-lab .rl-motion-presets{grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}.resize-lab .rl-motion-presets button{padding:4px 1px;font-size:8px;min-width:0}.resize-lab .rl-effect-thumbnail{height:34px}.resize-lab .rl-preset-icon{width:14px;height:14px}
+.resize-lab .rl-format-picker{margin-top:0;padding-top:6px}.resize-lab .rl-format-options{padding-left:5px}.resize-lab .rl-format-options label>span{grid-template-columns:1fr}.resize-lab .rl-format-options small{display:none}
+.resize-lab .rl-repeat-dialog{color:var(--rl-text);background:var(--rl-panel);border:1px solid var(--rl-border);border-radius:10px;width:min(440px,calc(100vw - 32px));padding:20px}.resize-lab .rl-repeat-dialog::backdrop{background:#0009}.resize-lab .rl-repeat-dialog p{font-size:12px;line-height:1.6}.resize-lab .rl-repeat-dialog>div{display:flex;justify-content:flex-end;gap:8px}.resize-lab .rl-repeat-dialog button{padding:8px;font-size:11px}
+.resize-lab .rl-canvas.master[data-selected-layer] .rl-layer[data-layer]:hover{outline:1px solid var(--rl-accent)}
+@media(max-width:900px){.resize-lab .rl-inspector-dock{padding:16px;border-top:1px solid var(--rl-border)}.resize-lab .rl-context-inspector{max-width:420px}.resize-lab .rl-body{grid-template-columns:1fr}}
+
+.resize-lab{--rl-panel:var(--rl-bg);--rl-text:var(--rl-fg);--rl-selected:hsl(207 98% 23%)}
+
+.resize-lab .rl-scene-layer-row{grid-template-columns:12px 15px minmax(0,1fr) 26px;gap:4px}.resize-lab .rl-scene-layer-row>svg{color:var(--rl-muted)}
+
+.resize-lab [data-selected-layer=logo] [data-layer=logo],.resize-lab [data-selected-layer=headline] [data-layer=headline],.resize-lab [data-selected-layer=subline] [data-layer=subline],.resize-lab [data-selected-layer=cta] [data-layer=cta]{outline:1px solid var(--rl-accent);outline-offset:-1px}
+
+.resize-lab .rl-scene-layer-row>button:first-of-type{display:flex;align-items:center;justify-content:space-between;gap:4px;min-width:0;height:30px}.resize-lab .rl-scene-layer-row>button:first-of-type>span{min-width:0;flex:1}.resize-lab .rl-scene-layer-row small{flex:none;white-space:nowrap;width:10px}.resize-lab .rl-inspector-dock .bm-bezier-values input{padding:4px;font-size:10px;min-width:0}
+
+@media(min-width:901px){.resize-lab #rl-design-panel .rl-format-picker{max-height:calc(100dvh - 230px);overflow:auto;overscroll-behavior:contain}.resize-lab .rl-scene-editor .rl-format-picker{max-height:max(150px,calc(100dvh - 570px));overflow:auto;overscroll-behavior:contain}}

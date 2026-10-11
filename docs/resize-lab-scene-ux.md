@@ -34,3 +34,24 @@ Runtime acceptance checks cover visible text/CTA during real playback, persisten
 
 ## Unified scene master rollout
 Each selected scene exposes Master → existing shared format picker → existing Smart rollout, independently of selected layer or content/motion tab. Uploading the scene master retains the complete source and invalidates only that scene's adaptations. Rollout sends that source at its real dimensions to the existing adaptation API, stores separate scene/format images, and retries only unfinished formats. Existing base adaptations are retained when adding missing formats to a scene based on the original design. Manual transforms do not mark an unadapted source ready. Generated or explicitly uploaded per-format images remain editable and survive reload/export. Format selection and optional AI instructions reuse the Design controls. Generation remains an explicit Smart rollout action, just as in Design.
+
+## Contextual inspector audit (2026-10-11)
+
+Observed separately in the supplied screens:
+- 16:19:55: scene 2 selected; scene list, transport, metadata, master and rollout occupy the left column; selected-layer properties are outside the visible area; 728×90 crops the character.
+- 16:24:56: scene 2 selected; the rollout action remains below scene/master/picker/instruction sections; the screenshot alone does not establish whether adaptation has run.
+- 16:37:39: Design shows headline, subline and CTA fields together, followed by typography/logo/button/AI disclosures and format selection.
+- 16:43:35: button styling is expanded above the long format list; the image does not show the mode tabs or current object selection.
+
+Existing → expected → change:
+- A mixed left form → navigation separate from object properties → left scenes/layers or formats, central canvas, right contextual inspector.
+- All text fields together → one selected object's Character controls → selection on master, output canvas, or Layers swaps text/font/relative size/color; button appearance only appears for CTA.
+- Rollout after expanding lists → launch remains discoverable → launch at the top of navigation, with selected scene scope; formats use their own tab.
+- Ready results disable generation → explicit regeneration of the selected scene → Repeat rollout opens a native modal describing scope, replacement and provider charges; confirmation regenerates selected sizes from the full source while retaining overrides and other scenes.
+
+Primary references:
+- Figma Properties: https://help.figma.com/hc/en-us/articles/360039832014-Design-prototype-and-explore-layer-properties-in-the-right-sidebar
+- Figma text properties: https://help.figma.com/hc/en-us/articles/360039956634-Explore-text-properties
+- After Effects contextual Properties / Text sections: https://helpx.adobe.com/after-effects/desktop/animate-in-after-effects/animate-using-the-properties-panel/properties-panel.html
+
+Only existing supported properties are exposed. Relative font size remains a percentage of the adaptive layout size. Text-layer styling is shared across scenes as in the existing project model; independent headline/subline/CTA fonts are preserved. No unsupported font weights, kerning, paragraph alignment, or new persistence model are claimed. Animation presets, the existing Bézier editor, per-format AI/manual editing, playback, save/reload and export remain available.
