@@ -10,10 +10,16 @@ describe('Resize Lab image pipeline',()=>{
   expect(first.prompt).toBe(second.prompt);expect(first.aspect_ratio).toBe('8:1');expect(second.input_references[0].image_url.url).toBe('second');
   expect(first.prompt).toContain('headline: x=2.0%');expect(first.prompt).toContain('WHOLE focal group');
  });
- it('outputs the exact banner dimensions rather than browser cover cropping',async()=>{
+ it('outputs the exact banner aspect without extra browser cropping or loss of native density',async()=>{
   const output=await prepareResizeLabImage(await image(800,100),{target:{width:728,height:90},family:'strip'});
-  expect(await sharp(Buffer.from(output.imageDataUrl.split(',')[1],'base64')).metadata()).toMatchObject({width:728,height:90});
+  const meta=await sharp(Buffer.from(output.imageDataUrl.split(',')[1],'base64')).metadata();expect(meta).toMatchObject({width:728,height:90});expect(meta.width!/meta.height!).toBeCloseTo(728/90,10);
   expect(output.geometry.requestedAspect).toBe('8:1');
+ });
+ it('retains high-density artwork while keeping HTML banner dimensions unchanged',async()=>{
+  const output=await prepareResizeLabImage(await image(3072,384),{target:{width:728,height:90},family:'strip'});
+  const meta=await sharp(Buffer.from(output.imageDataUrl.split(',')[1],'base64')).metadata();
+  expect(meta.width).toBe(2912);expect(meta.height).toBe(360);expect(meta.width!/meta.height!).toBeCloseTo(728/90,10);
+  expect(output.geometry.target).toEqual({width:728,height:90});expect(output.geometry.artwork).toEqual({width:2912,height:360});
  });
  it('also accepts an output already at the exact target ratio',async()=>{
   const output=await prepareResizeLabImage(await image(640,100),{target:{width:320,height:50},family:'micro'});

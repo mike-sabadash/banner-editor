@@ -18,8 +18,15 @@ export async function prepareResizeLabImage(bytes,{target,family}){
  // Allow provider pixel-rounding, but never accept e.g. 21:9 in place of 8:1.
  // No automatic extra generation: preserve the previous result and expose the error.
  if(Math.min(Math.abs(Math.log((meta.width/meta.height)/ratio)),Math.abs(Math.log((meta.width/meta.height)/(dimensions.width/dimensions.height))))>Math.log(1.12))throw Error(`AI вернул ${meta.width}×${meta.height} вместо пропорции ${requested}. Результат не применён: важные объекты могли бы обрезаться. Повторите раскатку или загрузите изображение нужного формата.`);
- const image=await sharp(bytes).rotate().resize(dimensions.width,dimensions.height,{fit:'cover',position:'centre',kernel:'lanczos3'}).jpeg({quality:92}).toBuffer();
- return {imageDataUrl:'data:image/jpeg;base64,'+image.toString('base64'),geometry:{requestedAspect:requested,generated:{width:meta.width,height:meta.height},target:dimensions,viewport:generationViewport(dimensions,family,meta.width/meta.height)}};
+ // Keep native AI density for @2x previews, family masters and later AI edits.
+ // Use integer multiples of the reduced target ratio; CSS/export dimensions stay
+ // at target size while the artwork retains as many original pixels as possible.
+ const gcd=(a,b)=>b?gcd(b,a%b):a;
+ const divisor=gcd(dimensions.width,dimensions.height),unitWidth=dimensions.width/divisor,unitHeight=dimensions.height/divisor;
+ const multiple=Math.max(divisor,Math.floor(Math.min(meta.width/unitWidth,meta.height/unitHeight)));
+ const artwork={width:unitWidth*multiple,height:unitHeight*multiple};
+ const image=await sharp(bytes).rotate().resize(artwork.width,artwork.height,{fit:'cover',position:'centre',kernel:'lanczos3'}).jpeg({quality:92}).toBuffer();
+ return {imageDataUrl:'data:image/jpeg;base64,'+image.toString('base64'),geometry:{requestedAspect:requested,generated:{width:meta.width,height:meta.height},target:dimensions,artwork,viewport:generationViewport(dimensions,family,meta.width/meta.height)}};
 }
 export async function runResizeLabImage(input,{apiKey,model,fetchImpl=fetch}){
  if(!apiKey)throw Error('OPENROUTER_API_KEY is not configured on the server');
