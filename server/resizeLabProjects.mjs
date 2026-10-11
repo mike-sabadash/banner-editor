@@ -35,6 +35,9 @@ export async function handleResizeLabProjects(req,res,{json,readBody}){
  if(req.method==="PUT"){
   const body=await readBody(req);
   if(!body||typeof body!=="object"||!body.state||typeof body.state!=="object"){json(req,res,400,{error:"Invalid project"});return true;}
+  // Preserve versioned decisions when an older/stale client saves unrelated edits.
+  let previous;try{previous=JSON.parse(await fs.readFile(file,'utf8')).state;}catch(e){if(e.code!=='ENOENT')throw e;}
+  body.state.artDirections=preserveProjectDirections(previous?.artDirections,body.state.artDirections);
   const record={id:match[1],name:String(body.name||"Untitled project").slice(0,120),updatedAt:new Date().toISOString(),state:await externalizeProjectImages(body.state,assetsDir)};
   await fs.mkdir(dir,{recursive:true});
   const tmp=file+"."+process.pid+"."+Date.now()+".tmp";
@@ -42,4 +45,15 @@ export async function handleResizeLabProjects(req,res,{json,readBody}){
   json(req,res,200,{id:record.id,updatedAt:record.updatedAt,state:record.state});return true;
  }
  json(req,res,405,{error:"Method not allowed"});return true;
+}
+
+export function preserveProjectDirections(previous,incoming){
+ const prior=previous&&typeof previous==='object'&&!Array.isArray(previous)?previous:{};
+ const next={...prior};
+ if(incoming&&typeof incoming==='object'&&!Array.isArray(incoming))for(const [key,value] of Object.entries(incoming)){
+  if(!/^[a-f0-9]{64}$/.test(key)||!value||typeof value!=='object'||value.sourceHash!==key||!value.plans||typeof value.plans!=='object')continue;
+  const old=prior[key];if(old?.plans&&Object.keys(old.plans).some(id=>!Object.hasOwn(value.plans,id)))continue;
+  next[key]=value;
+ }
+ return next;
 }

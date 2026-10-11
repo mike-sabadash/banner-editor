@@ -1,4 +1,5 @@
 import sharp from 'sharp';
+import {resolvePersistedDirection} from './resizeLabDirection.mjs';
 import {reviewResizeLabArtwork} from './resizeLabReview.mjs';
 import {buildResizeLabPrompt,imageAspectRatio,generationViewport} from './resizeLabPrompt.mjs';
 
@@ -9,7 +10,7 @@ export function resizeTarget(value={width:728,height:90}){
 }
 export function resizeLabImageRequest(input,model){
  const target=resizeTarget(input.target),family=String(input.family||'landscape'),userPrompt=String(input.prompt||'').slice(0,4000);
- const prompt=input.editMode?`Edit the supplied existing banner artwork at ${target.width}×${target.height}. Apply ONLY this user instruction: ${userPrompt}. Preserve the existing subject identity, lighting, scene and campaign style unless explicitly requested. Extend the scene naturally when moving the subject; avoid visible crop boundaries or seams. Keep the same aspect ratio. Do not render logos, buttons or any typography; HTML layers are handled separately.`:buildResizeLabPrompt({target,userPrompt,family,composition:input.composition,overlayLayout:input.overlayLayout});
+ const prompt=input.editMode?`Edit the supplied existing banner artwork at ${target.width}×${target.height}. Apply ONLY this user instruction: ${userPrompt}. Preserve the existing subject identity, lighting, scene and campaign style unless explicitly requested. Extend the scene naturally when moving the subject; avoid visible crop boundaries or seams. Keep the same aspect ratio. Do not render logos, buttons or any typography; HTML layers are handled separately.`:input.savedGenerationPrompt||buildResizeLabPrompt({target,userPrompt,family,composition:input.composition,overlayLayout:input.overlayLayout,artDirection:input.artDirection,formatPlan:input.formatPlan});
  return {model,prompt,aspect_ratio:imageAspectRatio(family,target),resolution:'1K',output_format:'jpeg',input_references:[{type:'image_url',image_url:{url:input.imageDataUrl}}]};
 }
 export async function prepareResizeLabImage(bytes,{target,family}){
@@ -29,22 +30,30 @@ export async function prepareResizeLabImage(bytes,{target,family}){
  const image=await sharp(bytes).rotate().resize(artwork.width,artwork.height,{fit:'cover',position:'centre',kernel:'lanczos3'}).jpeg({quality:92}).toBuffer();
  return {imageDataUrl:'data:image/jpeg;base64,'+image.toString('base64'),geometry:{requestedAspect:requested,generated:{width:meta.width,height:meta.height},target:dimensions,artwork,viewport:generationViewport(dimensions,family,meta.width/meta.height)}};
 }
-export async function runResizeLabImage(input,{apiKey,model,reviewModel='google/gemini-2.5-flash',fetchImpl=fetch}){
+export async function runResizeLabImage(input,{apiKey,model,reviewModel='google/gemini-2.5-flash',fetchImpl=fetch,planningScope,resolveDirection=resolvePersistedDirection}){
  if(!apiKey)throw Error('OPENROUTER_API_KEY is not configured on the server');
  if(!/^data:image\/(png|jpeg|jpg|webp);base64,/i.test(String(input.imageDataUrl||'')))throw Error('Upload a PNG, JPEG or WebP visual');
+ let direction={charges:{}};
+ if(!input.editMode){
+  direction=await resolveDirection({...input,target:resizeTarget(input.target)},{apiKey,model,reviewModel,fetchImpl,scope:planningScope});
+  if(direction.error)return {error:direction.error,artDirection:direction.artDirection,cost:Object.values(direction.charges).some(Number.isFinite)?Object.values(direction.charges).filter(Number.isFinite).reduce((sum,v)=>sum+v,0):null,costBreakdown:direction.charges,costIncomplete:Object.values(direction.charges).some(v=>!Number.isFinite(v))};
+  if(direction.artDirection){input={...input,artDirection:direction.artDirection,formatPlan:direction.plan,savedGenerationPrompt:direction.generationPrompt};model=direction.artDirection.models.generation;reviewModel=direction.artDirection.models.review;}
+ }
+ const saved={artDirection:direction.artDirection,planId:direction.planId};
+ const priorCharges=Object.values(direction.charges);
+ const billing=(generation,review)=>{const charges=[...priorCharges,generation,...(review===undefined?[]:[review])];return {cost:charges.some(Number.isFinite)?charges.filter(Number.isFinite).reduce((sum,value)=>sum+value,0):null,costBreakdown:{...direction.charges,generation,...(review===undefined?{}:{review})},costIncomplete:charges.some(value=>!Number.isFinite(value))};};
  const request=resizeLabImageRequest(input,model);
- const response=await fetchImpl('https://openrouter.ai/api/v1/images',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json','HTTP-Referer':'https://studio.bannermatic.online','X-Title':'Bannermatic Resize Lab'},body:JSON.stringify(request)});
- if(!response.ok)throw Error(`OpenRouter Image API ${response.status}: ${(await response.text()).slice(0,900)}`);
- const data=await response.json(),first=data?.data?.[0],cost=data?.usage?.cost??null;
- if(!first?.b64_json)return {error:'Image API returned no image',model,cost};
+ let response;try{response=await fetchImpl('https://openrouter.ai/api/v1/images',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json','HTTP-Referer':'https://studio.bannermatic.online','X-Title':'Bannermatic Resize Lab'},body:JSON.stringify(request)});}catch{return {error:"Image API недоступен. Результат не применён.",model,...saved,...billing(null)};}
+ if(!response.ok)return {error:`Image API недоступен (HTTP ${response.status}). Результат не применён.`,model,...saved,...billing(null)};
+ let data;try{data=await response.json();}catch{return {error:"Image API вернул некорректный ответ. Результат не применён.",model,...saved,...billing(null)};}const first=data?.data?.[0],cost=data?.usage?.cost??null;
+ if(!first?.b64_json)return {error:'Image API returned no image',model,...saved,...billing(cost)};
  try{
   const artwork=await prepareResizeLabImage(Buffer.from(first.b64_json,'base64'),{target:input.target,family:input.family||'landscape'});
   const review=await reviewResizeLabArtwork({...input,target:resizeTarget(input.target)},artwork,{apiKey,model:reviewModel,fetchImpl});
-  const charges=[cost,review.cost],total=charges.filter(Number.isFinite).reduce((sum,value)=>sum+value,0);
-  const billing={cost:charges.some(Number.isFinite)?total:null,costBreakdown:{generation:cost,review:review.cost},costIncomplete:charges.some(value=>!Number.isFinite(value))};
-  if(review.error)return {error:review.error,model,...billing};
-  if(!review.quality.accepted)return {error:'Результат не применён: '+review.quality.issues.join('; ')+'. Предыдущая картинка сохранена. Можно повторить раскатку вручную.',quality:review.quality,model,...billing};
-  return {...artwork,quality:review.quality,model,...billing};
+  const charges=billing(cost,review.cost);
+  if(review.error)return {error:review.error,model,...saved,...charges};
+  if(!review.quality.accepted)return {error:'Результат не применён: '+review.quality.issues.join('; ')+'. Предыдущая картинка сохранена. Можно повторить раскатку вручную.',quality:review.quality,model,...saved,...charges};
+  return {...artwork,quality:review.quality,model,...saved,...charges};
  }
- catch(error){return {error:error instanceof Error?error.message:String(error),model,cost};}
+ catch(error){return {error:error instanceof Error?error.message:String(error),model,...saved,...billing(cost)};}
 }

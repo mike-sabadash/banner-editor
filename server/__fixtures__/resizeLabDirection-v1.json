@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "promptVersion": "art-direction-v1",
+  "sourceHash": "b70035bb783a47bf61ac3ff70b005308e167ee984365690e638c1481b8ca2936",
+  "models": {
+    "analysis": "vision-v1",
+    "generation": "image-v1",
+    "review": "vision-v1"
+  },
+  "analysis": {
+    "kind": "related-group",
+    "summary": "A vehicle and person interacting",
+    "visualLanguage": "Same photographic scene",
+    "readingFlow": "Left to right",
+    "invariants": [
+      "Preserve interaction and relative scale"
+    ],
+    "groups": [
+      {
+        "id": "car-person",
+        "description": "Car and person",
+        "role": "primary",
+        "members": [
+          "car",
+          "person"
+        ],
+        "sourceBox": {
+          "x": 0,
+          "y": 0,
+          "width": 1,
+          "height": 1
+        },
+        "relationships": "Person leaning against the car; keep their relative scale",
+        "protectedDetails": [
+          "Product identity"
+        ],
+        "allowedCrop": "Peripheral environment only"
+      }
+    ]
+  },
+  "plans": {
+    "d8208388278357cc3639fe9535b1e4a9c0dc2194896429ff0f45db09ee7fcdd2": {
+      "contextId": "255ba13a8a891f47d6cdb4686bdb1175486c7b9193f7d39be127e68f948964a5",
+      "context": {
+        "target": {
+          "width": 728,
+          "height": 90
+        },
+        "occupiedZones": [
+          {
+            "key": "headline",
+            "x": 0,
+            "y": 0,
+            "width": 0.4,
+            "height": 0.8
+          }
+        ],
+        "instruction": ""
+      },
+      "revision": 1,
+      "plan": {
+        "strategy": "Horizontal connected group with quiet copy area",
+        "placements": [
+          {
+            "groupId": "car-person",
+            "targetBox": {
+              "x": 0.45,
+              "y": 0.1,
+              "width": 0.5,
+              "height": 0.8
+            },
+            "minimumHeight": 0.6,
+            "operation": "reposition",
+            "instruction": "Move the complete related group together, preserve the interaction"
+          }
+        ],
+        "backgroundExtension": "Continue the original environment",
+        "allowedChanges": [
+          "Reposition the existing group",
+          "Extend existing environment"
+        ],
+        "preserveRelationships": [
+          "Same scale ratio and contact between car and person"
+        ]
+      },
+      "generationPrompt": "SOURCE-FAITHFUL IMAGE EDIT to 728×90. Treat the supplied artwork as the single authoritative campaign master, not inspiration for a new visual. This is a faithful image-edit / canvas-extension task. Preserve its recognizable objects, their shapes, distinctive graphic assets, background motif, lighting, colors, textures, depth, materials, effects and campaign-specific visual language. Do not invent a different scene, new objects, new decorative assets or alternative design. Reuse and reposition the existing elements; when extra canvas is needed, outpaint a seamless continuation of the same environment. Keep recognizable brand artwork already baked into the original as faithfully as possible, but do not add new text. Execute this SAVED FORMAT PLAN exactly; do not re-analyze the master or choose a different composition. Source structure and invariants: {\"kind\":\"related-group\",\"summary\":\"A vehicle and person interacting\",\"visualLanguage\":\"Same photographic scene\",\"readingFlow\":\"Left to right\",\"invariants\":[\"Preserve interaction and relative scale\"],\"groups\":[{\"id\":\"car-person\",\"description\":\"Car and person\",\"role\":\"primary\",\"members\":[\"car\",\"person\"],\"sourceBox\":{\"x\":0,\"y\":0,\"width\":1,\"height\":1},\"relationships\":\"Person leaning against the car; keep their relative scale\",\"protectedDetails\":[\"Product identity\"],\"allowedCrop\":\"Peripheral environment only\"}]}. Format plan: {\"strategy\":\"Horizontal connected group with quiet copy area\",\"placements\":[{\"groupId\":\"car-person\",\"targetBox\":{\"x\":0.45,\"y\":0.1,\"width\":0.5,\"height\":0.8},\"minimumHeight\":0.6,\"operation\":\"reposition\",\"instruction\":\"Move the complete related group together, preserve the interaction\"}],\"backgroundExtension\":\"Continue the original environment\",\"allowedChanges\":[\"Reposition the existing group\",\"Extend existing environment\"],\"preserveRelationships\":[\"Same scale ratio and contact between car and person\"]}. Occupied HTML zones: [{\"key\":\"headline\",\"x\":0,\"y\":0,\"width\":0.4,\"height\":0.8}]. These HTML layers are not pixels to generate. The plan's groups and group-specific scale rules replace any generic single-hero assumption. All related members retain their interaction and relative scale. Abstract groups follow their recorded mass/rhythm directions. The allowedChanges list is closed: no new scene, object, typography, logo, CTA or decoration. Faithfully preserve authentic source product markings. No independent creative redesign. GENERATION CANVAS: 8:1. FINAL VISIBLE WINDOW: x=0.0%, y=0.5%, width=100.0%, height=98.9% of the generated image; only this centered window survives the final resize to 728×90. Keep complete heads/faces and essential product identifying details inside that window. A deliberate close-up may crop legs, a table, peripheral scenery and secondary decorations. Do not shrink the entire source poster to preserve every object. Outside it use only expendable continuation of the same environment. Never accidentally cut protected faces or product details outside this window; deliberate plan-approved peripheral crop is allowed.",
+      "id": "d8208388278357cc3639fe9535b1e4a9c0dc2194896429ff0f45db09ee7fcdd2"
+    }
+  },
+  "seal": "56f860df9a8967daa2636860ace895a7cd9f4aa4d88f572d740fd80774992a6a"
+}
