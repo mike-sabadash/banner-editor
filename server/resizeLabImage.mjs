@@ -1,4 +1,5 @@
 import sharp from 'sharp';
+import {reviewResizeLabArtwork} from './resizeLabReview.mjs';
 import {buildResizeLabPrompt,imageAspectRatio,generationViewport} from './resizeLabPrompt.mjs';
 
 export function resizeTarget(value={width:728,height:90}){
@@ -28,7 +29,7 @@ export async function prepareResizeLabImage(bytes,{target,family}){
  const image=await sharp(bytes).rotate().resize(artwork.width,artwork.height,{fit:'cover',position:'centre',kernel:'lanczos3'}).jpeg({quality:92}).toBuffer();
  return {imageDataUrl:'data:image/jpeg;base64,'+image.toString('base64'),geometry:{requestedAspect:requested,generated:{width:meta.width,height:meta.height},target:dimensions,artwork,viewport:generationViewport(dimensions,family,meta.width/meta.height)}};
 }
-export async function runResizeLabImage(input,{apiKey,model,fetchImpl=fetch}){
+export async function runResizeLabImage(input,{apiKey,model,reviewModel='google/gemini-2.5-flash',fetchImpl=fetch}){
  if(!apiKey)throw Error('OPENROUTER_API_KEY is not configured on the server');
  if(!/^data:image\/(png|jpeg|jpg|webp);base64,/i.test(String(input.imageDataUrl||'')))throw Error('Upload a PNG, JPEG or WebP visual');
  const request=resizeLabImageRequest(input,model);
@@ -36,6 +37,14 @@ export async function runResizeLabImage(input,{apiKey,model,fetchImpl=fetch}){
  if(!response.ok)throw Error(`OpenRouter Image API ${response.status}: ${(await response.text()).slice(0,900)}`);
  const data=await response.json(),first=data?.data?.[0],cost=data?.usage?.cost??null;
  if(!first?.b64_json)return {error:'Image API returned no image',model,cost};
- try{return {...await prepareResizeLabImage(Buffer.from(first.b64_json,'base64'),{target:input.target,family:input.family||'landscape'}),model,cost};}
+ try{
+  const artwork=await prepareResizeLabImage(Buffer.from(first.b64_json,'base64'),{target:input.target,family:input.family||'landscape'});
+  const review=await reviewResizeLabArtwork({...input,target:resizeTarget(input.target)},artwork,{apiKey,model:reviewModel,fetchImpl});
+  const charges=[cost,review.cost],total=charges.filter(Number.isFinite).reduce((sum,value)=>sum+value,0);
+  const billing={cost:charges.some(Number.isFinite)?total:null,costBreakdown:{generation:cost,review:review.cost},costIncomplete:charges.some(value=>!Number.isFinite(value))};
+  if(review.error)return {error:review.error,model,...billing};
+  if(!review.quality.accepted)return {error:'Результат не применён: '+review.quality.issues.join('; ')+'. Предыдущая картинка сохранена. Можно повторить раскатку вручную.',quality:review.quality,model,...billing};
+  return {...artwork,quality:review.quality,model,...billing};
+ }
  catch(error){return {error:error instanceof Error?error.message:String(error),model,cost};}
 }
