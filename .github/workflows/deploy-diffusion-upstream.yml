@@ -232,7 +232,7 @@ jobs:
           await page.getByRole('button', {name:'Выбрать объект Headline',exact:true}).waitFor({state:'visible'});
           await page.getByLabel('Инспектор свойств', {exact:true}).waitFor({state:'visible'});
           await page.getByText('FAMILY OUTPUT', {exact:true}).waitFor({state:'visible'});
-          await page.getByText('Composition 1', {exact:true}).first().waitFor({state:'visible'});
+          await page.locator('.master-block .rl-title').getByText(/Composition 1/).waitFor({state:'visible'});
           if ((await page.getByText('320x50', {exact:true}).count()) === 0) throw new Error('320x50 format missing');
           if ((await page.getByText('728x90', {exact:true}).count()) === 0) throw new Error('728x90 format missing');
           await page.getByText(/Smart rollout/).first().waitFor({state:'visible'});
