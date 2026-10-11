@@ -228,7 +228,9 @@ jobs:
           if (errors.length) console.log('BROWSER_ERRORS\n'+errors.join('\n'));
           if (errors.length) process.exitCode=2;
           await page.goto('https://resize-lab.bannermatic.online/', {waitUntil:'networkidle', timeout:60000});
-          await page.getByText('MVP-2', {exact:true}).waitFor({state:'visible'});
+          await page.getByRole('tab', {name:'Дизайн',exact:true}).waitFor({state:'visible'});
+          await page.getByRole('button', {name:'Выбрать объект Headline',exact:true}).waitFor({state:'visible'});
+          await page.getByLabel('Инспектор свойств', {exact:true}).waitFor({state:'visible'});
           await page.getByText('FAMILY OUTPUT', {exact:true}).waitFor({state:'visible'});
           await page.getByText('Composition 1', {exact:true}).first().waitFor({state:'visible'});
           if ((await page.getByText('320x50', {exact:true}).count()) === 0) throw new Error('320x50 format missing');
