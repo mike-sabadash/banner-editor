@@ -168,3 +168,15 @@
 .resize-lab [data-selected-layer=background] [data-edit-layer=background],.resize-lab [data-selected-layer=overlay] [data-edit-layer=overlay],.resize-lab [data-selected-layer=logo] [data-edit-layer=logo],.resize-lab [data-selected-layer=headline] [data-edit-layer=headline],.resize-lab [data-selected-layer=subline] [data-edit-layer=subline],.resize-lab [data-selected-layer=cta] [data-edit-layer=cta]{outline:1px solid var(--rl-accent);outline-offset:-1px}
 .resize-lab .rl-scene-meta>label{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;align-items:stretch;margin:8px 0;font-size:10px}
 .resize-lab .rl-scene-meta>label>input{display:block;width:100%;margin:0;height:28px}
+
+/* Reuse the existing master → format picker → Smart rollout flow in every scene. */
+.resize-lab .rl-scene-rollout{padding:12px 0;border-block:1px solid var(--rl-border);display:grid;gap:10px;margin:12px 0}
+.resize-lab .rl-scene-rollout h3{margin:0;font-size:12px}
+.resize-lab .rl-scene-master-source{display:flex;gap:10px;min-width:0;align-items:center}
+.resize-lab .rl-scene-master-source img{width:48px;height:72px;object-fit:contain;flex:none;border-radius:6px;background:var(--rl-panel)}
+.resize-lab .rl-scene-master-source>div{display:grid;gap:6px;min-width:0;flex:1}
+.resize-lab .rl-scene-master-source strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}
+.resize-lab .rl-scene-rollout small{font-size:10px;color:var(--rl-muted);line-height:1.5}
+.resize-lab .rl-scene-rollout .rl-property-group{margin:0}
+.resize-lab .rl-scene-rollout .rl-primary{width:100%;margin:0}
+.resize-lab .rl-scene-rollout .rl-status{margin:0}
