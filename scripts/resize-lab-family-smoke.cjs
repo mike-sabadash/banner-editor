@@ -18,7 +18,27 @@ const {chromium}=require('playwright');
  await page.getByRole('tab',{name:'Анимация',exact:true}).click();await page.getByLabel('Exit animation').selectOption('fade');await page.waitForTimeout(1400);if(!saved?.families?.square||saved.motion.exit!=='fade')throw Error('Settings not saved');
  await page.getByRole('button',{name:/Replay animation/}).click();await b.locator('[data-edit-layer="logo"]').evaluate(async el=>{const animations=el.getAnimations();console.log('motion-check',JSON.stringify({count:animations.length,name:getComputedStyle(el).animationName,delay:getComputedStyle(el).animationDelay,duration:getComputedStyle(el).animationDuration,reduced:matchMedia('(prefers-reduced-motion:reduce)').matches}));if(!animations.length)throw Error('Exit animation missing: '+el.closest('.rl-auto-canvas').outerHTML.slice(0,300));await Promise.all(animations.map(a=>a.finished));if(Number(getComputedStyle(el).opacity)>.01)throw Error('Exit animation did not hide logo: '+getComputedStyle(el).opacity)});
  await page.reload();await page.getByRole('tab',{name:'Анимация',exact:true}).click();await page.waitForTimeout(200);if(await page.getByLabel('Exit animation').inputValue()!=='fade')throw Error('Motion did not restore');if(errors.length)throw Error(errors.join('\n'));
+
+ // The initial Design rollout must send the actual measured overlays, including
+ // family-inherited logo size and manual offsets, for every target.
+ await page.getByRole('tab',{name:'Дизайн',exact:true}).click();
+ const layoutRequests=[];
+ await page.route('**/api/resize-lab/adapt',async route=>{
+  const body=route.request().postDataJSON();layoutRequests.push(body);
+  if(body.overlayLayout?.units!=='normalized')throw Error('Missing overlay geometry');
+  const keys=body.overlayLayout.zones.map(z=>z.key);
+  for(const key of ['logo','headline','cta'])if(!keys.includes(key))throw Error('Missing Design zone '+key);
+  if(body.target.height===90&&keys.includes('subline'))throw Error('Invisible strip subline was reserved');
+  for(const z of body.overlayLayout.zones)if(z.x<0||z.y<0||z.x+z.width>1.00001||z.y+z.height>1.00001)throw Error('Unbounded overlay zone');
+  await route.fulfill({json:{imageDataUrl:image}});
+ });
+ await page.getByRole('button',{name:'Smart rollout · 3 formats',exact:true}).click();
+ await page.getByRole('button',{name:'Smart rollout · 3 formats',exact:true}).waitFor();
+ if(layoutRequests.length!==3)throw Error('Not all Design formats received measured layout');
+ const logoZone=layoutRequests.find(r=>r.target.width===336).overlayLayout.zones.find(z=>z.key==='logo');
+ if(logoZone.x>=.07)throw Error('Family-inherited left override missing from AI layout '+JSON.stringify(logoZone));
  if(process.env.RESIZE_LAB_UI_SCREENSHOT){
+ await page.getByRole('tab',{name:'Анимация',exact:true}).click();
  await page.getByLabel('Exit animation').selectOption('none');
  await page.getByRole('tab',{name:'Дизайн',exact:true}).click();
  const top=await page.locator('.rl-body').boundingBox();const account=await page.locator('.rl-account-bar').boundingBox();
@@ -29,5 +49,5 @@ const {chromium}=require('playwright');
  await exact.fill('1.5');
  await page.screenshot({path:process.env.RESIZE_LAB_UI_SCREENSHOT});
 }
- console.log('PASS: PNG left drag, family proportional logo/visual inheritance, unrelated family isolation, per-format upload, autosave and reload, exit animation');await browser.close();
+ console.log('PASS: PNG left drag, family proportional logo/visual inheritance, unrelated family isolation, per-format upload, autosave and reload, exit animation, measured Design AI overlay zones');await browser.close();
 })().catch(e=>{console.error(e);process.exit(1)});
