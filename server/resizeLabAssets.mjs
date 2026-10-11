@@ -24,7 +24,7 @@ export async function externalizeProjectImages(state,dir){
    return seen.get(value);
   }
   if(Array.isArray(value))return Promise.all(value.map(visit));
-  if(value&&typeof value==='object')return Object.fromEntries(await Promise.all(Object.entries(value).map(async([k,v])=>[k,await visit(v)])));
+  if(value&&typeof value==='object')return Object.fromEntries(await Promise.all(Object.entries(value).map(async([k,v])=>[k,k==='artDirections'?v:await visit(v)])));
   return value;
  }
  return visit(state);

@@ -1,4 +1,5 @@
 import http from "node:http";
+import {buildResizeLabExport} from "./resizeLabExport.mjs";
 import {listTTKnowledge,refreshTTKnowledge,kbItemsAsDocuments} from "./ttKnowledgeService.mjs";
 import {randomUUID} from "node:crypto";
 import {handleMvp2Api,bannermaticStore} from "./mvp2Api.mjs";
@@ -40,6 +41,7 @@ export const server=http.createServer(async(req,res)=>{try{
  cors(req,res);
  if(await handleResizeLabProjects(req,res,{json,readBody}) || res.writableEnded)return;
  if(await handleMvp2Api(req,res,{json,readBody,layoutReview:reviewFigmaLayout,aiDirector:runAIDirector,semanticMapper:mapFigmaSemantics}) || res.writableEnded)return;
+ if(req.method==="POST"&&req.url==="/api/resize-lab/export")return json(req,res,200,await buildResizeLabExport(await readBody(req)));
  if(req.method==="POST"&&req.url==="/api/resize-lab/adapt")return json(req,res,200,await runResizeLab(await readBody(req),req));
  if(req.method==="GET"&&req.url==="/healthz")return json(req,res,200,{ok:true,service:"banner-openrouter-gateway",model:MODEL,keyConfigured:Boolean(API_KEY),aiTT:true,ttKnowledge:true,bannermaticMvp2:true});
  if(req.method==="GET"&&req.url==="/api/tt/kb")return json(req,res,200,listTTKnowledge());
