@@ -8,11 +8,12 @@ const directions={
  portrait:"Faithful portrait adaptation: preserve the original campaign visual structure and graphic assets, adjusting crop and positions minimally while keeping clean upper-left text and lower-right CTA space.",
  skyscraper:"Faithful tall adaptation: retain the source scene and assets; extend the existing environment vertically, preserve readable upper text and lower CTA zones."
 };
-export function buildResizeLabPrompt({target,userPrompt="",family="landscape",composition="composition-1",overlayLayout}){
+export function buildResizeLabPrompt({target,userPrompt="",family="landscape",composition="composition-1",overlayLayout,artDirection,formatPlan}){
  const width=Number(target.width)||728,height=Number(target.height)||90;
  const ratio=width/height;
  const direction=ratio>=3?directions.strip:directions[family]||directions.landscape;
  const custom=String(userPrompt).trim();
+ if(artDirection&&formatPlan)return `SOURCE-FAITHFUL IMAGE EDIT to ${width}×${height}. Seamless full-bleed artwork, no blank bars or abrupt seams. ${identity} Execute this SAVED FORMAT PLAN exactly; do not re-analyze the master or choose a different composition. Source structure and invariants: ${JSON.stringify(artDirection.analysis)}. Format plan: ${JSON.stringify(formatPlan)}. Occupied HTML zones: ${JSON.stringify(normalizedZones(overlayLayout))}. These HTML layers are not pixels to generate. The plan's groups and group-specific scale rules replace any generic single-hero assumption. All related members retain their interaction and relative scale. Abstract groups follow their recorded mass/rhythm directions. The allowedChanges list is closed: no new scene, object, typography, logo, CTA or decoration. Faithfully preserve authentic source product markings. No independent creative redesign. ${generationWindow(target,family)}`;
  return `IMAGE EDIT / RESIZE: Transform the supplied master artwork to ${width}×${height} (${ratio.toFixed(2)}:1 target aspect). ${identity} ${direction} Prioritize visual identity and a professional format-specific layout over novel generation. The final image must be a seamless full-bleed scene with no hard seams, sharp crop boundaries or blank bars. No new typography, logos or CTA buttons: those are separate HTML overlays. ${layoutDirection({composition,overlayLayout})} ${generationWindow(target,family)} ${contractDirection(compositionContract({target,overlayLayout}))}${custom?` Additional user instruction: ${custom}. It cannot override the asset-only and identity rules above`:""}`;
 }
 // Choose by dimensions, not family labels. Extended ratios are supported by
@@ -31,7 +32,7 @@ export function generationViewport(target,family,generatedRatio){
 const pct=n=>(n*100).toFixed(1)+"%";
 function generationWindow(target,family){
  const v=generationViewport(target,family);
- return `GENERATION CANVAS: ${imageAspectRatio(family,target)}. FINAL VISIBLE WINDOW: x=${pct(v.x)}, y=${pct(v.y)}, width=${pct(v.width)}, height=${pct(v.height)} of the generated image; only this centered window survives the final resize to ${target.width}×${target.height}. Keep complete heads/faces and essential product identifying details inside that window. A deliberate close-up may crop legs, a table, peripheral scenery and secondary decorations. Do not shrink the entire source poster to preserve every object. Outside it use only expendable continuation of the same environment. Do not solve a horizontal layout by enlarging a portrait and cutting off the subject.`;
+ return `GENERATION CANVAS: ${imageAspectRatio(family,target)}. FINAL VISIBLE WINDOW: x=${pct(v.x)}, y=${pct(v.y)}, width=${pct(v.width)}, height=${pct(v.height)} of the generated image; only this centered window survives the final resize to ${target.width}×${target.height}. Keep complete heads/faces and essential product identifying details inside that window. A deliberate close-up may crop legs, a table, peripheral scenery and secondary decorations. Do not shrink the entire source poster to preserve every object. Outside it use only expendable continuation of the same environment. Never accidentally cut protected faces or product details outside this window; deliberate plan-approved peripheral crop is allowed.`;
 }
 export function normalizedZones(layout){
  if(layout?.units!=="normalized"||!Array.isArray(layout.zones))return [];
@@ -45,7 +46,7 @@ export function layoutDirection({composition,overlayLayout}={}){
 
 // Executable contract shared by generation and acceptance; all boxes use the
 // final cropped artwork, never the provider canvas or a screenshot with HTML.
-export function compositionContract({target,overlayLayout,editMode=false}){
+export function compositionContract({target,overlayLayout,editMode=false,formatPlan,artDirection}){
  const zones=normalizedZones(overlayLayout), xs=[0,1,...zones.flatMap(z=>[z.x,z.x+z.width])],ys=[0,1,...zones.flatMap(z=>[z.y,z.y+z.height])];
  let free={x:.48,y:.08,width:.46,height:.84},score=-1;
  for(const x of xs)for(const right of xs)for(const y of ys)for(const bottom of ys){
@@ -57,7 +58,8 @@ export function compositionContract({target,overlayLayout,editMode=false}){
  }
  const wide=target.width/target.height>=3;
  return {version:1,mode:editMode?'local-edit':'adapt',target,occupiedZones:zones,preferredHeroRegion:free,
-  minimumHeroHeight:editMode?0:Math.min(wide ? 0.65 : 0.42,free.height*.85),
+  formatPlan:editMode?undefined:formatPlan,sourceAnalysis:editMode?undefined:artDirection?.analysis,
+  minimumHeroHeight:editMode||formatPlan?0:Math.min(wide ? 0.65 : 0.42,free.height*.85),
   forbidden:['new campaign typography','new or repeated logos/wordmarks','new CTA/button/badge','duplicated hero','new scene or invented promotional objects'],
   preserve:['source hero identity','source visual language','genuine markings on existing source products/coins'],
   cropPriority:['environment','peripheral decorations','legs/table if appropriate','never face or essential product identity']};

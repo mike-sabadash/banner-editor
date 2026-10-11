@@ -8,7 +8,7 @@ const accepted={reviewable:true,sourceHasHero:true,newTypography:false,newLogo:f
 async function run(review:any,options:{editMode?:boolean;reviewHttpError?:boolean;reviewCost?:number|null}={}){
  const bytes=await sharp({create:{width:800,height:100,channels:3,background:'#654321'}}).png().toBuffer();
  const requests:any[]=[];
- const result=await runResizeLabImage({...input,editMode:options.editMode},{apiKey:'test',model:'image-test',reviewModel:'vision-test',fetchImpl:async(url:string,request:any)=>{
+ const result=await runResizeLabImage({...input,editMode:options.editMode},{resolveDirection:async()=>({charges:{}}),apiKey:'test',model:'image-test',reviewModel:'vision-test',fetchImpl:async(url:string,request:any)=>{
   requests.push({url,body:JSON.parse(request.body)});
   if(url.endsWith('/images'))return {ok:true,json:async()=>({data:[{b64_json:bytes.toString('base64')}],usage:{cost:.045}})};
   if(options.reviewHttpError)return {ok:false,status:503};
