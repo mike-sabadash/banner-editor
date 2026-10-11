@@ -38,6 +38,7 @@ const {chromium}=require('playwright');
  const logoZone=layoutRequests.find(r=>r.target.width===336).overlayLayout.zones.find(z=>z.key==='logo');
  if(logoZone.x>=.07)throw Error('Family-inherited left override missing from AI layout '+JSON.stringify(logoZone));
  if(process.env.RESIZE_LAB_UI_SCREENSHOT){
+ await page.getByRole('tab',{name:'Анимация',exact:true}).click();
  await page.getByLabel('Exit animation').selectOption('none');
  await page.getByRole('tab',{name:'Дизайн',exact:true}).click();
  const top=await page.locator('.rl-body').boundingBox();const account=await page.locator('.rl-account-bar').boundingBox();
