@@ -2,11 +2,10 @@ name: Resize Lab UI review
 on:
   pull_request:
     paths:
-      - 'src/experiments/ResizeLab.tsx'
-      - 'src/experiments/resize-lab*.css'
-      - 'src/experiments/resizeLabAssetClient.ts'
-      - 'server/resizeLab*.mjs'
-      - 'scripts/resize-lab-assets-smoke.cjs'
+      - 'src/experiments/**'
+      - 'server/resizeLab*'
+      - 'server/__fixtures__/resizeLab*'
+      - 'scripts/resize-lab-*.cjs'
       - '.github/workflows/resize-lab-ui-checks.yml'
 jobs:
   browser:
@@ -30,6 +29,7 @@ jobs:
           node scripts/resize-lab-assets-smoke.cjs
           RESIZE_LAB_CHROME_SCREENSHOT=resize-lab-chrome.png node scripts/resize-lab-chrome-smoke.cjs
           RESIZE_LAB_SCENES_SCREENSHOT=resize-lab-scenes.png node scripts/resize-lab-scenes-smoke.cjs
+          RESIZE_LAB_EXPORT_SCREENSHOT=resize-lab-export.png node scripts/resize-lab-campaign-smoke.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -38,3 +38,4 @@ jobs:
             resize-lab-ui.png
             resize-lab-chrome.png
             resize-lab-scenes.png
+            resize-lab-export.png
