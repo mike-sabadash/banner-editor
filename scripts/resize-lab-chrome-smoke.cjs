@@ -10,7 +10,7 @@ const assert=require('node:assert/strict');
  assert(await page.getByLabel('headline font',{exact:true}).isVisible());assert.equal(await page.getByLabel('subline font',{exact:true}).count(),0);assert.equal(await page.getByLabel('Button fill',{exact:true}).count(),0);
  await page.getByRole('button',{name:'Выбрать объект Кнопка',exact:true}).click();assert(await page.getByLabel('Button fill',{exact:true}).isVisible());assert.equal(await page.getByLabel('headline font',{exact:true}).count(),0);
  await page.locator('.rl-auto-headline').first().click();assert(await page.getByLabel('headline font',{exact:true}).isVisible());
- await page.getByLabel('Master headline x',{exact:true}).fill('20');assert((await page.locator('.rl-canvas.master [data-layer="headline"]').getAttribute('style')).includes('left: 20%'));
+ await page.getByLabel('Master headline x',{exact:true}).fill('48');assert((await page.locator('.rl-canvas.master [data-layer="headline"]').getAttribute('style')).includes('left: 20%'));
  await page.getByRole('tab',{name:'Форматы · 2',exact:true}).click();assert(await page.getByRole('button',{name:'Smart rollout · 2 formats',exact:true}).isVisible());assert(await page.getByRole('button',{name:'Только 728x90',exact:true}).isVisible());await page.getByRole('tab',{name:'Слои',exact:true}).click();
  assert.equal(await page.locator('.rl-format-settings').first().evaluate(el=>el.open),false);
  await page.locator('.rl-format-card').filter({has:page.locator('header strong',{hasText:'300x300'})}).locator('.rl-format-settings>summary').click();const exact=page.getByLabel('300x300 visual scale exact value');await exact.fill('1.5');assert.equal(await page.getByLabel('300x300 visual scale',{exact:true}).inputValue(),'1.5');

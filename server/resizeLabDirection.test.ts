@@ -3,7 +3,7 @@ import {mkdtemp,readFile,readdir,writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {resolvePersistedDirection,validateAnalysis,validatePlan} from './resizeLabDirection.mjs';
-import {artworkReviewIssues} from './resizeLabReview.mjs';
+import {artworkReviewIssues,artworkReviewWarnings} from './resizeLabReview.mjs';
 import {compositionContract} from './resizeLabPrompt.mjs';
 const rect={x:.45,y:.1,width:.5,height:.8};
 const analysis=(kind='related-group')=>({kind,summary:'A vehicle and person interacting',visualLanguage:'Same photographic scene',readingFlow:'Left to right',invariants:['Preserve interaction and relative scale'],groups:[{id:'car-person',description:'Car and person',role:kind==='abstract'?'pattern':kind==='environment'?'environment':'primary',members:kind==='abstract'?['shapes','light bands']:['car','person'],sourceBox:{x:0,y:0,width:1,height:1},relationships:kind==='abstract'?'Rhythm and mass balance':'Person leaning against the car; keep their relative scale',protectedDetails:['Product identity'],allowedCrop:'Peripheral environment only'}]});
@@ -70,6 +70,7 @@ describe('persisted source structure and format plans',()=>{
  it('checks group identity, relationship, scale and placement instead of a single-character criterion',()=>{
   const contract=compositionContract({...input,formatPlan:plan(),artDirection:{analysis:analysis()}}),review={reviewable:true,sourceHasHero:true,newTypography:false,newLogo:false,newButton:false,duplicatedHero:false,identityChanged:false,inventedObjects:false,essentialDetailsObstructed:false,heroBox:null,planFollowed:true,groups:[{groupId:'car-person',box:rect,identityPreserved:true,relationsPreserved:true}],evidence:'Group preserved'};
   expect(contract.minimumHeroHeight).toBe(0);expect(artworkReviewIssues(review,contract)).toEqual([]);
+  const shifted={...review,groups:[{...review.groups[0],box:{...rect,x:0}}]};expect(artworkReviewIssues(shifted,contract)).toEqual([]);expect(artworkReviewWarnings(shifted,contract)).not.toEqual([]);
   expect(artworkReviewIssues({...review,groups:[{...review.groups[0],relationsPreserved:false}]},contract)).not.toEqual([]);
   expect(artworkReviewIssues({...review,groups:[{...review.groups[0],box:{...rect,height:.2}}]},contract)).toContain('слишком мелкая смысловая группа car-person');
  });

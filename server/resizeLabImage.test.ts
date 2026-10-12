@@ -31,7 +31,7 @@ describe('Resize Lab image pipeline',()=>{
  it('keeps provider cost on rejection, with one call and no unapproved automatic retry',async()=>{
   let calls=0;const bytes=await image(700,300);
   const result=await runResizeLabImage({imageDataUrl:'data:image/png;base64,AAAA',target:{width:728,height:90},family:'strip'},{resolveDirection:async()=>({charges:{}}),apiKey:'test',model:'test',fetchImpl:async()=>{calls++;return {ok:true,json:async()=>({data:[{b64_json:bytes.toString('base64')}],usage:{cost:.045}})}}});
-  expect(calls).toBe(1);expect(result.cost).toBe(.045);expect(result.imageDataUrl).toBeUndefined();expect(result.error).toContain('Результат не применён');
+  expect(calls).toBe(1);expect(result.cost).toBe(.045);expect(result.imageDataUrl).toBeUndefined();expect(result.error).toContain('Результат не применён');expect(result.candidate.canApply).toBe(false);expect(result.candidate.image).toMatch(/^data:image\/png/);
  });
  it('preserves the existing edit-only instruction without triggering wholesale recomposition',()=>{
   const result=resizeLabImageRequest({imageDataUrl:'source',editMode:true,prompt:'Remove one sparkle',target:{width:300,height:300},family:'square'},'test');
