@@ -1,3 +1,4 @@
+import {NumberProperty} from "./NumberProperty";
 import {useRef,useState,useEffect,type ReactNode} from 'react';
 import {createScene,sequenceDuration,sceneAt,type BannerScene,type SceneCopy} from './resizeLabScenes';
 import {sceneAdapted,layerOrder,sceneLayerKeys,initialLayers,effectiveLayers,cloneLayers,resolveScenes,type SceneLayerKey,type SceneLayer} from './resizeLabSceneLayers';
@@ -51,7 +52,7 @@ export function SceneEditor(p:Props){
    <section className="rl-scene-layer-properties" aria-label={`Настройки ${labels[p.layer]}`}>
    {panel==='content'?<>
     {isImage&&<><div className="rl-scene-image-preview">{imageSource&&p.imagePreview(imageSource)?<img src={p.imagePreview(imageSource)} alt={p.layer==='background'?'Фон выбранной сцены':'Картинка выбранной сцены'}/>:<span>Добавьте изображение</span>}</div><input ref={fileInput} hidden aria-label={`Scene ${p.layer} image`} type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>upload(e.target.files?.[0])}/><button className="rl-primary" type="button" onClick={()=>fileInput.current?.click()}>{imageSource?'Заменить изображение':'Добавить изображение'}</button><small>PNG, JPEG, WebP · до 10 МБ</small>{uploadError&&<p role="alert">{uploadError}</p>}
-     {p.layer==='background'?<><button type="button" onClick={()=>changeLayer({image:''})}>Использовать фон формата</button></>:<><button type="button" onClick={()=>changeLayer({action:'hide',image:''})} disabled={!imageSource}>Удалить изображение</button><div className="rl-property-grid">{(['x','y','width'] as const).map(key=><label key={key}>{key==='x'?'Центр по X, %':key==='y'?'Центр по Y, %':'Ширина, %'}<input aria-label={`Overlay ${key}`} type="number" min={key==='width'?1:0} max={100} value={current.layers.overlay[key]} onChange={e=>{const n=e.target.valueAsNumber;if(Number.isFinite(n))changeLayer({[key]:Math.max(key==='width'?1:0,Math.min(100,n))})}}/></label>)}</div></>}
+     {p.layer==='background'?<><button type="button" onClick={()=>changeLayer({image:''})}>Использовать фон формата</button></>:<><button type="button" onClick={()=>changeLayer({action:'hide',image:''})} disabled={!imageSource}>Удалить изображение</button><div className="rl-property-grid">{(['x','y','width'] as const).map(key=><NumberProperty key={key} symbol={key==='width'?'W':key.toUpperCase()} label={`Overlay ${key}`} unit="%" min={key==='width'?1:0} value={current.layers.overlay[key]} onChange={n=>changeLayer({[key]:n})}/>)}</div></>}
     </>}
     {(p.layer==='headline'||p.layer==='subline'||p.layer==='cta')&&<label>Текст<input aria-label={`Scene ${p.layer}`} value={current.copy[p.layer]} onChange={e=>changeLayer({}, {...selected.copy,[p.layer]:e.target.value})}/></label>}
     {p.layer==='logo'&&p.logoProperties}

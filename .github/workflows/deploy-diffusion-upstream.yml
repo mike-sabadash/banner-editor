@@ -252,4 +252,5 @@ jobs:
           NODE_PATH=/tmp/diffusion-browser-smoke/node_modules RESIZE_LAB_URL=https://resize-lab.bannermatic.online/ node "$GITHUB_WORKSPACE/scripts/resize-lab-scenes-smoke.cjs"
           NODE_PATH=/tmp/diffusion-browser-smoke/node_modules RESIZE_LAB_URL=https://resize-lab.bannermatic.online/ node "$GITHUB_WORKSPACE/scripts/resize-lab-campaign-smoke.cjs"
 
+          NODE_PATH=/tmp/diffusion-browser-smoke/node_modules RESIZE_LAB_URL=https://resize-lab.bannermatic.online/ node "$GITHUB_WORKSPACE/scripts/resize-lab-recovery-smoke.cjs"
           RESIZE_LAB_URL=https://resize-lab.bannermatic.online/ node "$GITHUB_WORKSPACE/scripts/resize-lab-export-api-smoke.cjs"

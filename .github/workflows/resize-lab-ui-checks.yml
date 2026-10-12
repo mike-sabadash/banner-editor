@@ -30,6 +30,7 @@ jobs:
           RESIZE_LAB_CHROME_SCREENSHOT=resize-lab-chrome.png node scripts/resize-lab-chrome-smoke.cjs
           RESIZE_LAB_SCENES_SCREENSHOT=resize-lab-scenes.png node scripts/resize-lab-scenes-smoke.cjs
           RESIZE_LAB_EXPORT_SCREENSHOT=resize-lab-export.png node scripts/resize-lab-campaign-smoke.cjs
+          node scripts/resize-lab-recovery-smoke.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

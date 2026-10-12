@@ -30,7 +30,7 @@ describe('artwork acceptance contract',()=>{
   const content=requests[1].body.messages[1].content;expect(content[1].image_url.url).toBe(input.imageDataUrl);expect(content[2].image_url.url).toBe(result.imageDataUrl);expect(content[0].text).toContain('coin engravings');
  });
  it.each(['newTypography','newLogo','newButton','duplicatedHero','identityChanged','inventedObjects','essentialDetailsObstructed'])('rejects %s without returning a replacement or automatically generating again',async(flag)=>{
-  const {result,requests}=await run({...accepted,[flag]:true});expect(result.imageDataUrl).toBeUndefined();expect(result.quality.accepted).toBe(false);expect(result.error).toContain('Результат не применён');expect(result.cost).toBeCloseTo(.047);expect(requests.filter(r=>r.url.endsWith('/images'))).toHaveLength(1);
+  const {result,requests}=await run({...accepted,[flag]:true});expect(result.imageDataUrl).toBeUndefined();expect(result.quality.accepted).toBe(false);expect(result.candidate.canApply).toBe(true);expect(result.candidate.image).toMatch(/^data:image\/jpeg/);expect(result.error).toContain('Результат не применён');expect(result.cost).toBeCloseTo(.047);expect(requests.filter(r=>r.url.endsWith('/images'))).toHaveLength(1);
  });
  it('rejects a miniature hero even when reviewer reports no new branding',async()=>{
   const {result}=await run({...accepted,heroBox:{x:.5,y:.3,width:.1,height:.2}});expect(result.error).toContain('слишком мелкий');expect(result.imageDataUrl).toBeUndefined();
@@ -40,7 +40,7 @@ describe('artwork acceptance contract',()=>{
   expect(artworkReviewIssues({...accepted,heroBox:{x:.5,y:.3,width:.1,height:.2}},compositionContract({...input,editMode:true}))).toEqual([]);
  });
  it('fails closed on review outage while keeping the known generation charge',async()=>{
-  const {result,requests}=await run(accepted,{reviewHttpError:true});expect(result.error).toContain('проверка не завершена');expect(result.cost).toBe(.045);expect(result.costIncomplete).toBe(true);expect(result.imageDataUrl).toBeUndefined();expect(requests).toHaveLength(2);
+  const {result,requests}=await run(accepted,{reviewHttpError:true});expect(result.error).toContain('проверка не завершена');expect(result.cost).toBe(.045);expect(result.costIncomplete).toBe(true);expect(result.candidate.canApply).toBe(true);expect(result.imageDataUrl).toBeUndefined();expect(requests).toHaveLength(2);
  });
  it.each(['not JSON',{}, {...accepted,heroBox:{x:.9,y:0,width:.5,height:.8}}, {...accepted,reviewable:false}])('rejects invalid or uncertain review %j',async(review)=>{
   const {result}=await run(review);expect(result.error).toBeTruthy();expect(result.imageDataUrl).toBeUndefined();expect(result.cost).toBeCloseTo(.047);

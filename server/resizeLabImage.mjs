@@ -48,11 +48,14 @@ export async function runResizeLabImage(input,{apiKey,model,reviewModel='google/
  let data;try{data=await response.json();}catch{return {error:"Image API вернул некорректный ответ. Результат не применён.",model,...saved,...billing(null)};}const first=data?.data?.[0],cost=data?.usage?.cost??null;
  if(!first?.b64_json)return {error:'Image API returned no image',model,...saved,...billing(cost)};
  try{
-  const artwork=await prepareResizeLabImage(Buffer.from(first.b64_json,'base64'),{target:input.target,family:input.family||'landscape'});
+  const rawBytes=Buffer.from(first.b64_json,'base64');const rawMeta=await sharp(rawBytes,{limitInputPixels:40_000_000}).metadata();const rawType=rawMeta.format==='png'?'png':rawMeta.format==='webp'?'webp':'jpeg';
+  const rawCandidate={image:'data:image/'+rawType+';base64,'+rawBytes.toString('base64'),canApply:false};
+  let artwork;try{artwork=await prepareResizeLabImage(Buffer.from(first.b64_json,'base64'),{target:input.target,family:input.family||'landscape'});}catch(error){return {error:String(error instanceof Error?error.message:error),candidate:rawCandidate,model,...saved,...billing(cost)};}
+  const candidate={image:artwork.imageDataUrl,canApply:true};
   const review=await reviewResizeLabArtwork({...input,target:resizeTarget(input.target)},artwork,{apiKey,model:reviewModel,fetchImpl});
   const charges=billing(cost,review.cost);
-  if(review.error)return {error:review.error,model,...saved,...charges};
-  if(!review.quality.accepted)return {error:'Результат не применён: '+review.quality.issues.join('; ')+'. Предыдущая картинка сохранена. Можно повторить раскатку вручную.',quality:review.quality,model,...saved,...charges};
+  if(review.error)return {error:review.error,candidate,model,...saved,...charges};
+  if(!review.quality.accepted)return {error:'Результат не применён: '+review.quality.issues.join('; ')+'. Текущая картинка сохранена; новый вариант доступен для просмотра без повторной генерации.',candidate,quality:review.quality,model,...saved,...charges};
   return {...artwork,quality:review.quality,model,...saved,...charges};
  }
  catch(error){return {error:error instanceof Error?error.message:String(error),model,...saved,...billing(cost)};}
