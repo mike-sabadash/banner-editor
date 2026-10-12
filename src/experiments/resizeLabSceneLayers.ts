@@ -13,6 +13,7 @@ export function sceneAdapted(result:SceneAdaptation|undefined,source:string){ret
 export const stillMotion={...defaultMotion};
 export function initialLayers():SceneLayers{return Object.fromEntries(sceneLayerKeys.map(key=>[key,{action:key==='overlay'?'hide':'keep',x:50,y:50,width:40,motion:{...stillMotion}}])) as SceneLayers;}
 export function cloneLayers(layers:SceneLayers):SceneLayers{return Object.fromEntries(sceneLayerKeys.map(key=>[key,{...layers[key],motion:{...layers[key].motion},adaptations:layers[key].adaptations?Object.fromEntries(Object.entries(layers[key].adaptations!).map(([id,result])=>[id,{...result,visual:result.visual?{...result.visual}:undefined,overrides:result.overrides?Object.fromEntries(Object.entries(result.overrides).map(([k,v])=>[k,{...v}])):undefined}])):undefined}])) as SceneLayers;}
+export function restoreScopedFormats(value:unknown){if(!value||typeof value!=='object')return undefined;const valid=(v:unknown):v is string=>typeof v==='string'&&/^(data:image\/(png|jpe?g|webp|svg\+xml);base64,|\/api\/resize-lab\/assets\/[a-f0-9]{64}\.(png|jpg|webp|svg)$)/.test(v);return Object.fromEntries(Object.entries(value).filter(([id,r])=>/^\d{1,4}x\d{1,4}$/.test(id)&&r&&valid(r.sourceImage)).map(([id,r])=>[id,{...Object.fromEntries(Object.entries(restoreAdaptation(r)).filter(([,v])=>v!==undefined)),sourceImage:r.sourceImage,...(valid(r.image)?{image:r.image}:{} )}]));}
 export function restoreLayers(value:unknown,motion:MotionSettings):SceneLayers|undefined{
  if(!value||typeof value!=='object')return undefined;
  const source=value as Partial<SceneLayers>,layers=initialLayers();
@@ -28,7 +29,7 @@ export function resolveScenes(scenes:BannerScene[],base:SceneCopy,background:str
  let copy={...base},bg=background,overlay='',layers=initialLayers(),visible=Object.fromEntries(sceneLayerKeys.map(key=>[key,key!=='overlay'])) as Record<SceneLayerKey,boolean>;
  return scenes.map(s=>{const settings=effectiveLayers(s);const next=cloneLayers(layers),show={...visible};
  for(const key of sceneLayerKeys){const setting=settings[key];if(setting.action==='keep')continue;next[key]={...setting,motion:{...setting.motion}};show[key]=setting.action!=='hide';if(setting.action==='change'){if(key==='headline'||key==='subline'||key==='cta')copy={...copy,[key]:s.copy[key]};if(key==='background')bg=setting.image||background;if(key==='overlay')overlay=setting.image||'';}}
- layers=next;visible=show;return {...s,copy:{...copy},layers:cloneLayers(layers),visible:{...visible},background:bg,overlay};
+ layers=next;visible=show;const local=cloneLayers(layers);for(const [id,r] of Object.entries(s.formatOverrides||{}))if(r.sourceImage===bg)local.background.adaptations={...local.background.adaptations,[id]:{image:local.background.adaptations?.[id]?.image||'',...local.background.adaptations?.[id],...(r.image?{error:undefined,candidate:undefined,planId:undefined,warning:undefined}:{}),...r}};return {...s,copy:{...copy},layers:local,visible:{...visible},background:bg,overlay};
  });
 }
 // One DOM instance for each uninterrupted layer state; unchanged layers do not restart.
@@ -40,7 +41,7 @@ export function layerSequenceMarkup(scenes:BannerScene[],resolved:ResolvedScene[
  const clock=`${total}ms linear var(--rl-sequence-delay) ${loop?'infinite':'1'} both`,rules:string[]=[],markup:string[]=[];
  for(const [order,key] of sceneLayerKeys.entries()){
   let first=0;
-  while(first<scenes.length){let last=first;while(last+1<scenes.length&&effectiveLayers(scenes[last+1])[key].action==='keep')last++;
+  while(first<scenes.length){let last=first;while(last+1<scenes.length&&effectiveLayers(scenes[last+1])[key].action==='keep'&&(key==='overlay'||!Object.keys(scenes[last].formatOverrides||{}).length&&!Object.keys(scenes[last+1].formatOverrides||{}).length))last++;
    const s=resolved[first];if(s.visible[key]){const start=starts[first],end=starts[last]+scenes[last].duration,final=last===scenes.length-1&&!loop,m=effectiveLayers(scenes[first])[key].action==='keep'?stillMotion:effectiveLayers(scenes[first])[key].motion;
     const id=`rl-sequence-layer-${order}-${first}`,exit=final?stillMotion:m;
     // All transition phases fit in the first scene; outgoing transition fits the last.
