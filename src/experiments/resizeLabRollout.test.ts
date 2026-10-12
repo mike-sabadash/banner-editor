@@ -1,0 +1,3 @@
+import {it,expect} from 'vitest';
+import {missingRolloutFormats} from './resizeLabRollout';
+it('only requests missing artwork, retaining accepted outputs after failed retries or interrupted work',()=>{const f=[{id:'ready'},{id:'failed-old'},{id:'interrupted-old'},{id:'missing'},{id:'rejected'}];const results={ready:{image:'accepted',status:'ready',overrides:{headline:{x:12,y:2}}},'failed-old':{image:'accepted-old',status:'error'},'interrupted-old':{image:'accepted-old',status:'working'},rejected:{image:'',status:'error',candidate:{image:'rejected'}}};const before=JSON.stringify(results);expect(missingRolloutFormats(f,results).map(x=>x.id)).toEqual(['missing','rejected']);expect(JSON.stringify(results)).toBe(before)});

@@ -33,7 +33,7 @@ const {chromium}=require('playwright');
   for(const z of body.overlayLayout.zones)if(z.x<0||z.y<0||z.x+z.width>1.00001||z.y+z.height>1.00001)throw Error('Unbounded overlay zone');
   await route.fulfill({json:{imageDataUrl:image}});
  });
- await page.getByRole('button',{name:'Smart rollout · 3 formats',exact:true}).click();
+ page.once('dialog',dialog=>dialog.accept());await page.getByText('Планы композиции',{exact:true}).click();await page.getByRole('button',{name:'Пересмотреть композицию',exact:true}).click();
  await page.getByRole('button',{name:'Smart rollout · 3 formats',exact:true}).waitFor();
  if(layoutRequests.length!==3)throw Error('Not all Design formats received measured layout');
  const logoZone=layoutRequests.find(r=>r.target.width===336).overlayLayout.zones.find(z=>z.key==='logo');
