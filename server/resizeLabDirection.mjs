@@ -1,7 +1,7 @@
 import {promises as fs} from 'node:fs';
 import path from 'node:path';
 import {createHash,createHmac,randomUUID} from 'node:crypto';
-import {compositionContract,normalizedZones,buildResizeLabPrompt} from './resizeLabPrompt.mjs';
+import {compositionContract,normalizedZones,buildResizeLabPrompt,EXECUTION_VERSION} from './resizeLabPrompt.mjs';
 
 export const DIRECTION_VERSION=1;
 const canonical=value=>Array.isArray(value)?value.map(canonical):value&&typeof value==='object'?Object.fromEntries(Object.keys(value).sort().map(k=>[k,canonical(value[k])])):value;
@@ -41,13 +41,14 @@ export async function resolvePersistedDirection(input,{apiKey,model,reviewModel,
   let record,charges={},trusted=false;
   const save=async()=>{record.seal=sign(record);await fs.mkdir(dir,{recursive:true});const tmp=file+'.'+randomUUID()+'.tmp';await fs.writeFile(tmp,JSON.stringify(record),{mode:0o600});await fs.rename(tmp,file);};
   try{
+   if(input.executionVersion!==undefined&&input.executionVersion!==EXECUTION_VERSION)throw Error('Версия запрошенного исполнения не поддерживается');
    try{record=JSON.parse(await fs.readFile(file,'utf8'));}catch(e){if(e.code!=='ENOENT')throw e;}
    // A project carries a portable backup. Unknown versions fail closed, never migrate implicitly.
    if(!record&&input.savedDirections?.[sourceHash]){record=structuredClone(input.savedDirections[sourceHash]);if(record.seal!==sign(record))throw Error('Подпись сохранённого плана не совпадает. Данные не изменены.');}
    if(record){
     if(record.version!==DIRECTION_VERSION||record.promptVersion!=='art-direction-v1'||record.sourceHash!==sourceHash||!record.models||!['analysis','generation','review'].every(k=>text(record.models[k]))||!record.plans||typeof record.plans!=='object')throw Error('Сохранённая версия art direction несовместима. Старые данные не изменены.');
     if(record.seal!==sign(record))throw Error('Подпись сохранённого плана не совпадает. Старые данные не изменены.');
-    validateAnalysis(record.analysis);for(const p of Object.values(record.plans)){if(typeof p.generationPrompt!=='string'||p.generationPrompt.length>40000||!Number.isInteger(p.revision)||p.revision<1||p.contextId!==hash(p.context))throw Error('Повреждена версия плана');validatePlan(p.plan,record.analysis);if(p.id!==hash({context:p.context,plan:p.plan,models:record.models,revision:p.revision,generationPrompt:p.generationPrompt}))throw Error('Повреждён сохранённый план. Старые данные не изменены.');}
+    validateAnalysis(record.analysis);for(const p of Object.values(record.plans)){if(p.executionVersion!==undefined&&p.executionVersion!==EXECUTION_VERSION)throw Error('Версия инструкции исполнения не поддерживается. Данные не изменены.');if(typeof p.generationPrompt!=='string'||p.generationPrompt.length>40000||!Number.isInteger(p.revision)||p.revision<1||p.contextId!==hash(p.context))throw Error('Повреждена версия плана');validatePlan(p.plan,record.analysis);if(p.id!==hash({context:p.context,plan:p.plan,models:record.models,revision:p.revision,generationPrompt:p.generationPrompt}))throw Error('Повреждён сохранённый план. Старые данные не изменены.');}
     trusted=true;
    }else{
     const analysis=validateAnalysis(await ask(analysisSchema,'Analyze ONLY the supplied source artwork, not a hypothetical banner. Identify its visual language, reading flow and semantic groups. Do not assume a person or a single hero. Even a uniform background needs one environment/pattern group; do not return an empty groups array. A vehicle and a person interacting belong to a related group; preserve their spatial relationship and relative scale. Product sets retain their hierarchy. Abstract artwork has pattern/mass/rhythm groups, no invented hero. Use normalized source boxes. Describe essential identity/details, relationships and permitted peripheral crop; never propose new objects, branding or copy.',input.imageDataUrl,{apiKey,model:reviewModel,fetchImpl},charges,'analysis'));
@@ -58,7 +59,13 @@ export async function resolvePersistedDirection(input,{apiKey,model,reviewModel,
    if(!selected||input.replan===true){
     const guidance=compositionContract(input);
     const plan=validatePlan(await ask(planSchema,`Create a specific executable design adaptation for the FINAL ${input.target.width}x${input.target.height} artwork. Source analysis: ${JSON.stringify(record.analysis)}. Actual HTML occupied zones and user instruction: ${JSON.stringify(context)}. Free-region guidance: ${JSON.stringify(guidance.preferredHeroRegion)}. No typography/logo/button may be drawn. Do NOT force a character or one hero: plan EVERY source semantic group exactly once, preserving its membership and relationships. For a car/person group keep interaction, relative scale and direction. For products preserve hierarchy. For abstraction rearrange existing masses/rhythm and continue the same motif. Choose intentional crop/reposition/scale and matching environment extension, never shrink an entire poster into a miniature. Supply normalized target boxes and group-specific minimum visible heights (0 for environment/pattern where scale is not a focal criterion). Essential faces/product identity stay outside occupied HTML zones; decoration may overlap. Describe a closed allowedChanges list: only existing-source transformations and environment continuation. No new scene/assets. Give concrete group instructions, not generic advice.`,input.imageDataUrl,{apiKey,model:record.models.analysis,fetchImpl},charges,'planning'),record.analysis);
-    const revision=(selected?.revision||0)+1;const generationPrompt=buildResizeLabPrompt({...input,artDirection:record,formatPlan:plan});selected={contextId,context,revision,plan,generationPrompt};selected.id=hash({context,plan,models:record.models,revision,generationPrompt});record.plans[selected.id]=selected;await save();
+    const revision=(selected?.revision||0)+1;const generationPrompt=buildResizeLabPrompt({...input,userPrompt:context.instruction,artDirection:record,formatPlan:plan});selected={contextId,context,revision,plan,generationPrompt,executionVersion:EXECUTION_VERSION};selected.id=hash({context,plan,models:record.models,revision,generationPrompt});record.plans[selected.id]=selected;await save();
+   }else if((input.repairExecution===true||input.executionVersion===EXECUTION_VERSION)&&selected.executionVersion!==EXECUTION_VERSION){
+    // Only an explicit retry of a failed output repairs execution guidance.
+    // Keep the original signed plan and prompt; no paid analysis/planning request.
+    const generationPrompt=buildResizeLabPrompt({...input,userPrompt:context.instruction,artDirection:record,formatPlan:selected.plan});
+    const repaired={...selected,revision:selected.revision+1,generationPrompt,executionVersion:EXECUTION_VERSION,replaces:selected.id};
+    repaired.id=hash({context,plan:repaired.plan,models:record.models,revision:repaired.revision,generationPrompt});record.plans[repaired.id]=repaired;selected=repaired;await save();
    }else await save();
    return {artDirection:record,planId:selected.id,plan:selected.plan,generationPrompt:selected.generationPrompt,charges};
   }catch(e){return {error:`${e instanceof Error?e.message:String(e)} Результат не применён.`,artDirection:trusted?record:undefined,charges};}
