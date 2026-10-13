@@ -5,10 +5,10 @@ import {artworkReviewIssues} from './resizeLabReview.mjs';
 import {runResizeLabImage} from './resizeLabImage.mjs';
 const input={imageDataUrl:'data:image/png;base64,AAAA',target:{width:728,height:90},family:'strip',overlayLayout:{units:'normalized',zones:[{key:'headline',x:0,y:0,width:.4,height:.8},{key:'cta',x:.88,y:.4,width:.12,height:.6}]}};
 const accepted={reviewable:true,sourceTiled:false,sourceHasHero:true,newTypography:false,newLogo:false,newButton:false,duplicatedHero:false,identityChanged:false,inventedObjects:false,essentialDetailsObstructed:false,heroBox:{x:.5,y:.1,width:.2,height:.8},evidence:'Same hero, large close-up, no new branding.'};
-async function run(review:any,options:{editMode?:boolean;reviewHttpError?:boolean;reviewCost?:number|null}={}){
+async function run(review:any,options:{editMode?:boolean;reviewHttpError?:boolean;reviewCost?:number|null;executionVersion?:string}={}){
  const bytes=await sharp({create:{width:800,height:100,channels:3,background:'#654321'}}).png().toBuffer();
  const requests:any[]=[];
- const result=await runResizeLabImage({...input,editMode:options.editMode},{resolveDirection:async()=>({charges:{}}),apiKey:'test',model:'image-test',reviewModel:'vision-test',fetchImpl:async(url:string,request:any)=>{
+ const result=await runResizeLabImage({...input,editMode:options.editMode,executionVersion:options.executionVersion},{resolveDirection:async()=>({charges:{}}),apiKey:'test',model:'image-test',reviewModel:'vision-test',fetchImpl:async(url:string,request:any)=>{
   requests.push({url,body:JSON.parse(request.body)});
   if(url.endsWith('/images'))return {ok:true,json:async()=>({data:[{b64_json:bytes.toString('base64')}],usage:{cost:.045}})};
   if(options.reviewHttpError)return {ok:false,status:503};
@@ -17,6 +17,14 @@ async function run(review:any,options:{editMode?:boolean;reviewHttpError?:boolea
  return {result,requests};
 }
 describe('artwork acceptance contract',()=>{
+ it('direct review needs no planned group IDs and still rejects duplicated or miniature source subjects',async()=>{
+  const ok=await run(accepted,{executionVersion:'direct-adaptation-v4'});expect(ok.result.error).toBeUndefined();
+  const schema=ok.requests[1].body.response_format.json_schema;
+  expect(schema.name).toBe('resize_lab_direct_artwork_review');expect(schema.schema.properties.groups).toBeUndefined();expect(schema.schema.required).toContain('duplicatedHero');expect(ok.requests).toHaveLength(2);
+  const duplicate=await run({...accepted,duplicatedHero:true},{executionVersion:'direct-adaptation-v4'});expect(duplicate.result.error).toContain('продублирован');expect(duplicate.result.candidate.canApply).toBe(true);expect(duplicate.result.imageDataUrl).toBeUndefined();expect(duplicate.requests).toHaveLength(2);
+  const small=await run({...accepted,heroBox:{x:.5,y:.3,width:.1,height:.2}},{executionVersion:'direct-adaptation-v4'});expect(small.result.error).toContain('слишком мелкий');
+  const abstract=await run({...accepted,sourceHasHero:false,heroBox:null},{executionVersion:'direct-adaptation-v4'});expect(abstract.result.error).toBeUndefined();
+ });
  it('rejects source tiling even when identity and all other checks pass',()=>{
   expect(artworkReviewIssues({...accepted,sourceTiled:true},compositionContract(input))).toContain('исходник повторён плиткой или коллажем вместо адаптации');
  });

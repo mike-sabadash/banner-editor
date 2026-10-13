@@ -3,6 +3,11 @@ import {readFile} from 'node:fs/promises';
 import {buildResizeLabPrompt,imageAspectRatio,generationViewport,normalizedZones} from "./resizeLabPrompt.mjs";
 
 describe("Resize Lab smart art direction",()=>{
+ it('pins the short direct v4 prompt and does not include analysis or a numerical plan',async()=>{
+  const f=JSON.parse(await readFile(new URL('./__fixtures__/resizeLabDirectExecution-v4.json',import.meta.url),'utf8'));
+  const prompt=buildResizeLabPrompt({...f.input,artDirection:{analysis:{summary:'analysis-sentinel'}},formatPlan:{strategy:'plan-sentinel'}});
+  expect(prompt).toBe(f.prompt);expect(prompt.length).toBeLessThan(1200);expect(prompt).not.toContain('analysis-sentinel');expect(prompt).not.toContain('plan-sentinel');expect(prompt).not.toContain('FINAL VISIBLE WINDOW');expect(prompt).toContain('original object counts');
+ });
  it('pins the exact family v3 instruction so later changes require an explicit execution version review',async()=>{
   const fixture=JSON.parse(await readFile(new URL('./__fixtures__/resizeLabFamilyExecution-v3.json',import.meta.url),'utf8'));
   expect(buildResizeLabPrompt(fixture.input)).toBe(fixture.prompt);
