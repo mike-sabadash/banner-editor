@@ -18,6 +18,21 @@ async function fixture(kind='related-group'){
  return {directory,calls,options};
 }
 describe('persisted source structure and format plans',()=>{
+ it('direct adaptation saves an exact execution with no paid analysis or planning, survives project restore and pins models',async()=>{
+  const f=await fixture(),direct={...input,executionVersion:'direct-adaptation-v4'};
+  const first=await resolvePersistedDirection(direct,f.options);
+  expect(first.error).toBeUndefined();expect(first.artDirection.version).toBe(2);expect(first.artDirection.analysis).toBeUndefined();expect(first.plan).toBeUndefined();expect(first.charges).toEqual({});expect(f.calls).toHaveLength(0);
+  const other=await mkdtemp(path.join(tmpdir(),'direct-restore-'));
+  const restored=await resolvePersistedDirection({...direct,savedDirections:{[first.artDirection.sourceHash]:first.artDirection}},{...f.options,directory:other,model:'changed-model'});
+  expect(restored.error).toBeUndefined();expect(restored.planId).toBe(first.planId);expect(restored.generationPrompt).toBe(first.generationPrompt);expect(restored.artDirection.models.generation).toBe('image-v1');expect(f.calls).toHaveLength(0);
+ });
+ it('adds direct execution to legacy records without erasing old plans or performing paid planning',async()=>{
+  const f=await fixture(),old=await resolvePersistedDirection(input,f.options),entry=structuredClone(old.artDirection.plans[old.planId]);
+  const next=await resolvePersistedDirection({...input,executionVersion:'direct-adaptation-v4'},f.options);
+  expect(next.error).toBeUndefined();expect(next.artDirection.plans[old.planId]).toEqual(entry);expect(next.plan).toBeUndefined();expect(f.calls).toHaveLength(2);
+  const repeat=await resolvePersistedDirection({...input,executionVersion:'direct-adaptation-v4'},f.options);expect(repeat.planId).toBe(next.planId);expect(f.calls).toHaveLength(2);
+  const legacy=await resolvePersistedDirection(input,f.options);expect(legacy.planId).toBe(old.planId);expect(legacy.generationPrompt).toBe(old.generationPrompt);
+ });
  it('upgrades v2 execution to family adaptation once, preserves its signed history and pins repeated requests',async()=>{
   const f=await fixture(),old=await resolvePersistedDirection({...input,executionVersion:'source-edit-v2'},f.options);
   const saved=structuredClone(old.artDirection.plans[old.planId]);
@@ -95,6 +110,19 @@ describe('persisted source structure and format plans',()=>{
 import sharp from 'sharp';
 import {runResizeLabImage} from './resizeLabImage.mjs';
 describe('full planned image pipeline',()=>{
+ it('runs direct adaptation as exactly one original-reference image edit and one independent review',async()=>{
+  const f=await fixture(),bytes=await sharp({create:{width:800,height:100,channels:3,background:'#654321'}}).png().toBuffer(),requests:any[]=[];
+  const fetchImpl=async(url:string,r:any)=>{const body=JSON.parse(r.body);requests.push({url,body});
+   if(url.endsWith('/images'))return {ok:true,json:async()=>({usage:{cost:.045},data:[{b64_json:bytes.toString('base64')}]})};
+   expect(body.response_format.json_schema.name).toBe('resize_lab_direct_artwork_review');
+   return {ok:true,json:async()=>({usage:{cost:.002},choices:[{message:{content:JSON.stringify({reviewable:true,sourceHasHero:true,sourceTiled:false,newTypography:false,newLogo:false,newButton:false,duplicatedHero:false,identityChanged:false,inventedObjects:false,essentialDetailsObstructed:false,heroBox:{x:.5,y:.1,width:.2,height:.8},evidence:'One large source object, faithful scene'})}}]})};
+  };
+  const options={apiKey:'test-secret',model:'image-v1',reviewModel:'vision-v1',planningScope:'user-a',fetchImpl,resolveDirection:(i:any,o:any)=>resolvePersistedDirection(i,{...o,directory:f.directory})};
+  const result=await runResizeLabImage({...input,executionVersion:'direct-adaptation-v4'},options);
+  expect(result.error).toBeUndefined();expect(result.quality.accepted).toBe(true);expect(requests).toHaveLength(2);expect(result.cost).toBeCloseTo(.047);expect(result.costBreakdown.analysis).toBeUndefined();expect(result.costBreakdown.planning).toBeUndefined();
+  expect(requests[0].body.input_references[0].image_url.url).toBe(input.imageDataUrl);expect(requests[0].body.aspect_ratio).toBe('8:1');expect(requests[0].body.prompt.length).toBeLessThan(1200);
+  const repeated=await runResizeLabImage({...input,executionVersion:'direct-adaptation-v4'},{...options,model:'different-image-model'});expect(repeated.error).toBeUndefined();expect(requests).toHaveLength(4);expect(requests[2].body.prompt).toBe(requests[0].body.prompt);expect(requests[2].body.model).toBe('image-v1');
+ });
  it('uses analysis → planning → image edit → review, then only edit/review on repeat',async()=>{
   const f=await fixture(),bytes=await sharp({create:{width:800,height:100,channels:3,background:'#777'}}).png().toBuffer(),requests:any[]=[];
   const fetchImpl=async(url:string,request:any)=>{

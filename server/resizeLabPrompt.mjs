@@ -10,13 +10,25 @@ const directions={
 };
 export const EXECUTION_VERSION='source-edit-v2';
 export const FAMILY_EXECUTION_VERSION='family-edit-v3';
-export const supportedExecutionVersions=[EXECUTION_VERSION,FAMILY_EXECUTION_VERSION];
+export const DIRECT_EXECUTION_VERSION='direct-adaptation-v4';
+export const supportedExecutionVersions=[EXECUTION_VERSION,FAMILY_EXECUTION_VERSION,DIRECT_EXECUTION_VERSION];
+// Direct image edit, based on the first family rollout (3dc8627). No scene
+// description, analysis JSON, historical placement plan or generation-window
+// lecture is fed to the image model. It reads the source image itself.
+export function buildDirectAdaptationPrompt({target,family='landscape',overlayLayout,userPrompt=''}){
+ const wide=target.width/target.height>=3;
+ const direction=wide?'Recompose as a wide advertising strip: use a large close-up of the existing focal object or related group right of center, with quiet space for the overlays. Fill the banner height with the focal content rather than fitting the entire portrait into the strip. Crop peripheral scenery as needed.':({square:'Rebalance the existing composition for a square canvas, with quiet upper-left copy space.',portrait:'Adapt the existing vertical composition with minimal repositioning and crop.',skyscraper:'Adapt the existing composition to a tall narrow canvas, preserving key details.',landscape:'Recompose horizontally, with focal content right of center and quiet space on the left.'}[family]||'Rebalance the existing composition for the target canvas.');
+ const zones=normalizedZones(overlayLayout);
+ const overlays=zones.length?'Keep these separate HTML overlay areas quiet: '+zones.map(z=>`${z.key} ${Math.round(z.x*100)},${Math.round(z.y*100)},${Math.round(z.width*100)},${Math.round(z.height*100)}`).join('; ')+' (x,y,width,height in percent).':'';
+ return `Adapt the supplied advertising artwork to ${target.width}×${target.height}. ${direction} Preserve the original object counts, identities, relationships, lighting, palette and style. For an abstract source, adapt its existing shapes and rhythm instead of inventing a subject. Reposition, scale and crop existing artwork; extend its background naturally as one continuous scene. Keep faces and product details intact. Add no objects, repeated copies, words, logos or buttons. ${overlays}${String(userPrompt).trim()?` Additional edit: ${String(userPrompt).trim()}`:''}`.trim();
+}
 const noTiling='ONE CONTINUOUS SOURCE-FAITHFUL COMPOSITION. Never tile, mirror, stamp, repeat or collage the source image to fill the canvas. Do not create a wallpaper strip or repeat sets of background objects. Extend the existing perspective and lighting naturally. Preserve each recognizable source subject exactly once; use crop and repositioning to make the existing focal group legible at this size, rather than reducing the whole portrait into a tiny poster. For abstract or pattern-only artwork preserve its existing motif without introducing a focal subject.';
 export function buildResizeLabPrompt({target,userPrompt="",family="landscape",composition="composition-1",overlayLayout,artDirection,formatPlan,executionVersion}){
  const width=Number(target.width)||728,height=Number(target.height)||90;
  const ratio=width/height;
  const direction=artDirection&&['abstract','environment'].includes(artDirection.analysis?.kind)?'Adapt the original environmental perspective or abstract masses to this aspect ratio; maintain source rhythm and hierarchy without inventing a focal subject.':ratio>=3?directions.strip:directions[family]||directions.landscape;
  const custom=String(userPrompt).trim();
+ if(executionVersion===DIRECT_EXECUTION_VERSION)return buildDirectAdaptationPrompt({target,family,overlayLayout,userPrompt:custom});
  // Restore family-led image editing. A recorded analysis is useful for review,
  // but dumping every semantic group's numerical plan into the image request
  // changes this task into preserving a whole poster inside a new rectangle.

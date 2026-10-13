@@ -1,0 +1,44 @@
+{
+  "input": {
+    "target": {
+      "width": 728,
+      "height": 90
+    },
+    "family": "strip",
+    "executionVersion": "direct-adaptation-v4",
+    "overlayLayout": {
+      "units": "normalized",
+      "zones": [
+        {
+          "key": "logo",
+          "x": 0.02,
+          "y": 0.15,
+          "width": 0.1,
+          "height": 0.7
+        },
+        {
+          "key": "headline",
+          "x": 0.14,
+          "y": 0.25,
+          "width": 0.35,
+          "height": 0.25
+        },
+        {
+          "key": "subline",
+          "x": 0.14,
+          "y": 0.55,
+          "width": 0.35,
+          "height": 0.15
+        },
+        {
+          "key": "cta",
+          "x": 0.84,
+          "y": 0.3,
+          "width": 0.14,
+          "height": 0.4
+        }
+      ]
+    }
+  },
+  "prompt": "Adapt the supplied advertising artwork to 728×90. Recompose as a wide advertising strip: use a large close-up of the existing focal object or related group right of center, with quiet space for the overlays. Fill the banner height with the focal content rather than fitting the entire portrait into the strip. Crop peripheral scenery as needed. Preserve the original object counts, identities, relationships, lighting, palette and style. For an abstract source, adapt its existing shapes and rhythm instead of inventing a subject. Reposition, scale and crop existing artwork; extend its background naturally as one continuous scene. Keep faces and product details intact. Add no objects, repeated copies, words, logos or buttons. Keep these separate HTML overlay areas quiet: logo 2,15,10,70; headline 14,25,35,25; subline 14,55,35,15; cta 84,30,14,40 (x,y,width,height in percent)."
+}

@@ -4,7 +4,7 @@ const {chromium}=require('playwright');
  const browser=await chromium.launch({headless:true});const page=await browser.newPage({viewport:{width:1600,height:1000}});const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.text().startsWith('motion-check'))console.log(m.text())});
  const image='data:image/svg+xml;base64,'+Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="250"><rect width="300" height="250" fill="purple"/></svg>').toString('base64');
  const logo='data:image/svg+xml;base64,'+Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="30"><rect width="120" height="30" fill="red"/></svg>').toString('base64');
- const state={image,logoImage:logo,logoWidth:100,selected:['300x250','336x280','728x90'],results:Object.fromEntries(['300x250','336x280','728x90'].map(id=>[id,{image,layout:{},status:'ready'}]))};let saved;
+ const state={image,headline:'Headline',subline:'Subline',cta:'CTA',logoImage:logo,logoWidth:100,selected:['300x250','336x280','728x90'],results:Object.fromEntries(['300x250','336x280','728x90'].map(id=>[id,{image,layout:{},status:'ready'}]))};let saved;
  await page.addInitScript(()=>localStorage.setItem('rl-token','test-token'));
  await page.route('**/api/resize-lab/projects/default',async route=>{if(route.request().method()==='PUT'){saved=route.request().postDataJSON().state;await route.fulfill({json:{ok:true}})}else await route.fulfill({json:{state:saved||state}})});
  await page.goto(process.env.RESIZE_LAB_URL||'http://127.0.0.1:5173/?view=resize-lab');
