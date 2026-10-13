@@ -29,7 +29,7 @@ const {chromium}=require('playwright');
   if(body.overlayLayout?.units!=='normalized')throw Error('Missing overlay geometry');
   const keys=body.overlayLayout.zones.map(z=>z.key);
   for(const key of ['logo','headline','cta'])if(!keys.includes(key))throw Error('Missing Design zone '+key);
-  if(body.target.height===90&&keys.includes('subline'))throw Error('Invisible strip subline was reserved');
+  if(body.target.height===90&&!keys.includes('subline'))throw Error('Visible strip subline was not reserved');
   for(const z of body.overlayLayout.zones)if(z.x<0||z.y<0||z.x+z.width>1.00001||z.y+z.height>1.00001)throw Error('Unbounded overlay zone');
   await route.fulfill({json:{imageDataUrl:image}});
  });

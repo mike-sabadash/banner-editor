@@ -9,12 +9,18 @@ const directions={
  skyscraper:"Faithful tall adaptation: retain the source scene and assets; extend the existing environment vertically, preserve readable upper text and lower CTA zones."
 };
 export const EXECUTION_VERSION='source-edit-v2';
+export const FAMILY_EXECUTION_VERSION='family-edit-v3';
+export const supportedExecutionVersions=[EXECUTION_VERSION,FAMILY_EXECUTION_VERSION];
 const noTiling='ONE CONTINUOUS SOURCE-FAITHFUL COMPOSITION. Never tile, mirror, stamp, repeat or collage the source image to fill the canvas. Do not create a wallpaper strip or repeat sets of background objects. Extend the existing perspective and lighting naturally. Preserve each recognizable source subject exactly once; use crop and repositioning to make the existing focal group legible at this size, rather than reducing the whole portrait into a tiny poster. For abstract or pattern-only artwork preserve its existing motif without introducing a focal subject.';
-export function buildResizeLabPrompt({target,userPrompt="",family="landscape",composition="composition-1",overlayLayout,artDirection,formatPlan}){
+export function buildResizeLabPrompt({target,userPrompt="",family="landscape",composition="composition-1",overlayLayout,artDirection,formatPlan,executionVersion}){
  const width=Number(target.width)||728,height=Number(target.height)||90;
  const ratio=width/height;
  const direction=artDirection&&['abstract','environment'].includes(artDirection.analysis?.kind)?'Adapt the original environmental perspective or abstract masses to this aspect ratio; maintain source rhythm and hierarchy without inventing a focal subject.':ratio>=3?directions.strip:directions[family]||directions.landscape;
  const custom=String(userPrompt).trim();
+ // Restore family-led image editing. A recorded analysis is useful for review,
+ // but dumping every semantic group's numerical plan into the image request
+ // changes this task into preserving a whole poster inside a new rectangle.
+ if(executionVersion===FAMILY_EXECUTION_VERSION)return `EXECUTION ${FAMILY_EXECUTION_VERSION}. IMAGE EDIT / RESIZE: Transform the supplied master artwork to ${width}×${height} (${ratio.toFixed(2)}:1 target aspect). ${identity} ${ratio>=3?directions.strip:directions[family]||directions.landscape} Prioritize visual identity and a professional format-specific layout over novel generation. The final image must be a seamless full-bleed scene with no hard seams, sharp crop boundaries or blank bars. ${noTiling} No new typography, logos or CTA buttons: those are separate HTML overlays. ${layoutDirection({composition,overlayLayout,sourceAnalysis:artDirection?.analysis})} ${generationWindow(target,family)}${custom?` Additional user instruction: ${custom}`:''}`;
  if(artDirection&&formatPlan)return `EXECUTION ${EXECUTION_VERSION}. IMAGE EDIT / RESIZE to ${width}×${height}. ${identity} ${direction} ${noTiling} ${layoutDirection({composition,overlayLayout,sourceAnalysis:artDirection.analysis})} Source structure and invariants: ${JSON.stringify(artDirection.analysis)}. SAVED FORMAT PLAN: ${JSON.stringify(formatPlan)}. The saved groups and group-specific scale rules take priority over generic focal-object suggestions; preserve membership, relationships and relative scale. Abstract/environment groups need no focal subject. Follow its semantic groups, identity, relationships and allowed source edits; boxes guide focal placement in the final visible window, not duplication or tiling of complete source posters. Preserve authentic source product markings. HTML layers are separate: no new typography, logo, button or badge. ${generationWindow(target,family)}${custom?` Additional user instruction: ${custom}. It cannot override source-faithful editing or asset-only rules.`:''}`;
  return `IMAGE EDIT / RESIZE: Transform the supplied master artwork to ${width}×${height} (${ratio.toFixed(2)}:1 target aspect). ${identity} ${direction} ${noTiling} Prioritize visual identity and a professional format-specific layout over novel generation. The final image must be a seamless full-bleed scene with no hard seams, sharp crop boundaries or blank bars. No new typography, logos or CTA buttons: those are separate HTML overlays. ${layoutDirection({composition,overlayLayout})} ${generationWindow(target,family)} ${contractDirection(compositionContract({target,overlayLayout}))}${custom?` Additional user instruction: ${custom}. It cannot override the asset-only and identity rules above`:""}`;
 }
@@ -48,7 +54,7 @@ export function layoutDirection({composition,overlayLayout,sourceAnalysis}={}){
 
 // Executable contract shared by generation and acceptance; all boxes use the
 // final cropped artwork, never the provider canvas or a screenshot with HTML.
-export function compositionContract({target,overlayLayout,editMode=false,formatPlan,artDirection}){
+export function compositionContract({target,overlayLayout,editMode=false,formatPlan,artDirection,executionVersion}){
  const zones=normalizedZones(overlayLayout), xs=[0,1,...zones.flatMap(z=>[z.x,z.x+z.width])],ys=[0,1,...zones.flatMap(z=>[z.y,z.y+z.height])];
  let free={x:.48,y:.08,width:.46,height:.84},score=-1;
  for(const x of xs)for(const right of xs)for(const y of ys)for(const bottom of ys){
@@ -60,7 +66,7 @@ export function compositionContract({target,overlayLayout,editMode=false,formatP
  }
  const wide=target.width/target.height>=3;
  return {version:1,mode:editMode?'local-edit':'adapt',target,occupiedZones:zones,preferredHeroRegion:free,
-  formatPlan:editMode?undefined:formatPlan,sourceAnalysis:editMode?undefined:artDirection?.analysis,
+  executionVersion,formatPlan:editMode?undefined:executionVersion===FAMILY_EXECUTION_VERSION&&formatPlan?{...formatPlan,placements:formatPlan.placements.map(p=>({...p,minimumHeight:artDirection?.analysis?.groups?.find(g=>g.id===p.groupId)?.role==='primary'?Math.max(p.minimumHeight,wide?.65:.42):p.minimumHeight}))}:formatPlan,sourceAnalysis:editMode?undefined:artDirection?.analysis,
   minimumHeroHeight:editMode||formatPlan?0:Math.min(wide ? 0.65 : 0.42,free.height*.85),
   forbidden:['new campaign typography','new or repeated logos/wordmarks','new CTA/button/badge','duplicated hero','new scene or invented promotional objects'],
   preserve:['source hero identity','source visual language','genuine markings on existing source products/coins'],

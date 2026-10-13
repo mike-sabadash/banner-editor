@@ -18,6 +18,15 @@ async function fixture(kind='related-group'){
  return {directory,calls,options};
 }
 describe('persisted source structure and format plans',()=>{
+ it('upgrades v2 execution to family adaptation once, preserves its signed history and pins repeated requests',async()=>{
+  const f=await fixture(),old=await resolvePersistedDirection({...input,executionVersion:'source-edit-v2'},f.options);
+  const saved=structuredClone(old.artDirection.plans[old.planId]);
+  const upgraded=await resolvePersistedDirection({...input,executionVersion:'family-edit-v3'},f.options);
+  expect(upgraded.error).toBeUndefined();expect(upgraded.artDirection.plans[old.planId]).toEqual(saved);
+  expect(upgraded.generationPrompt).not.toContain('SAVED FORMAT PLAN');expect(upgraded.executionVersion).toBe('family-edit-v3');expect(upgraded.charges).toEqual({});
+  const repeated=await resolvePersistedDirection({...input,executionVersion:'family-edit-v3'},f.options);
+  expect(repeated.planId).toBe(upgraded.planId);expect(repeated.generationPrompt).toBe(upgraded.generationPrompt);expect(f.calls).toHaveLength(2);
+ });
  it('analyzes once and repeats the exact saved plan, prompt and pinned models across a fresh request',async()=>{
   const f=await fixture(),first=await resolvePersistedDirection(input,f.options);
   expect(first.error).toBeUndefined();expect(f.calls).toHaveLength(2);expect(first.charges).toEqual({analysis:.003,planning:.003});
@@ -68,11 +77,18 @@ describe('persisted source structure and format plans',()=>{
   expect(()=>validateAnalysis({...analysis(),groups:[{...analysis().groups[0],members:[]}]})).toThrow();expect(()=>validatePlan({...plan(),placements:[]},analysis())).toThrow();expect(()=>validatePlan(plan(),analysis('abstract'))).toThrow('нет требования масштаба hero');
  });
  it('checks group identity, relationship, scale and placement instead of a single-character criterion',()=>{
-  const contract=compositionContract({...input,formatPlan:plan(),artDirection:{analysis:analysis()}}),review={reviewable:true,sourceHasHero:true,newTypography:false,newLogo:false,newButton:false,duplicatedHero:false,identityChanged:false,inventedObjects:false,essentialDetailsObstructed:false,heroBox:null,planFollowed:true,groups:[{groupId:'car-person',box:rect,identityPreserved:true,relationsPreserved:true}],evidence:'Group preserved'};
+  const contract=compositionContract({...input,formatPlan:plan(),artDirection:{analysis:analysis()}}),review={reviewable:true,sourceTiled:false,sourceHasHero:true,newTypography:false,newLogo:false,newButton:false,duplicatedHero:false,identityChanged:false,inventedObjects:false,essentialDetailsObstructed:false,heroBox:null,planFollowed:true,groups:[{groupId:'car-person',box:rect,identityPreserved:true,relationsPreserved:true}],evidence:'Group preserved'};
   expect(contract.minimumHeroHeight).toBe(0);expect(artworkReviewIssues(review,contract)).toEqual([]);
   const shifted={...review,groups:[{...review.groups[0],box:{...rect,x:0}}]};expect(artworkReviewIssues(shifted,contract)).toEqual([]);expect(artworkReviewWarnings(shifted,contract)).not.toEqual([]);
   expect(artworkReviewIssues({...review,groups:[{...review.groups[0],relationsPreserved:false}]},contract)).not.toEqual([]);
   expect(artworkReviewIssues({...review,groups:[{...review.groups[0],box:{...rect,height:.2}}]},contract)).toContain('слишком мелкая смысловая группа car-person');
+ });
+ it('family adaptation retains semantic relationship checks, rejects miniature primary groups and permits new horizontal positions',()=>{
+  const contract=compositionContract({...input,executionVersion:'family-edit-v3',formatPlan:{...plan(),placements:plan().placements.map(p=>({...p,minimumHeight:.1}))},artDirection:{analysis:analysis()}});
+  const review={reviewable:true,sourceTiled:false,sourceHasHero:true,newTypography:false,newLogo:false,newButton:false,duplicatedHero:false,identityChanged:false,inventedObjects:false,essentialDetailsObstructed:false,heroBox:null,planFollowed:false,groups:[{groupId:'car-person',box:rect,identityPreserved:true,relationsPreserved:true}],evidence:'Same car-person relationship in a new horizontal position'};
+  expect(artworkReviewIssues(review,contract)).toEqual([]);
+  expect(artworkReviewIssues({...review,groups:[{...review.groups[0],box:{...rect,height:.2}}]},contract)).toContain('слишком мелкая смысловая группа car-person');
+  expect(artworkReviewIssues({...review,groups:[{...review.groups[0],relationsPreserved:false}]},contract)).toContain('не сохранена смысловая группа car-person');
  });
 });
 
@@ -86,7 +102,7 @@ describe('full planned image pipeline',()=>{
    if(url.endsWith('/images'))return {ok:true,json:async()=>({data:[{b64_json:bytes.toString('base64')}],usage:{cost:.04}})};
    const name=body.response_format.json_schema.name;
    if(name!=='resize_lab_artwork_review')return f.options.fetchImpl(url,request);
-   return {ok:true,json:async()=>({usage:{cost:.002},choices:[{message:{content:JSON.stringify({reviewable:true,sourceHasHero:true,newTypography:false,newLogo:false,newButton:false,duplicatedHero:false,identityChanged:false,inventedObjects:false,essentialDetailsObstructed:false,heroBox:null,planFollowed:true,groups:[{groupId:'car-person',box:rect,identityPreserved:true,relationsPreserved:true}],evidence:'Same related group and plan'})}}]})};
+   return {ok:true,json:async()=>({usage:{cost:.002},choices:[{message:{content:JSON.stringify({reviewable:true,sourceTiled:false,sourceHasHero:true,newTypography:false,newLogo:false,newButton:false,duplicatedHero:false,identityChanged:false,inventedObjects:false,essentialDetailsObstructed:false,heroBox:null,planFollowed:true,groups:[{groupId:'car-person',box:rect,identityPreserved:true,relationsPreserved:true}],evidence:'Same related group and plan'})}}]})};
   };
   const options={apiKey:'test-secret',model:'image-v1',reviewModel:'vision-v1',fetchImpl,planningScope:'user-a',resolveDirection:(i:any,o:any)=>resolvePersistedDirection(i,{...o,directory:f.directory})};
   const first=await runResizeLabImage(input,options);expect(first.error).toBeUndefined();expect(first.cost).toBeCloseTo(.048);expect(requests).toHaveLength(4);expect(first.planId).toBeDefined();
@@ -109,10 +125,10 @@ describe('immutable v1 project compatibility fixture',()=>{
 
  describe('cache integrity',()=>{it('rejects modified cached analysis without returning corrupt metadata or overwriting its bytes',async()=>{const f=await fixture();await resolvePersistedDirection(input,f.options);const scope=(await readdir(f.directory))[0],file=path.join(f.directory,scope,(await readdir(path.join(f.directory,scope)))[0]);const record=JSON.parse(await readFile(file,'utf8'));record.analysis.summary='Unrequested changed scene';await writeFile(file,JSON.stringify(record));const before=await readFile(file,'utf8');const r=await resolvePersistedDirection(input,f.options);expect(r.error).toContain('Подпись');expect(r.artDirection).toBeUndefined();expect(await readFile(file,'utf8')).toBe(before);expect(f.calls).toHaveLength(2);});});
 describe('versioned execution repair without replanning',()=>{
- it.each([{repairExecution:true},{executionVersion:'source-edit-v2'}])('keeps old signed execution and creates one separate repaired revision without planning: %j',async(flags)=>{
+ it.each([{repairExecution:true},{executionVersion:'source-edit-v2'},{executionVersion:'family-edit-v3'}])('keeps old signed execution and creates one separate repaired revision without planning: %j',async(flags)=>{
   const record=JSON.parse(await readFile(new URL('./__fixtures__/resizeLabDirection-v1.json',import.meta.url),'utf8')),oldId=Object.keys(record.plans)[0],old=structuredClone(record.plans[oldId]);const directory=await mkdtemp(path.join(tmpdir(),'repair-execution-'));let calls=0;const options={directory,scope:'repair-user',apiKey:'test-secret',model:'future-image',reviewModel:'future-review',fetchImpl:async()=>{calls++;throw Error('Repair must not invoke AI planning')}};
-  const first=await resolvePersistedDirection({...input,savedDirections:{[record.sourceHash]:record},...flags},options);expect(first.error).toBeUndefined();expect(first.artDirection.plans[oldId]).toEqual(old);expect(first.planId).not.toBe(oldId);expect(first.artDirection.plans[first.planId].executionVersion).toBe('source-edit-v2');expect(first.artDirection.plans[first.planId].replaces).toBe(oldId);expect(first.plan).toEqual(old.plan);expect(first.artDirection.models).toEqual(record.models);expect(first.generationPrompt).toContain('HORIZONTAL DESIGN RE-LAYOUT');expect(first.generationPrompt).toContain('Never tile');expect(first.charges).toEqual({});
-  const repeat=await resolvePersistedDirection({...input,repairExecution:true},options);expect(repeat.planId).toBe(first.planId);expect(repeat.generationPrompt).toBe(first.generationPrompt);expect(Object.keys(repeat.artDirection.plans)).toHaveLength(Object.keys(record.plans).length+1);expect(calls).toBe(0);
+  const first=await resolvePersistedDirection({...input,savedDirections:{[record.sourceHash]:record},...flags},options);expect(first.error).toBeUndefined();expect(first.artDirection.plans[oldId]).toEqual(old);expect(first.planId).not.toBe(oldId);expect(first.artDirection.plans[first.planId].executionVersion).toBe('executionVersion' in flags?flags.executionVersion:'source-edit-v2');expect(first.artDirection.plans[first.planId].replaces).toBe(oldId);expect(first.plan).toEqual(old.plan);expect(first.artDirection.models).toEqual(record.models);expect(first.generationPrompt).toContain('HORIZONTAL DESIGN RE-LAYOUT');expect(first.generationPrompt).toContain('Never tile');expect(first.charges).toEqual({});
+  const repeat=await resolvePersistedDirection({...input,repairExecution:true,...flags},options);expect(repeat.planId).toBe(first.planId);expect(repeat.generationPrompt).toBe(first.generationPrompt);expect(Object.keys(repeat.artDirection.plans)).toHaveLength(Object.keys(record.plans).length+1);expect(calls).toBe(0);
  });
 });
 
