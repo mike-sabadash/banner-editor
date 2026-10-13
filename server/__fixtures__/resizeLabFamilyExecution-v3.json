@@ -1,0 +1,44 @@
+{
+  "input": {
+    "target": {
+      "width": 728,
+      "height": 90
+    },
+    "family": "strip",
+    "executionVersion": "family-edit-v3",
+    "overlayLayout": {
+      "units": "normalized",
+      "zones": [
+        {
+          "key": "logo",
+          "x": 0.02,
+          "y": 0.15,
+          "width": 0.1,
+          "height": 0.7
+        },
+        {
+          "key": "headline",
+          "x": 0.14,
+          "y": 0.25,
+          "width": 0.35,
+          "height": 0.25
+        },
+        {
+          "key": "subline",
+          "x": 0.14,
+          "y": 0.55,
+          "width": 0.35,
+          "height": 0.15
+        },
+        {
+          "key": "cta",
+          "x": 0.84,
+          "y": 0.3,
+          "width": 0.14,
+          "height": 0.4
+        }
+      ]
+    }
+  },
+  "prompt": "EXECUTION family-edit-v3. IMAGE EDIT / RESIZE: Transform the supplied master artwork to 728×90 (8.09:1 target aspect). Treat the supplied artwork as the single authoritative campaign master, not inspiration for a new visual. This is a faithful image-edit / canvas-extension task. Preserve its recognizable objects, their shapes, distinctive graphic assets, background motif, lighting, colors, textures, depth, materials, effects and campaign-specific visual language. Do not invent a different scene, new objects, new decorative assets or alternative design. Reuse and reposition the existing elements; when extra canvas is needed, outpaint a seamless continuation of the same environment. Keep recognizable brand artwork already baked into the original as faithfully as possible, but do not add new text. HORIZONTAL DESIGN RE-LAYOUT, not a portrait crop. Build a true left-to-right panorama: follow measured copy clearance; distribute and scale recognizable source visual elements horizontally through center and right, with a focal subject in the middle-right and the far-right CTA safe. Preserve the source campaign's signature visual objects, their proportions and visual relationship. Avoid vertical stacking, oversized background empty areas and abrupt image boundaries. Prioritize visual identity and a professional format-specific layout over novel generation. The final image must be a seamless full-bleed scene with no hard seams, sharp crop boundaries or blank bars. ONE CONTINUOUS SOURCE-FAITHFUL COMPOSITION. Never tile, mirror, stamp, repeat or collage the source image to fill the canvas. Do not create a wallpaper strip or repeat sets of background objects. Extend the existing perspective and lighting naturally. Preserve each recognizable source subject exactly once; use crop and repositioning to make the existing focal group legible at this size, rather than reducing the whole portrait into a tiny poster. For abstract or pattern-only artwork preserve its existing motif without introducing a focal subject. No new typography, logos or CTA buttons: those are separate HTML overlays. HTML OVERLAY PLAN (Composition 1: logo and copy generally left, CTA right): logo: x=2.0%, y=15.0%, width=10.0%, height=70.0%; headline: x=14.0%, y=25.0%, width=35.0%, height=25.0%; subline: x=14.0%, y=55.0%, width=35.0%, height=15.0%; cta: x=84.0%, y=30.0%, width=14.0%, height=40.0% Coordinates are relative to the FINAL VISIBLE WINDOW, not the whole generation canvas. These are occupied foreground areas, including padding; do NOT draw them into the image. The measured positions take priority over generic family directions. Make those areas visually quiet, low-detail and suitable for light text. Recompose the WHOLE focal group with a clear hierarchy: one large hero, supporting source objects, then environment. Keep faces and essential product details out from behind logo/headline/subline/CTA. Place the visual anchor in the remaining free area. Crop or reposition secondary source objects before shrinking the hero. Preserve all original identities and the same environment. Before finishing, inspect the final window and ensure no key object is clipped or obstructed by the listed overlays. GENERATION CANVAS: 8:1. FINAL VISIBLE WINDOW: x=0.0%, y=0.5%, width=100.0%, height=98.9% of the generated image; only this centered window survives the final resize to 728×90. Keep complete heads/faces and essential product identifying details inside that window. A deliberate close-up may crop legs, a table, peripheral scenery and secondary decorations. Do not shrink the entire source poster to preserve every object. Outside it use only expendable continuation of the same environment. Never accidentally cut protected faces or product details outside this window; deliberate plan-approved peripheral crop is allowed."
+}

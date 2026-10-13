@@ -4,7 +4,7 @@ import {compositionContract} from './resizeLabPrompt.mjs';
 import {artworkReviewIssues} from './resizeLabReview.mjs';
 import {runResizeLabImage} from './resizeLabImage.mjs';
 const input={imageDataUrl:'data:image/png;base64,AAAA',target:{width:728,height:90},family:'strip',overlayLayout:{units:'normalized',zones:[{key:'headline',x:0,y:0,width:.4,height:.8},{key:'cta',x:.88,y:.4,width:.12,height:.6}]}};
-const accepted={reviewable:true,sourceHasHero:true,newTypography:false,newLogo:false,newButton:false,duplicatedHero:false,identityChanged:false,inventedObjects:false,essentialDetailsObstructed:false,heroBox:{x:.5,y:.1,width:.2,height:.8},evidence:'Same hero, large close-up, no new branding.'};
+const accepted={reviewable:true,sourceTiled:false,sourceHasHero:true,newTypography:false,newLogo:false,newButton:false,duplicatedHero:false,identityChanged:false,inventedObjects:false,essentialDetailsObstructed:false,heroBox:{x:.5,y:.1,width:.2,height:.8},evidence:'Same hero, large close-up, no new branding.'};
 async function run(review:any,options:{editMode?:boolean;reviewHttpError?:boolean;reviewCost?:number|null}={}){
  const bytes=await sharp({create:{width:800,height:100,channels:3,background:'#654321'}}).png().toBuffer();
  const requests:any[]=[];
@@ -17,6 +17,9 @@ async function run(review:any,options:{editMode?:boolean;reviewHttpError?:boolea
  return {result,requests};
 }
 describe('artwork acceptance contract',()=>{
+ it('rejects source tiling even when identity and all other checks pass',()=>{
+  expect(artworkReviewIssues({...accepted,sourceTiled:true},compositionContract(input))).toContain('исходник повторён плиткой или коллажем вместо адаптации');
+ });
  it('places a large focal region between actual copy and CTA rather than shrinking the entire poster',()=>{
   const c=compositionContract(input);expect(c.preferredHeroRegion).toEqual({x:.4,y:0,width:.48,height:1});expect(c.minimumHeroHeight).toBe(.65);
   expect(c.occupiedZones).toHaveLength(2);expect(c.cropPriority.at(-1)).toContain('never face');
@@ -36,7 +39,7 @@ describe('artwork acceptance contract',()=>{
   const {result}=await run({...accepted,heroBox:{x:.5,y:.3,width:.1,height:.2}});expect(result.error).toContain('слишком мелкий');expect(result.imageDataUrl).toBeUndefined();
  });
  it('does not impose a hero on an abstract source or change scale during a local edit',()=>{
-  expect(artworkReviewIssues({...accepted,sourceHasHero:false,heroBox:null},compositionContract(input))).toEqual([]);
+  expect(artworkReviewIssues({...accepted,sourceTiled:false,sourceHasHero:false,heroBox:null},compositionContract(input))).toEqual([]);
   expect(artworkReviewIssues({...accepted,heroBox:{x:.5,y:.3,width:.1,height:.2}},compositionContract({...input,editMode:true}))).toEqual([]);
  });
  it('fails closed on review outage while keeping the known generation charge',async()=>{

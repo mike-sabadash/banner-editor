@@ -37,7 +37,7 @@ export async function runResizeLabImage(input,{apiKey,model,reviewModel='google/
  if(!input.editMode){
   direction=await resolveDirection({...input,target:resizeTarget(input.target)},{apiKey,model,reviewModel,fetchImpl,scope:planningScope});
   if(direction.error)return {error:direction.error,artDirection:direction.artDirection,cost:Object.values(direction.charges).some(Number.isFinite)?Object.values(direction.charges).filter(Number.isFinite).reduce((sum,v)=>sum+v,0):null,costBreakdown:direction.charges,costIncomplete:Object.values(direction.charges).some(v=>!Number.isFinite(v))};
-  if(direction.artDirection){input={...input,artDirection:direction.artDirection,formatPlan:direction.plan,savedGenerationPrompt:direction.generationPrompt};model=direction.artDirection.models.generation;reviewModel=direction.artDirection.models.review;}
+  if(direction.artDirection){input={...input,artDirection:direction.artDirection,formatPlan:direction.plan,executionVersion:direction.executionVersion,savedGenerationPrompt:direction.generationPrompt};model=direction.artDirection.models.generation;reviewModel=direction.artDirection.models.review;}
  }
  const saved={artDirection:direction.artDirection,planId:direction.planId};
  const priorCharges=Object.values(direction.charges);

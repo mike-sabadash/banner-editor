@@ -1,7 +1,16 @@
 import {describe,expect,it} from "vitest";
+import {readFile} from 'node:fs/promises';
 import {buildResizeLabPrompt,imageAspectRatio,generationViewport,normalizedZones} from "./resizeLabPrompt.mjs";
 
 describe("Resize Lab smart art direction",()=>{
+ it('pins the exact family v3 instruction so later changes require an explicit execution version review',async()=>{
+  const fixture=JSON.parse(await readFile(new URL('./__fixtures__/resizeLabFamilyExecution-v3.json',import.meta.url),'utf8'));
+  expect(buildResizeLabPrompt(fixture.input)).toBe(fixture.prompt);
+ });
+ it("restores family execution without feeding a numerical poster plan into the image request",()=>{
+  const prompt=buildResizeLabPrompt({target:{width:728,height:90},family:'strip',executionVersion:'family-edit-v3',artDirection:{analysis:{kind:'related-group'}},formatPlan:{strategy:'sentinel-poster-plan',placements:[]},overlayLayout:{units:'normalized',zones:[{key:'headline',x:.15,y:.2,width:.3,height:.4}]}});
+  expect(prompt).toContain('HORIZONTAL DESIGN RE-LAYOUT');expect(prompt).toContain('headline: x=15.0%');expect(prompt).toContain('FINAL VISIBLE WINDOW');expect(prompt).not.toContain('sentinel-poster-plan');expect(prompt).not.toContain('SAVED FORMAT PLAN');
+ });
   it("bakes family direction into a one-click rollout",()=>{
     const prompt=buildResizeLabPrompt({target:{width:728,height:90},family:"strip"});
     expect(prompt).toContain("HORIZONTAL DESIGN RE-LAYOUT");

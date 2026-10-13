@@ -2,6 +2,15 @@ import {describe,it,expect} from "vitest";
 import {formatAutoLayout,fitCopy} from "./resizeLabAutoLayout";
 import {marketFormats} from "./resizeLabFormats";
 describe("Resize Lab fixed-pixel auto-layout",()=>{
+ it("keeps strip branding independent of headline and retains short subline",()=>{
+  for(const width of [468,728,970]){
+   const l=formatAutoLayout({width,height:90,family:'strip'});
+   expect(l.logo!.x+l.logo!.width).toBeLessThan(l.copy.x);
+   expect(l.logo!.y+l.logo!.height).toBeLessThanOrEqual(90-l.safe);
+   const fitted=fitCopy(l,'LOGO','Your headline goes here','Subline text','Offer');
+   expect(fitted.showSubline).toBe(true);expect(fitted.fits).toBe(true);
+  }
+ });
  it("keeps all geometry inside every exact format",()=>{
   for(const f of marketFormats){
    const l=formatAutoLayout(f);
