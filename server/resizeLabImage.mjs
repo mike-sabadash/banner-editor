@@ -2,6 +2,12 @@ import sharp from 'sharp';
 import {resolvePersistedDirection} from './resizeLabDirection.mjs';
 import {reviewResizeLabArtwork} from './resizeLabReview.mjs';
 import {buildResizeLabPrompt,imageAspectRatio,generationViewport} from './resizeLabPrompt.mjs';
+import {buildResizeLabPrompt as checkpointPrompt,imageAspectRatio as checkpointAspect} from './resizeLabCheckpoint.mjs';
+
+export const APPROVED_CHECKPOINT_EXECUTION='checkpoint-65d2e842';
+// Public rollout always uses the approved checkpoint, including stale clients.
+// Local AI edits retain their existing explicitly requested edit-only path.
+export const approvedRolloutInput=input=>input.editMode?input:{...input,executionVersion:APPROVED_CHECKPOINT_EXECUTION};
 
 export function resizeTarget(value={width:728,height:90}){
  const width=Number(value.width),height=Number(value.height);
@@ -10,6 +16,7 @@ export function resizeTarget(value={width:728,height:90}){
 }
 export function resizeLabImageRequest(input,model){
  const target=resizeTarget(input.target),family=String(input.family||'landscape'),userPrompt=String(input.prompt||'').slice(0,4000);
+ if(!input.editMode&&input.executionVersion===APPROVED_CHECKPOINT_EXECUTION)return {model,prompt:checkpointPrompt({target,userPrompt,family,composition:input.composition}),aspect_ratio:checkpointAspect(family),resolution:'1K',output_format:'jpeg',input_references:[{type:'image_url',image_url:{url:input.imageDataUrl}}]};
  const prompt=input.editMode?`Edit the supplied existing banner artwork at ${target.width}×${target.height}. Apply ONLY this user instruction: ${userPrompt}. Preserve the existing subject identity, lighting, scene and campaign style unless explicitly requested. Extend the scene naturally when moving the subject; avoid visible crop boundaries or seams. Keep the same aspect ratio. Do not render logos, buttons or any typography; HTML layers are handled separately.`:input.savedGenerationPrompt||buildResizeLabPrompt({target,userPrompt,family,composition:input.composition,overlayLayout:input.overlayLayout,artDirection:input.artDirection,formatPlan:input.formatPlan,executionVersion:input.executionVersion});
  return {model,prompt,aspect_ratio:imageAspectRatio(family,target),resolution:'1K',output_format:'jpeg',input_references:[{type:'image_url',image_url:{url:input.imageDataUrl}}]};
 }
@@ -33,8 +40,9 @@ export async function prepareResizeLabImage(bytes,{target,family}){
 export async function runResizeLabImage(input,{apiKey,model,reviewModel='google/gemini-2.5-flash',fetchImpl=fetch,planningScope,resolveDirection=resolvePersistedDirection}){
  if(!apiKey)throw Error('OPENROUTER_API_KEY is not configured on the server');
  if(!/^data:image\/(png|jpeg|jpg|webp);base64,/i.test(String(input.imageDataUrl||'')))throw Error('Upload a PNG, JPEG or WebP visual');
+ const checkpoint=!input.editMode&&input.executionVersion===APPROVED_CHECKPOINT_EXECUTION;
  let direction={charges:{}};
- if(!input.editMode){
+ if(!input.editMode&&!checkpoint){
   direction=await resolveDirection({...input,target:resizeTarget(input.target)},{apiKey,model,reviewModel,fetchImpl,scope:planningScope});
   if(direction.error)return {error:direction.error,artDirection:direction.artDirection,cost:Object.values(direction.charges).some(Number.isFinite)?Object.values(direction.charges).filter(Number.isFinite).reduce((sum,v)=>sum+v,0):null,costBreakdown:direction.charges,costIncomplete:Object.values(direction.charges).some(v=>!Number.isFinite(v))};
   if(direction.artDirection){input={...input,artDirection:direction.artDirection,formatPlan:direction.plan,executionVersion:direction.executionVersion,savedGenerationPrompt:direction.generationPrompt};model=direction.artDirection.models.generation;reviewModel=direction.artDirection.models.review;}
@@ -47,6 +55,9 @@ export async function runResizeLabImage(input,{apiKey,model,reviewModel='google/
  if(!response.ok)return {error:`Image API недоступен (HTTP ${response.status}). Результат не применён.`,model,...saved,...billing(null)};
  let data;try{data=await response.json();}catch{return {error:"Image API вернул некорректный ответ. Результат не применён.",model,...saved,...billing(null)};}const first=data?.data?.[0],cost=data?.usage?.cost??null;
  if(!first?.b64_json)return {error:'Image API returned no image',model,...saved,...billing(cost)};
+ // Byte-for-byte provider artwork, exactly as the approved handler returned it.
+ // No planning, review call, aspect rejection, Sharp crop or recompression.
+ if(checkpoint)return {imageDataUrl:`data:${first.media_type||'image/jpeg'};base64,${first.b64_json}`,model,cost,costBreakdown:{generation:cost},executionVersion:APPROVED_CHECKPOINT_EXECUTION};
  try{
   const rawBytes=Buffer.from(first.b64_json,'base64');const rawMeta=await sharp(rawBytes,{limitInputPixels:40_000_000}).metadata();const rawType=rawMeta.format==='png'?'png':rawMeta.format==='webp'?'webp':'jpeg';
   const rawCandidate={image:'data:image/'+rawType+';base64,'+rawBytes.toString('base64'),canApply:false};
