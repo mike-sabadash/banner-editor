@@ -151,6 +151,7 @@ jobs:
             [ "$attempt" -lt 20 ] || { pm2 describe banner-openrouter-gateway; exit 1; }
             sleep 1
           done
+          node scripts/resize-lab-credit-diagnostics.mjs || echo "OPENROUTER_DIAGNOSTICS_UNAVAILABLE"
           echo "STUDIO_API_COMMIT: $(git rev-parse --short HEAD)"
           REMOTE
 
