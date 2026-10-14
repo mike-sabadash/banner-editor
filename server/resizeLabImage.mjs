@@ -1,4 +1,5 @@
 import sharp from 'sharp';
+import {resizeLabProviderError} from './resizeLabProviderError.mjs';
 import {checkpointOverlayInstruction} from './resizeLabOverlayInstruction.mjs';
 import {resolvePersistedDirection} from './resizeLabDirection.mjs';
 import {reviewResizeLabArtwork} from './resizeLabReview.mjs';
@@ -53,7 +54,7 @@ export async function runResizeLabImage(input,{apiKey,model,reviewModel='google/
  const billing=(generation,review)=>{const charges=[...priorCharges,generation,...(review===undefined?[]:[review])];return {cost:charges.some(Number.isFinite)?charges.filter(Number.isFinite).reduce((sum,value)=>sum+value,0):null,costBreakdown:{...direction.charges,generation,...(review===undefined?{}:{review})},costIncomplete:charges.some(value=>!Number.isFinite(value))};};
  const request=resizeLabImageRequest(input,model);
  let response;try{response=await fetchImpl('https://openrouter.ai/api/v1/images',{method:'POST',headers:{Authorization:`Bearer ${apiKey}`,'Content-Type':'application/json','HTTP-Referer':'https://studio.bannermatic.online','X-Title':'Bannermatic Resize Lab'},body:JSON.stringify(request)});}catch{return {error:"Image API недоступен. Результат не применён.",model,...saved,...billing(null)};}
- if(!response.ok)return {error:`Image API недоступен (HTTP ${response.status}). Результат не применён.`,model,...saved,...billing(null)};
+ if(!response.ok)return {...await resizeLabProviderError(response),model,...saved,...billing(null)};
  let data;try{data=await response.json();}catch{return {error:"Image API вернул некорректный ответ. Результат не применён.",model,...saved,...billing(null)};}const first=data?.data?.[0],cost=data?.usage?.cost??null;
  if(!first?.b64_json)return {error:'Image API returned no image',model,...saved,...billing(cost)};
  // Byte-for-byte provider artwork, exactly as the approved handler returned it.
