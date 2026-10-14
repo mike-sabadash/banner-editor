@@ -17,7 +17,9 @@ export function formatAutoLayout(format:Pick<MarketFormat,"width"|"height"|"fami
    const buttonWidth=between(Math.round(w*.27),72,100);
    const buttonHeight=between(h-2*safe,24,30);
    const button={x:w-safe-buttonWidth,y:(h-buttonHeight)/2,width:buttonWidth,height:buttonHeight};
-   return{safe,gap,logoSize,headlineSize,sublineSize,ctaSize,copy:{x:safe,y:safe,width:button.x-safe-gap-safe,maxHeight:h-2*safe},button,showSubline:false};
+   const logo={x:safe,y:safe,width:Math.min(36,h-2*safe),height:h-2*safe};
+   const copyX=logo.x+logo.width+gap*2;
+   return{safe,gap,logoSize,headlineSize,sublineSize,ctaSize,logo,copy:{x:copyX,y:safe,width:button.x-copyX-gap*2,maxHeight:h-2*safe},button,showSubline:false};
  }
  if(strip){
    const buttonWidth=w>=600?between(Math.round(w*.14),90,118):0;

@@ -32,4 +32,19 @@ describe('approved 65d2e842 rollout parity',()=>{
  it('is enforced by the production gateway',async()=>{
   const code=await readFile(new URL('./openrouterGateway.mjs',import.meta.url),'utf8');expect(code).toContain('runResizeLabImage(approvedRolloutInput(input)');
  });
+ it('appends measured CTA protection without changing the approved strip prompt or request settings',()=>{
+  const base=resizeLabImageRequest(approvedRolloutInput(input),model);
+  const protectedRequest=resizeLabImageRequest(approvedRolloutInput({...input,overlayLayout:{units:'normalized',zones:[{key:'cta',x:.8,y:.3,width:.18,height:.4}]}}),model);
+  expect(protectedRequest.prompt.startsWith(base.prompt)).toBe(true);
+  expect(protectedRequest.prompt).toContain('x 80–98%');
+  expect(protectedRequest.prompt).toContain('entirely outside this rectangle');
+  expect({...protectedRequest,prompt:base.prompt}).toEqual(base);
+ });
+ it('keeps micro face details in the visible band and preserves the setting',()=>{
+  const request=resizeLabImageRequest(approvedRolloutInput({...input,family:'micro',target:{width:320,height:50},overlayLayout:{units:'normalized',zones:[{key:'cta',x:.7,y:.2,width:.25,height:.6},{key:'headline',x:.15,y:.15,width:.5,height:.6}]}}),model);
+  expect(request.prompt).toContain('central horizontal band y 31.8–68.2%');
+  expect(request.prompt).toContain("recognizable setting, lighting and campaign atmosphere");
+  expect(request.aspect_ratio).toBe('21:9');
+ });
+
 });
