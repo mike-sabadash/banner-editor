@@ -28,5 +28,19 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),shar
  state={...state,headline:'',subline:''};await page.reload();await card.locator('.rl-auto-canvas').waitFor();await page.waitForFunction(()=>document.querySelector('.rl-format-card [data-edit-layer="headline"]')?.textContent==='');
  await page.unroute('**/api/resize-lab/adapt');await page.route('**/api/resize-lab/adapt',route=>{calls++;const body=route.request().postDataJSON();assert.equal(body.executionVersion,'checkpoint-65d2e842');assert(!body.overlayLayout.zones.some(z=>['headline','subline'].includes(z.key)));assert.equal(body.imageDataUrl,original);return route.fulfill({json:{imageDataUrl:replacement,cost:.045}})});
  await page.getByText('Настройки 728x90',{exact:true}).click();page.once('dialog',dialog=>dialog.accept());const edited=page.waitForResponse(r=>r.url().endsWith('/api/resize-lab/adapt'));await page.getByRole('button',{name:'Перегенерировать только 728x90',exact:true}).click();await edited;assert.equal(calls,5);
+ // Micro raster logos must not push copy outside the 50/60px viewport.
+ for(const id of ['320x50','468x60']){
+  state={...state,headline:'Your headline goes here',subline:'Subline',selected:[id],results:{[id]:{image:original,status:'ready',layout:{}}}};
+  await page.reload();const micro=page.locator('.rl-format-card').filter({has:page.locator('header strong',{hasText:id})});
+  await micro.locator('[data-edit-layer="headline"]').waitFor();
+  const bounds=await micro.locator('.rl-auto-canvas').evaluate(canvas=>{const r=canvas.getBoundingClientRect(),box=k=>{const b=canvas.querySelector(`[data-edit-layer="${k}"]`).getBoundingClientRect();return{x:b.x-r.x,y:b.y-r.y,right:b.right-r.x,bottom:b.bottom-r.y}};return {height:r.height,width:r.width,logo:box('logo'),headline:box('headline'),cta:box('cta')}});
+  for(const key of ['logo','headline','cta']){assert(bounds[key].y>=0);assert(bounds[key].bottom<=bounds.height+1,`${id} ${key} clipped`);assert(bounds[key].right<=bounds.width+1);}
+  assert(bounds.logo.right<bounds.headline.x);assert(bounds.headline.right<bounds.cta.x);
+  await micro.getByRole('button',{name:'✦ AI-редактирование',exact:true}).click();await micro.locator('textarea').fill('Move the character left');
+  await page.unroute('**/api/resize-lab/adapt');await page.route('**/api/resize-lab/adapt',route=>{calls++;const body=route.request().postDataJSON();assert.equal(body.editMode,true);assert.equal(body.prompt,'Move the character left');return route.fulfill({json:{imageDataUrl:replacement,cost:.069}})});
+  await micro.getByRole('button',{name:'✦ Применить',exact:true}).click();await micro.locator('.rl-ai-panel').waitFor({state:'hidden'});await page.waitForTimeout(1200);
+  assert.equal(state.results[id].image,replacement);assert.equal(state.results[id].previousImage,original);
+  const before=calls;await page.reload();await micro.locator('[data-edit-layer="headline"]').waitFor();assert.equal(state.results[id].image,replacement);assert.equal(calls,before);
+ }
  console.log('PASS: square-logo 728x90 horizontal composition stays visible and independent; ordinary rollout sends only missing targets and preserves ready artwork/overrides, including across reload; explicit single-format regeneration; rejected paid candidate preserved/reloaded/applied without new AI calls; failed base and scene repeats retain accepted image and overrides; compact rounded px fields, keyboard steps and scrubbing; reviewed media-plan setup without TT, invalid-dimension blocking');await browser.close();
 })().catch(e=>{console.error(e);process.exit(1)});

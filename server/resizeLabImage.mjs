@@ -1,4 +1,5 @@
 import sharp from 'sharp';
+import {checkpointOverlayInstruction} from './resizeLabOverlayInstruction.mjs';
 import {resolvePersistedDirection} from './resizeLabDirection.mjs';
 import {reviewResizeLabArtwork} from './resizeLabReview.mjs';
 import {buildResizeLabPrompt,imageAspectRatio,generationViewport} from './resizeLabPrompt.mjs';
@@ -16,7 +17,7 @@ export function resizeTarget(value={width:728,height:90}){
 }
 export function resizeLabImageRequest(input,model){
  const target=resizeTarget(input.target),family=String(input.family||'landscape'),userPrompt=String(input.prompt||'').slice(0,4000);
- if(!input.editMode&&input.executionVersion===APPROVED_CHECKPOINT_EXECUTION)return {model,prompt:checkpointPrompt({target,userPrompt,family,composition:input.composition}),aspect_ratio:checkpointAspect(family),resolution:'1K',output_format:'jpeg',input_references:[{type:'image_url',image_url:{url:input.imageDataUrl}}]};
+ if(!input.editMode&&input.executionVersion===APPROVED_CHECKPOINT_EXECUTION)return {model,prompt:checkpointPrompt({target,userPrompt,family,composition:input.composition})+checkpointOverlayInstruction(input),aspect_ratio:checkpointAspect(family),resolution:'1K',output_format:'jpeg',input_references:[{type:'image_url',image_url:{url:input.imageDataUrl}}]};
  const prompt=input.editMode?`Edit the supplied existing banner artwork at ${target.width}×${target.height}. Apply ONLY this user instruction: ${userPrompt}. Preserve the existing subject identity, lighting, scene and campaign style unless explicitly requested. Extend the scene naturally when moving the subject; avoid visible crop boundaries or seams. Keep the same aspect ratio. Do not render logos, buttons or any typography; HTML layers are handled separately.`:input.savedGenerationPrompt||buildResizeLabPrompt({target,userPrompt,family,composition:input.composition,overlayLayout:input.overlayLayout,artDirection:input.artDirection,formatPlan:input.formatPlan,executionVersion:input.executionVersion});
  return {model,prompt,aspect_ratio:imageAspectRatio(family,target),resolution:'1K',output_format:'jpeg',input_references:[{type:'image_url',image_url:{url:input.imageDataUrl}}]};
 }
