@@ -1,4 +1,4 @@
-name: Stage verified RiffKiller recovery
+name: Deploy verified RiffKiller recovery
 on:
   push:
     branches: [codex/riffkiller-server-preflight-20261019]
@@ -22,7 +22,7 @@ jobs:
           printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/server_key
           chmod 600 ~/.ssh/server_key
           ssh-keyscan -T 10 -p 2222 213.182.208.29 >> ~/.ssh/known_hosts
-      - name: Stage and verify RiffKiller without changing production
+      - name: Install verified RiffKiller release with backup and live checks
         run: |
           set -euo pipefail
           ssh -i ~/.ssh/server_key -p 2222 -o BatchMode=yes -o IdentitiesOnly=yes -o ConnectTimeout=15 root@213.182.208.29 'python3 -' <<'PY'
@@ -99,11 +99,68 @@ jobs:
                   if result.returncode:
                       raise RuntimeError('PHP syntax validation failed: '+relative)
           print('STAGED_PHP_SYNTAX_OK')
-          result=subprocess.run(['python3',str(source/'tools/apply_recovery.py'),'--site-root',str(root),'--archive',str(archive_path)],capture_output=True,text=True)
+          # Record protected runtime files without exposing their contents.
+          protected={}
+          for directory in ['config','data']:
+              for path in (root/directory).rglob('*'):
+                  if path.is_file():
+                      relative=path.relative_to(root).as_posix()
+                      if relative not in plan['files'] and relative!='data/riffs.json' and not relative.endswith('.lock'):
+                          protected[relative]=hashlib.sha256(path.read_bytes()).hexdigest()
+          if (root/'.env').is_file():
+              protected['.env']=hashlib.sha256((root/'.env').read_bytes()).hexdigest()
+          command=['python3',str(source/'tools/apply_recovery.py'),'--site-root',str(root),'--archive',str(archive_path)]
+          result=subprocess.run(command+['--apply'],capture_output=True,text=True)
           print(result.stdout)
           if result.returncode:
               print(result.stderr)
-              raise RuntimeError('Production preflight failed; production was not changed')
-          print('STAGED_RELEASE',release_sha)
-          print('RIFFKILLER_READY_FOR_PRODUCTION_APPROVAL')
+              raise RuntimeError('Recovery installation failed; inspect automatic rollback result')
+          for relative,expected in protected.items():
+              if hashlib.sha256((root/relative).read_bytes()).hexdigest()!=expected:
+                  raise RuntimeError('Protected runtime file changed during installation: '+relative)
+          print('PROTECTED_RUNTIME_FILES_UNCHANGED')
+          for relative,metadata in plan['files'].items():
+              if hashlib.sha256((root/relative).read_bytes()).hexdigest()!=metadata['after']:
+                  raise RuntimeError('Installed code checksum failed: '+relative)
+          for relative,metadata in plan['media'].items():
+              if hashlib.sha256((root/relative).read_bytes()).hexdigest()!=metadata['sha256']:
+                  raise RuntimeError('Installed media checksum failed: '+relative)
+          print('INSTALLED_CODE_AND_MEDIA_SHA256_OK')
+          check=subprocess.run(command,capture_output=True,text=True)
+          print(check.stdout)
+          if check.returncode or 'Preflight passed: 0 files.' not in check.stdout:
+              raise RuntimeError('Installed recovery is not idempotent')
+          print('INSTALLED_RECOVERY_IDEMPOTENT')
+          import urllib.request, urllib.error, datetime
+          base='https://riffkiller.fun'
+          with urllib.request.urlopen(base+'/?recovery='+release_sha,timeout=30) as response:
+              content=response.read()
+              if response.status!=200 or hashlib.sha256(content).hexdigest()!=plan['files']['index.html']['after']:
+                  raise RuntimeError('Public home does not match installed release')
+          print('LIVE_LIBRARY_HTTP_OK')
+          for relative in plan['media']:
+              request=urllib.request.Request(base+'/'+relative,headers={'Range':'bytes=0-1023'})
+              with urllib.request.urlopen(request,timeout=30) as response:
+                  data=response.read(1025)
+                  if response.status!=206 or len(data)!=1024 or not response.headers.get('Content-Range','').startswith('bytes 0-1023/'):
+                      raise RuntimeError('Public media Range request failed: '+relative)
+          print('LIVE_ALL_MEDIA_RANGE_OK')
+          with urllib.request.urlopen(base+'/api/me.php',timeout=30) as response:
+              if response.status!=200:
+                  raise RuntimeError('Session API health check failed')
+              json.loads(response.read())
+          print('LIVE_SESSION_API_OK')
+          for endpoint in ['/api/auth/email-login.php','/api/riffs/save.php']:
+              request=urllib.request.Request(base+endpoint,data=b'{}',headers={'Content-Type':'application/json'},method='POST')
+              try:
+                  urllib.request.urlopen(request,timeout=30)
+                  raise RuntimeError('Empty invalid request was accepted: '+endpoint)
+              except urllib.error.HTTPError as error:
+                  if error.code!=400:
+                      raise RuntimeError('Input validation health check failed: '+endpoint)
+          print('LIVE_LOGIN_AND_EDITOR_VALIDATION_OK')
+          backup=next((line.removeprefix('Installed. Backup: ') for line in result.stdout.splitlines() if line.startswith('Installed. Backup: ')),None)
+          (stage/'deployed.json').write_text(json.dumps({'release':release_sha,'media':media_sha,'backup':backup,'deployed_at':datetime.datetime.now(datetime.timezone.utc).isoformat()},indent=2)+'\n')
+          print('DEPLOYED_RELEASE',release_sha)
+          print('RIFFKILLER_PRODUCTION_RECOVERY_SUCCESS')
           PY
