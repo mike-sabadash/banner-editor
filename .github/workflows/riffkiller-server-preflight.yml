@@ -1,4 +1,4 @@
-name: Deploy verified RiffKiller recovery
+name: Deploy verified RiffKiller player
 on:
   push:
     branches: [codex/riffkiller-server-preflight-20261019]
@@ -22,145 +22,111 @@ jobs:
           printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/server_key
           chmod 600 ~/.ssh/server_key
           ssh-keyscan -T 10 -p 2222 213.182.208.29 >> ~/.ssh/known_hosts
-      - name: Install verified RiffKiller release with backup and live checks
+      - name: Deploy approved player release with backup and public checks
         run: |
           set -euo pipefail
           ssh -i ~/.ssh/server_key -p 2222 -o BatchMode=yes -o IdentitiesOnly=yes -o ConnectTimeout=15 root@213.182.208.29 'python3 -' <<'PY'
-          import hashlib, io, json, os, pathlib, shutil, subprocess, tarfile, zipfile
-          root=pathlib.Path('/var/www/riffkiller')
-          stage=pathlib.Path('/root/riffkiller-recovery-20261019')
-          release_sha='a8afdab520fc77fc2475c5025bf69d061c5edc16'
-          media_sha='1f5968358c473e8e114d2416dcc71f9ed15b05dd'
-          env={**os.environ,'GIT_TERMINAL_PROMPT':'0'}
+          import datetime, hashlib, json, os, pathlib, shutil, stat, subprocess, urllib.request
+          
+          root = pathlib.Path('/var/www/riffkiller')
+          release = 'f12338fb7520443925c959d010e980de5c0541b5'
+          base = '51cf4343230ab2ff0764a08a891e9f910421ea8e'
+          paths = ['js/practice-media.js', 'css/practice.css', 'css/riff-dna.css',
+                   'js/practice.js', 'js/riff-dna.js', 'js/rk-theme-init.js',
+                   'js/rk-theme.js', 'js/site-header.js', 'practice.html']
+          env = {**os.environ, 'GIT_TERMINAL_PROMPT': '0'}
           def git(*args):
-              result=subprocess.run(['git','-C',str(root),*args],capture_output=True,env=env)
-              if result.returncode:
-                  raise RuntimeError('RiffKiller Git operation failed: '+args[0])
-              return result.stdout
-          fetch=subprocess.run(['git','-C',str(root),'fetch','--no-tags','origin','codex/restore-riffkiller-20261019','recovery/riffkiller-media-20261019'],capture_output=True,env=env,timeout=240)
-          if fetch.returncode:
-              raise RuntimeError('Could not fetch the verified RiffKiller release')
-          for sha in [release_sha,media_sha]:
-              git('cat-file','-e',sha+'^{commit}')
-          plan=json.loads(git('show',release_sha+':tools/recovery-plan.json'))
-          stage.mkdir(mode=0o700,parents=True,exist_ok=True)
-          def extract(commit,names,destination):
-              destination.mkdir(parents=True,exist_ok=True)
-              proc=subprocess.Popen(['git','-C',str(root),'archive',commit,*names],stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,env=env)
-              with tarfile.open(fileobj=proc.stdout,mode='r|') as archive:
-                  for member in archive:
-                      relative=pathlib.PurePosixPath(member.name)
-                      if relative.is_absolute() or '..' in relative.parts or member.issym() or member.islnk():
-                          raise RuntimeError('Unsafe release archive entry')
-                      dest=destination.joinpath(*relative.parts)
-                      if member.isdir():
-                          dest.mkdir(parents=True,exist_ok=True)
-                      elif member.isfile():
-                          dest.parent.mkdir(parents=True,exist_ok=True)
-                          with archive.extractfile(member) as source,dest.open('wb') as output:
-                              shutil.copyfileobj(source,output,1048576)
-              if proc.wait():
-                  raise RuntimeError('Could not extract the verified Git release')
-          source=stage/'release'
-          extract(release_sha,list(plan['files'])+['data/riffs.json','tools/recovery-plan.json','tools/apply_recovery.py'],source)
-          extract(media_sha,['recovery-media'],stage)
-          manifest=json.loads((stage/'recovery-media/manifest.json').read_text())
-          if manifest['files'] != plan['media']:
-              raise RuntimeError('Media manifest does not match the release')
-          archive_path=stage/'media.zip'
-          with zipfile.ZipFile(archive_path,'w',compression=zipfile.ZIP_STORED) as archive:
-              for relative,metadata in plan['media'].items():
-                  sha=metadata['sha256']
-                  entry=manifest['objects'][sha]
-                  checksum=hashlib.sha256();size=0
-                  with archive.open('riffkiller/'+relative,'w',force_zip64=True) as output:
-                      for part in entry['parts']:
-                          path=stage/part
-                          if not path.resolve().is_relative_to((stage/'recovery-media/parts').resolve()):
-                              raise RuntimeError('Unsafe media part path')
-                          with path.open('rb') as item:
-                              while True:
-                                  block=item.read(1048576)
-                                  if not block:break
-                                  checksum.update(block);size+=len(block);output.write(block)
-                  if checksum.hexdigest()!=sha or size!=metadata['size']:
-                      raise RuntimeError('Recovered media failed checksum validation')
-                  print('STAGED_MEDIA',relative,'SHA256_OK')
-          catalog=json.loads((source/'data/riffs.json').read_text())
-          black_dog=next(r for r in catalog if r['id']==1)
-          for segment in black_dog['segments']:
-              path=root/segment['tabImage']
-              if not path.is_file():
-                  raise RuntimeError('Missing Black Dog tab: '+segment['tabImage'])
-          print('BLACK_DOG_TAB_SET_OK')
-          for relative in plan['files']:
-              if relative.endswith('.php'):
-                  result=subprocess.run(['php','-l',str(source/relative)],capture_output=True,text=True)
-                  if result.returncode:
-                      raise RuntimeError('PHP syntax validation failed: '+relative)
-          print('STAGED_PHP_SYNTAX_OK')
-          # Record protected runtime files without exposing their contents.
-          protected={}
-          for directory in ['config','data']:
-              for path in (root/directory).rglob('*'):
-                  if path.is_file():
-                      relative=path.relative_to(root).as_posix()
-                      if relative not in plan['files'] and relative!='data/riffs.json' and not relative.endswith('.lock'):
-                          protected[relative]=hashlib.sha256(path.read_bytes()).hexdigest()
-          if (root/'.env').is_file():
-              protected['.env']=hashlib.sha256((root/'.env').read_bytes()).hexdigest()
-          command=['python3',str(source/'tools/apply_recovery.py'),'--site-root',str(root),'--archive',str(archive_path)]
-          result=subprocess.run(command+['--apply'],capture_output=True,text=True)
-          print(result.stdout)
-          if result.returncode:
-              print(result.stderr)
-              raise RuntimeError('Recovery installation failed; inspect automatic rollback result')
-          for relative,expected in protected.items():
-              if hashlib.sha256((root/relative).read_bytes()).hexdigest()!=expected:
-                  raise RuntimeError('Protected runtime file changed during installation: '+relative)
-          print('PROTECTED_RUNTIME_FILES_UNCHANGED')
-          for relative,metadata in plan['files'].items():
-              if hashlib.sha256((root/relative).read_bytes()).hexdigest()!=metadata['after']:
-                  raise RuntimeError('Installed code checksum failed: '+relative)
-          for relative,metadata in plan['media'].items():
-              if hashlib.sha256((root/relative).read_bytes()).hexdigest()!=metadata['sha256']:
-                  raise RuntimeError('Installed media checksum failed: '+relative)
-          print('INSTALLED_CODE_AND_MEDIA_SHA256_OK')
-          check=subprocess.run(command,capture_output=True,text=True)
-          print(check.stdout)
-          if check.returncode or 'Preflight passed: 0 files.' not in check.stdout:
-              raise RuntimeError('Installed recovery is not idempotent')
-          print('INSTALLED_RECOVERY_IDEMPOTENT')
-          import urllib.request, urllib.error, datetime
-          base='https://riffkiller.fun'
-          with urllib.request.urlopen(base+'/?recovery='+release_sha,timeout=30) as response:
-              content=response.read()
-              if response.status!=200 or hashlib.sha256(content).hexdigest()!=plan['files']['index.html']['after']:
-                  raise RuntimeError('Public home does not match installed release')
-          print('LIVE_LIBRARY_HTTP_OK')
-          for relative in plan['media']:
-              request=urllib.request.Request(base+'/'+relative,headers={'Range':'bytes=0-1023'})
-              with urllib.request.urlopen(request,timeout=30) as response:
-                  data=response.read(1025)
-                  if response.status!=206 or len(data)!=1024 or not response.headers.get('Content-Range','').startswith('bytes 0-1023/'):
-                      raise RuntimeError('Public media Range request failed: '+relative)
-          print('LIVE_ALL_MEDIA_RANGE_OK')
-          with urllib.request.urlopen(base+'/api/me.php',timeout=30) as response:
-              if response.status!=200:
-                  raise RuntimeError('Session API health check failed')
-              json.loads(response.read())
-          print('LIVE_SESSION_API_OK')
-          for endpoint in ['/api/auth/email-login.php','/api/riffs/save.php']:
-              request=urllib.request.Request(base+endpoint,data=b'{}',headers={'Content-Type':'application/json'},method='POST')
+              proc = subprocess.run(['git', '-C', str(root), *args], capture_output=True, env=env, timeout=180)
+              if proc.returncode:
+                  raise RuntimeError('RiffKiller Git operation failed: ' + args[0])
+              return proc.stdout
+          git('fetch', '--no-tags', 'origin', 'main')
+          git('cat-file', '-e', release + '^{commit}')
+          git('cat-file', '-e', base + '^{commit}')
+          payload = {path: git('show', release + ':' + path) for path in paths}
+          previous = {}
+          for path in paths:
+              dest = root / path
+              if dest.is_symlink() or not dest.resolve().is_relative_to(root.resolve()):
+                  raise RuntimeError('Unsafe destination: ' + path)
+              actual = dest.read_bytes() if dest.exists() else None
+              if actual is not None and actual == payload[path]:
+                  print('ALREADY_CURRENT', path)
+                  continue
+              if path == 'js/practice-media.js':
+                  if actual is not None:
+                      raise RuntimeError('Unexpected existing media loader')
+              else:
+                  expected = git('show', base + ':' + path)
+                  # The preceding verified release only differed at some final newlines.
+                  if actual is None or actual.rstrip(b'\r\n') != expected.rstrip(b'\r\n'):
+                      raise RuntimeError('Production file differs from reviewed baseline: ' + path)
+              previous[path] = actual
+          print('PREFLIGHT_OK', len(previous), 'static files')
+          
+          stamp = datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%SZ')
+          backup = pathlib.Path('/root/riffkiller-player-releases') / (stamp + '-' + release[:12])
+          backup.mkdir(parents=True, mode=0o700)
+          for path, data in previous.items():
+              if data is not None:
+                  saved = backup / path
+                  saved.parent.mkdir(parents=True, exist_ok=True)
+                  shutil.copy2(root / path, saved)
+          (backup / 'manifest.json').write_text(json.dumps({
+              'release': release, 'baseline': base, 'files': {
+                  path: {'before': hashlib.sha256(data).hexdigest() if data is not None else None,
+                         'after': hashlib.sha256(payload[path]).hexdigest()}
+                  for path, data in previous.items()
+              }
+          }, indent=2) + '\n')
+          written = []
+          def replace(path, data, metadata):
+              dest = root / path
+              temp = dest.with_name('.' + dest.name + '.player-deploy-' + str(os.getpid()))
               try:
-                  urllib.request.urlopen(request,timeout=30)
-                  raise RuntimeError('Empty invalid request was accepted: '+endpoint)
-              except urllib.error.HTTPError as error:
-                  if error.code!=400:
-                      raise RuntimeError('Input validation health check failed: '+endpoint)
-          print('LIVE_LOGIN_AND_EDITOR_VALIDATION_OK')
-          backup=next((line.removeprefix('Installed. Backup: ') for line in result.stdout.splitlines() if line.startswith('Installed. Backup: ')),None)
-          (stage/'deployed.json').write_text(json.dumps({'release':release_sha,'media':media_sha,'backup':backup,'deployed_at':datetime.datetime.now(datetime.timezone.utc).isoformat()},indent=2)+'\n')
-          print('DEPLOYED_RELEASE',release_sha)
-          print('RIFFKILLER_PRODUCTION_RECOVERY_SUCCESS')
+                  with temp.open('xb') as output:
+                      output.write(data)
+                      output.flush()
+                      os.fsync(output.fileno())
+                  os.chmod(temp, stat.S_IMODE(metadata.st_mode))
+                  os.chown(temp, metadata.st_uid, metadata.st_gid)
+                  os.replace(temp, dest)
+              finally:
+                  if temp.exists(): temp.unlink()
+          metadata = {path: (root / path).stat() if data is not None else (root / 'js/practice.js').stat()
+                      for path, data in previous.items()}
+          try:
+              for path in previous:
+                  replace(path, payload[path], metadata[path])
+                  written.append(path)
+              for path in paths:
+                  if (root / path).read_bytes() != payload[path]:
+                      raise RuntimeError('Installed checksum mismatch: ' + path)
+              for path in paths:
+                  url = 'https://riffkiller.fun/' + path + '?release=' + release
+                  with urllib.request.urlopen(url, timeout=30) as response:
+                      if response.status != 200 or response.read() != payload[path]:
+                          raise RuntimeError('Public static asset mismatch: ' + path)
+              with urllib.request.urlopen('https://riffkiller.fun/api/me.php', timeout=30) as response:
+                  if response.status != 200: raise RuntimeError('Session API check failed')
+                  json.loads(response.read())
+              for path in ['assets/video/led-zeppelin/black-dog/black-dog-left.mp4',
+                           'assets/video/led-zeppelin/black-dog/black-dog-right.mp4']:
+                  request = urllib.request.Request('https://riffkiller.fun/' + path, headers={'Range': 'bytes=0-1023'})
+                  with urllib.request.urlopen(request, timeout=30) as response:
+                      if response.status != 206 or len(response.read(1025)) != 1024:
+                          raise RuntimeError('Media Range check failed')
+          except Exception:
+              for path in reversed(written):
+                  if previous[path] is None:
+                      (root / path).unlink()
+                  else:
+                      replace(path, previous[path], metadata[path])
+              print('ROLLBACK_COMPLETED', str(backup))
+              raise
+          (backup / 'deployed.json').write_text(json.dumps({'release': release, 'deployed_at': stamp}, indent=2) + '\n')
+          print('BACKUP', str(backup))
+          print('PUBLIC_STATIC_ASSETS_SHA256_OK')
+          print('SESSION_AND_MEDIA_RANGE_OK')
+          print('RIFFKILLER_PLAYER_DEPLOY_SUCCESS', release)
           PY
