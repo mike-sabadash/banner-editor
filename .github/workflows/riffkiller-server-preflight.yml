@@ -52,5 +52,21 @@ jobs:
           if public.is_file():
               pem=subprocess.check_output(['ssh-keygen','-f',str(public),'-e','-m','PKCS8'])
               print('PUBLIC_TRANSFER_KEY_B64',base64.b64encode(pem).decode())
+          if (root/'.git').exists():
+              remote=subprocess.run(['git','-C',str(root),'remote','get-url','origin'],capture_output=True,text=True)
+              print('RIFF_REMOTE_TYPE','SSH' if remote.stdout.strip().startswith(('git@','ssh:')) else 'HTTPS_OR_OTHER')
+              try:
+                  check=subprocess.run(['git','-C',str(root),'ls-remote','origin','HEAD'],capture_output=True,text=True,timeout=25,env={**__import__('os').environ,'GIT_TERMINAL_PROMPT':'0'})
+                  print('RIFF_GIT_READ_DEFAULT',check.returncode,check.stdout.strip() if check.returncode==0 else '')
+              except subprocess.TimeoutExpired:
+                  print('RIFF_GIT_READ_DEFAULT','TIMEOUT')
+              for key in pathlib.Path('/root/.ssh').glob('*riff*'):
+                  if key.suffix=='.pub' or not key.is_file(): continue
+                  try:
+                      ssh='ssh -i '+str(key)+' -p 443 -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10'
+                      check=subprocess.run(['git','ls-remote','git@ssh.github.com:mike-sabadash/riffkiller-site.git','HEAD'],capture_output=True,text=True,timeout=20,env={**__import__('os').environ,'GIT_TERMINAL_PROMPT':'0','GIT_SSH_COMMAND':ssh})
+                      print('RIFF_GIT_READ_KEY',key.name,check.returncode,check.stdout.strip() if check.returncode==0 else '')
+                  except subprocess.TimeoutExpired:
+                      print('RIFF_GIT_READ_KEY',key.name,'TIMEOUT')
           print('RIFFKILLER_PREFLIGHT_CONNECTION_OK')
           PY
