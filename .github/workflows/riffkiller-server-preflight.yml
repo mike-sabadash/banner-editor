@@ -1,4 +1,4 @@
-name: Diagnose RiffKiller OAuth
+name: Prepare secure RiffKiller config recovery
 on:
   push:
     branches: [codex/riffkiller-server-preflight-20261019]
@@ -26,25 +26,12 @@ jobs:
         run: |
           set -euo pipefail
           ssh -i ~/.ssh/server_key -p 2222 -o BatchMode=yes -o IdentitiesOnly=yes -o ConnectTimeout=15 root@213.182.208.29 'python3 -' <<'PY'
-          import subprocess,json,pathlib,urllib.request,urllib.error,re
-          root=pathlib.Path('/var/www/riffkiller')
-          php=r"""require '/var/www/riffkiller/config/load-env.php';require '/var/www/riffkiller/config/site-url.php';$out=['base'=>get_site_base_url(),'curl'=>function_exists('curl_init')];foreach(['GOOGLE_CLIENT_ID','GOOGLE_CLIENT_SECRET','PATREON_CLIENT_ID','PATREON_CLIENT_SECRET','PATREON_PROXY_URL'] as $key){$v=getenv($key)?:'';$out[$key]=['present'=>$v!=='','placeholder'=>(bool)preg_match('/your_|replace|example|xxx/i',$v)];if($key==='PATREON_PROXY_URL')$out['proxy_host']=parse_url($v,PHP_URL_HOST);}echo json_encode($out);"""
-          print('CONFIG',subprocess.run(['php','-r',php],capture_output=True,text=True).stdout)
-          for p in [*root.glob('.env*'),root/'patreon-secrets.php',*pathlib.Path('/root').glob('*riff*')]:
-           if p.is_file() and p.stat().st_size<100000:
-            raw=p.read_text(errors='replace')
-            keys={key:bool(re.search(r'(?:^|\n)\s*(?:export\s+)?'+key+r'\s*=\s*\S',raw)) for key in ['GOOGLE_CLIENT_ID','GOOGLE_CLIENT_SECRET','PATREON_CLIENT_ID','PATREON_CLIENT_SECRET']}
-            print('CONFIG_CANDIDATE',str(p),keys)
-          secret=root/'patreon-secrets.php'
-          if secret.exists():
-           code=r"""require '/var/www/riffkiller/patreon-secrets.php';$out=[];foreach(['PATREON_CLIENT_ID','PATREON_CLIENT_SECRET'] as $k){$v=defined($k)?constant($k):'';$out[$k]=['present'=>$v!=='','placeholder'=>(bool)preg_match('/your_|replace|example|xxx/i',$v)];}echo json_encode($out);"""
-           print('LEGACY_PATREON_CONFIG',subprocess.run(['php','-r',code],capture_output=True,text=True).stdout)
-          req=urllib.request.Request('https://riffkiller.fun/patreon-exchange.php',data=json.dumps({'code':'diagnostic-invalid-code','redirect_uri':'https://riffkiller.fun/patreon-callback.html'}).encode(),headers={'Content-Type':'application/json'})
-          try:res=urllib.request.urlopen(req,timeout=50)
-          except urllib.error.HTTPError as e:res=e
-          try:
-           d=json.loads(res.read());print('EXCHANGE',res.code,{k:d.get(k) for k in ['error','patreon_error','http_code','step'] if k in d})
-          except Exception:print('EXCHANGE_NON_JSON',res.code)
-          print('DIAGNOSTIC_COMPLETE')
+          import pathlib,subprocess,base64
+          key=pathlib.Path('/root/riffkiller-oauth-transfer-20261019.pem')
+          if not key.exists():
+           subprocess.run(['openssl','genpkey','-algorithm','RSA','-pkeyopt','rsa_keygen_bits:3072','-out',str(key)],stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,check=True)
+           key.chmod(0o600)
+          public=subprocess.run(['openssl','pkey','-in',str(key),'-pubout'],capture_output=True,check=True).stdout
+          print('OAUTH_TRANSFER_PUBLIC_KEY',base64.b64encode(public).decode())
           
           PY
