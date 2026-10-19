@@ -1,4 +1,4 @@
-name: Deploy verified RiffKiller player
+name: Diagnose RiffKiller OAuth
 on:
   push:
     branches: [codex/riffkiller-server-preflight-20261019]
@@ -26,107 +26,25 @@ jobs:
         run: |
           set -euo pipefail
           ssh -i ~/.ssh/server_key -p 2222 -o BatchMode=yes -o IdentitiesOnly=yes -o ConnectTimeout=15 root@213.182.208.29 'python3 -' <<'PY'
-          import datetime, hashlib, json, os, pathlib, shutil, stat, subprocess, urllib.request
-          
-          root = pathlib.Path('/var/www/riffkiller')
-          release = 'f12338fb7520443925c959d010e980de5c0541b5'
-          base = '51cf4343230ab2ff0764a08a891e9f910421ea8e'
-          paths = ['js/practice-media.js', 'css/practice.css', 'css/riff-dna.css',
-                   'js/practice.js', 'js/riff-dna.js', 'js/rk-theme-init.js',
-                   'js/rk-theme.js', 'js/site-header.js', 'practice.html']
-          env = {**os.environ, 'GIT_TERMINAL_PROMPT': '0'}
-          def git(*args):
-              proc = subprocess.run(['git', '-C', str(root), *args], capture_output=True, env=env, timeout=180)
-              if proc.returncode:
-                  raise RuntimeError('RiffKiller Git operation failed: ' + args[0])
-              return proc.stdout
-          git('fetch', '--no-tags', 'origin', 'main')
-          git('cat-file', '-e', release + '^{commit}')
-          git('cat-file', '-e', base + '^{commit}')
-          payload = {path: git('show', release + ':' + path) for path in paths}
-          previous = {}
-          for path in paths:
-              dest = root / path
-              if dest.is_symlink() or not dest.resolve().is_relative_to(root.resolve()):
-                  raise RuntimeError('Unsafe destination: ' + path)
-              actual = dest.read_bytes() if dest.exists() else None
-              if actual is not None and actual == payload[path]:
-                  print('ALREADY_CURRENT', path)
-                  continue
-              if path == 'js/practice-media.js':
-                  if actual is not None:
-                      raise RuntimeError('Unexpected existing media loader')
-              else:
-                  expected = git('show', base + ':' + path)
-                  # The preceding verified release only differed at some final newlines.
-                  if actual is None or actual.rstrip(b'\r\n') != expected.rstrip(b'\r\n'):
-                      raise RuntimeError('Production file differs from reviewed baseline: ' + path)
-              previous[path] = actual
-          print('PREFLIGHT_OK', len(previous), 'static files')
-          
-          stamp = datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%SZ')
-          backup = pathlib.Path('/root/riffkiller-player-releases') / (stamp + '-' + release[:12])
-          backup.mkdir(parents=True, mode=0o700)
-          for path, data in previous.items():
-              if data is not None:
-                  saved = backup / path
-                  saved.parent.mkdir(parents=True, exist_ok=True)
-                  shutil.copy2(root / path, saved)
-          (backup / 'manifest.json').write_text(json.dumps({
-              'release': release, 'baseline': base, 'files': {
-                  path: {'before': hashlib.sha256(data).hexdigest() if data is not None else None,
-                         'after': hashlib.sha256(payload[path]).hexdigest()}
-                  for path, data in previous.items()
-              }
-          }, indent=2) + '\n')
-          written = []
-          def replace(path, data, metadata):
-              dest = root / path
-              temp = dest.with_name('.' + dest.name + '.player-deploy-' + str(os.getpid()))
-              try:
-                  with temp.open('xb') as output:
-                      output.write(data)
-                      output.flush()
-                      os.fsync(output.fileno())
-                  os.chmod(temp, stat.S_IMODE(metadata.st_mode))
-                  os.chown(temp, metadata.st_uid, metadata.st_gid)
-                  os.replace(temp, dest)
-              finally:
-                  if temp.exists(): temp.unlink()
-          metadata = {path: (root / path).stat() if data is not None else (root / 'js/practice.js').stat()
-                      for path, data in previous.items()}
+          import subprocess,json,pathlib,urllib.request,urllib.error,re
+          root=pathlib.Path('/var/www/riffkiller')
+          php=r"""require '/var/www/riffkiller/config/load-env.php';require '/var/www/riffkiller/config/site-url.php';$out=['base'=>get_site_base_url(),'curl'=>function_exists('curl_init')];foreach(['GOOGLE_CLIENT_ID','GOOGLE_CLIENT_SECRET','PATREON_CLIENT_ID','PATREON_CLIENT_SECRET','PATREON_PROXY_URL'] as $key){$v=getenv($key)?:'';$out[$key]=['present'=>$v!=='','placeholder'=>(bool)preg_match('/your_|replace|example|xxx/i',$v)];if($key==='PATREON_PROXY_URL')$out['proxy_host']=parse_url($v,PHP_URL_HOST);}echo json_encode($out);"""
+          print('CONFIG',subprocess.run(['php','-r',php],capture_output=True,text=True).stdout)
+          for p in [*root.glob('.env*'),root/'patreon-secrets.php',*pathlib.Path('/root').glob('*riff*')]:
+           if p.is_file() and p.stat().st_size<100000:
+            raw=p.read_text(errors='replace')
+            keys={key:bool(re.search(r'(?:^|\n)\s*(?:export\s+)?'+key+r'\s*=\s*\S',raw)) for key in ['GOOGLE_CLIENT_ID','GOOGLE_CLIENT_SECRET','PATREON_CLIENT_ID','PATREON_CLIENT_SECRET']}
+            print('CONFIG_CANDIDATE',str(p),keys)
+          secret=root/'patreon-secrets.php'
+          if secret.exists():
+           code=r"""require '/var/www/riffkiller/patreon-secrets.php';$out=[];foreach(['PATREON_CLIENT_ID','PATREON_CLIENT_SECRET'] as $k){$v=defined($k)?constant($k):'';$out[$k]=['present'=>$v!=='','placeholder'=>(bool)preg_match('/your_|replace|example|xxx/i',$v)];}echo json_encode($out);"""
+           print('LEGACY_PATREON_CONFIG',subprocess.run(['php','-r',code],capture_output=True,text=True).stdout)
+          req=urllib.request.Request('https://riffkiller.fun/patreon-exchange.php',data=json.dumps({'code':'diagnostic-invalid-code','redirect_uri':'https://riffkiller.fun/patreon-callback.html'}).encode(),headers={'Content-Type':'application/json'})
+          try:res=urllib.request.urlopen(req,timeout=50)
+          except urllib.error.HTTPError as e:res=e
           try:
-              for path in previous:
-                  replace(path, payload[path], metadata[path])
-                  written.append(path)
-              for path in paths:
-                  if (root / path).read_bytes() != payload[path]:
-                      raise RuntimeError('Installed checksum mismatch: ' + path)
-              for path in paths:
-                  url = 'https://riffkiller.fun/' + path + '?release=' + release
-                  with urllib.request.urlopen(url, timeout=30) as response:
-                      if response.status != 200 or response.read() != payload[path]:
-                          raise RuntimeError('Public static asset mismatch: ' + path)
-              with urllib.request.urlopen('https://riffkiller.fun/api/me.php', timeout=30) as response:
-                  if response.status != 200: raise RuntimeError('Session API check failed')
-                  json.loads(response.read())
-              for path in ['assets/video/led-zeppelin/black-dog/black-dog-left.mp4',
-                           'assets/video/led-zeppelin/black-dog/black-dog-right.mp4']:
-                  request = urllib.request.Request('https://riffkiller.fun/' + path, headers={'Range': 'bytes=0-1023'})
-                  with urllib.request.urlopen(request, timeout=30) as response:
-                      if response.status != 206 or len(response.read(1025)) != 1024:
-                          raise RuntimeError('Media Range check failed')
-          except Exception:
-              for path in reversed(written):
-                  if previous[path] is None:
-                      (root / path).unlink()
-                  else:
-                      replace(path, previous[path], metadata[path])
-              print('ROLLBACK_COMPLETED', str(backup))
-              raise
-          (backup / 'deployed.json').write_text(json.dumps({'release': release, 'deployed_at': stamp}, indent=2) + '\n')
-          print('BACKUP', str(backup))
-          print('PUBLIC_STATIC_ASSETS_SHA256_OK')
-          print('SESSION_AND_MEDIA_RANGE_OK')
-          print('RIFFKILLER_PLAYER_DEPLOY_SUCCESS', release)
+           d=json.loads(res.read());print('EXCHANGE',res.code,{k:d.get(k) for k in ['error','patreon_error','http_code','step'] if k in d})
+          except Exception:print('EXCHANGE_NON_JSON',res.code)
+          print('DIAGNOSTIC_COMPLETE')
+          
           PY
