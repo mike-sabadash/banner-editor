@@ -1,4 +1,4 @@
-name: RiffKiller server preflight
+name: Stage verified RiffKiller recovery
 on:
   push:
     branches: [codex/riffkiller-server-preflight-20261019]
@@ -10,7 +10,7 @@ concurrency:
 jobs:
   preflight:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - name: Configure existing server connection
         env:
@@ -22,51 +22,88 @@ jobs:
           printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/server_key
           chmod 600 ~/.ssh/server_key
           ssh-keyscan -T 10 -p 2222 213.182.208.29 >> ~/.ssh/known_hosts
-      - name: Read-only RiffKiller preflight
+      - name: Stage and verify RiffKiller without changing production
         run: |
           set -euo pipefail
           ssh -i ~/.ssh/server_key -p 2222 -o BatchMode=yes -o IdentitiesOnly=yes -o ConnectTimeout=15 root@213.182.208.29 'python3 -' <<'PY'
-          import base64, hashlib, json, pathlib, subprocess
+          import hashlib, io, json, os, pathlib, shutil, subprocess, tarfile, zipfile
           root=pathlib.Path('/var/www/riffkiller')
-          plan=json.loads(base64.b64decode('ewogICJ1cHN0cmVhbUNvbW1pdCI6ICIzZTdlNzMwOGJkNDhhMjZhYWYxMTI4ODU2OWIxYjc2YjQ2ZGJiYzQ2IiwKICAiZmlsZXMiOiB7CiAgICAiaW5kZXguaHRtbCI6IHsKICAgICAgImJlZm9yZSI6ICI1MjFkOGQyMDRlZGIyZjQyYTc4NTdkNDFiMzBmOTVlMzMzZDI4NGI0NWQyYmE0MjA4ZDU1ZmI0NjcwZDY1MTVlIiwKICAgICAgImFmdGVyIjogIjk3Yzc0Y2RjZTg5NzRhMjg2YTI4MWQ0NzgxZjFmMDg2YTdlY2YxYjg3OTRlYWUzMDMwYjBhZWViOTI5NjM4OWYiCiAgICB9LAogICAgImNvbWluZy1zb29uLmh0bWwiOiB7CiAgICAgICJiZWZvcmUiOiAiMjY2N2RiMDJhNGZjMGQ5Y2VhYTZiMTE3ZGRlMGQyOWEwMTVmMmEyNDRjNmE0YjI3MTY2OTM0NzA5NTQ3MzI1NyIsCiAgICAgICJhZnRlciI6ICJhYTQ3MjU1OTkyM2FiY2U2Zjc4YmVmYTYxZjVjOWE4ZjBiODE3MGRjYzc5MWUyNmJlYzc0MmI2MDgyNDgzMDRlIgogICAgfSwKICAgICJwcmFjdGljZS5odG1sIjogewogICAgICAiYmVmb3JlIjogIjA4YzQyOGQyZjg2MzdkNjYwZTRhZTkyYjUwODQ0YzhjMDM0Y2E4MjU5NzgyZDhkODc4MDQyMjQzNzYyNjM0ZDgiLAogICAgICAiYWZ0ZXIiOiAiM2IzNjZkZGQzODljNjk5NzNlNTk1NDg3ZGI4NDI3ZjAyNTFiN2M2NTUyN2FlYzY1ZjZkZWRlOWM4ODE0ZmNmOSIKICAgIH0sCiAgICAiYWRtaW4vcmlmZnMuaHRtbCI6IHsKICAgICAgImJlZm9yZSI6ICI5YmY3MTE2YjI3OTE3NTE5NzY3MzdkZjIwMTIxYWZmYWJjNDA4NDIxYTY1YTE3ZTM2ZTZkOGE4NmRiOTcyZmZkIiwKICAgICAgImFmdGVyIjogIjE5YWFlYjRjNzBhNThjMTQwNTU4NTc5NzY2ZjhmMzE2ZTQwMjBkMWQyYjg0NDA0OTg4N2JjYjE3M2E5ZmI5ODMiCiAgICB9LAogICAgImFwaS9yaWZmcy9zYXZlLnBocCI6IHsKICAgICAgImJlZm9yZSI6ICI3ZTg4ZWFlM2VhZWU0MDUwOTJiN2IyMDYxZTZiZTZmYzRmODJkNDlkMWE1NDA2MjhiMzViODZiYTYxNDVlMjNjIiwKICAgICAgImFmdGVyIjogIjE5NWM0MjdlY2NlNmI0MDIxODBjZGYzMjEzMzlhNzkyOGI1M2I0MDhkMWJmNTY4NzkxNmYwMDUxM2I4MDY0NDEiCiAgICB9LAogICAgImFwaS9hdXRoL2VtYWlsLWxvZ2luLnBocCI6IHsKICAgICAgImJlZm9yZSI6ICI5ODJjZGQ0N2I3MzEyNDJmZjFiZjBiZjc1ZmY2NzBiNjgxNDIwMWQxZjg0MTFiMjllYzJmMGQ2ZWYyMzBlNmIxIiwKICAgICAgImFmdGVyIjogIjQ1ZTYxYzRkNDMzZDVmNTcwZTFmNjk0OTNiMGY3MTIwM2Y4MWE5ZjU1MzI4MTQ2YzVlNjk4YjZjYzM3Y2FkMjgiCiAgICB9LAogICAgImFwaS9hdXRoL2VtYWlsLXJlZ2lzdGVyLnBocCI6IHsKICAgICAgImJlZm9yZSI6ICI1MTAwMDk4YjlmZGY4MDg3YjJjNTIzZGI0YjU1YzY1Y2QzMWRiMGI0ZGYzMjFmMzdiNDM2ODAyOTQ5MGYwYTE3IiwKICAgICAgImFmdGVyIjogImFhOGFmMDIwYzE2ZmQzMGEwMDUxNzhmMDA5ZDg0ZjQyNDY1NzkzZjczMWM0MWUyYmZjY2I0MTg2ZWRiM2RlNmUiCiAgICB9LAogICAgImNvbmZpZy9yaWZmLXZhbGlkYXRpb24ucGhwIjogewogICAgICAiYmVmb3JlIjogbnVsbCwKICAgICAgImFmdGVyIjogIjk2NTFkOTU4NWRjYzE2NmU0ZWI1MzViMzJjYTVlZTg4YjY1MTU1MzE0YjE4YjUxMDk2YmRlZTNmNDI1YTc0OTQiCiAgICB9LAogICAgImNzcy9yaWZmLWRuYS5jc3MiOiB7CiAgICAgICJiZWZvcmUiOiBudWxsLAogICAgICAiYWZ0ZXIiOiAiZjdhZDQ5N2IyMjAyNmNjNzViMjAxYjQ2YjJiZjVhOGJhMTZhYTY4Njg3YmU2ZDYyODM1NTE2MzYyMGU2YjU1NCIKICAgIH0sCiAgICAianMvYWRtaW4tZG5hLmpzIjogewogICAgICAiYmVmb3JlIjogbnVsbCwKICAgICAgImFmdGVyIjogImM2OGVjM2M5ODE0OGE3MGYyYWE4NGRlYmZkZDg2NDlmZjU2MTdmZTVjNDE4MDViMzJkM2FhMjYwYWI5ZDRhZmQiCiAgICB9LAogICAgImpzL2F1dGgtbWFuYWdlci5qcyI6IHsKICAgICAgImJlZm9yZSI6ICI3YTY0OTNjMDcxYTYzMTE0ZGZlNTIzZGJiZjYzNzI1YWM4NDU2NDhiM2E5NzEzMTI2YzI3ZTI3OGM3YzY4OWYxIiwKICAgICAgImFmdGVyIjogIjA5NDZlMTlhZGVhOTRmNzNmNmE2NDgyODVhMGY2YzBmNWM1NTk0YmYwODdhN2VjNTllN2VjZmQ3ZDAxMDU3ZTkiCiAgICB9LAogICAgImpzL3ByYWN0aWNlLmpzIjogewogICAgICAiYmVmb3JlIjogIjM5MjdlYmY5MGFmODc0M2ZhYzNkMTQ5OGQ5ODVmODFlNTg4NDgwZDQ0ZTc2NGFjNGZlNWJlM2JhNjc4NDY0OTEiLAogICAgICAiYWZ0ZXIiOiAiNWNkNzEyZWMxZmNiMjIyZDRjZGJjNjUwMjNmMzVjZmRjMDI1ZmIzODBjYjRkNzAxM2RlOWEwMGRhZDZmZjk5YSIKICAgIH0sCiAgICAianMvcHJhY3RpY2UtdHJhbnNwb3J0LmpzIjogewogICAgICAiYmVmb3JlIjogbnVsbCwKICAgICAgImFmdGVyIjogIjQ2MDg4NjE4YzQ1MTI1MjVlN2VjN2JkODYzYWZmYzU2OTMwNWRiMjNhOTI1NzNmN2E4YmExNzcxOGVkNjQwNTIiCiAgICB9LAogICAgImpzL3JpZmYtZG5hLmpzIjogewogICAgICAiYmVmb3JlIjogbnVsbCwKICAgICAgImFmdGVyIjogIjg2MWNmMWQzOGNiYWI4MjEwODczY2RhZDYzY2Y2M2QxODE3ODRiNzY4Mjk5MjE0MjQ1YTI3MmFmYTBlNWY0OTAiCiAgICB9CiAgfSwKICAibWVkaWEiOiB7CiAgICAiYXNzZXRzL3ZpZGVvL2FjZGMvaGVsbHMtYmVsbHMtbGVmdC5tcDQiOiB7CiAgICAgICJzaGEyNTYiOiAiYzMyYzMyNWNmNTgxMWRhNDZiOGQ1MTY1NWMxNGJkOTFkNzIwNjliNjVlMDVkZjIxYWQ3ODY0ZWM3NDg4YTI1MiIsCiAgICAgICJzaXplIjogMjA1Mzk0MDAKICAgIH0sCiAgICAiYXNzZXRzL3ZpZGVvL2FjZGMvaGVsbHMtYmVsbHMtcmlnaHQubXA0IjogewogICAgICAic2hhMjU2IjogIjVhZGRlNDQwOGZkYjk5OWYwM2RlMjVlY2NjMGZkNzAyMDY4NmU5NGY1OGFjN2ZkMDM1ZThlZGU3OWMxMjU3MTIiLAogICAgICAic2l6ZSI6IDIxNjcyNjAwCiAgICB9LAogICAgImFzc2V0cy92aWRlby9sZWQtemVwcGVsaW4vYmxhY2stZG9nL2JsYWNrLWRvZy1sZWZ0Lm1wNCI6IHsKICAgICAgInNoYTI1NiI6ICJhMDMyODBjYWM5NTljYjdiZDlmNDc4ODc4YTI4NjM4ODZjYTdlZTkyMWJjZGZhMjg0ZTFlYmI0YTNhY2FmMmNkIiwKICAgICAgInNpemUiOiAxMzI2NjU2OAogICAgfSwKICAgICJhc3NldHMvdmlkZW8vbGVkLXplcHBlbGluL2JsYWNrLWRvZy9ibGFjay1kb2ctcmlnaHQubXA0IjogewogICAgICAic2hhMjU2IjogIjA0OTIwM2RmMTk3YTUxOTBmMTAzZTllMzJkMTI2NDZhMjNiMWM5N2RmMWU2NjI0YzNjZWIzOTVlNjdkYzlkODgiLAogICAgICAic2l6ZSI6IDEwODUyNDMyCiAgICB9LAogICAgImFzc2V0cy92aWRlby9sZWQtemVwcGVsaW4vd2hvbGUtbG90dGEtbG92ZS9ibGFjay1kb2ctbGVmdC5tcDQiOiB7CiAgICAgICJzaGEyNTYiOiAiMzdiZWM5ZWRjMGU3MzRlNWZmZWRmZjdkNTEzNmUzMmQ5NzRkYjZlMTYxYzIyNmQwNDlmZmQxYzAxNDRkZDAxYiIsCiAgICAgICJzaXplIjogMzU4NjA0OAogICAgfSwKICAgICJhc3NldHMvdmlkZW8vbGVkLXplcHBlbGluL3dob2xlLWxvdHRhLWxvdmUvYmxhY2stZG9nLXJpZ2h0Lm1wNCI6IHsKICAgICAgInNoYTI1NiI6ICJlNjc5ZDc0YzUzZjVkMjI3OWNmNGRkNWJjMmZjMTEwN2U5NzlmNGQ0OWRiYzRkMDEzM2M2YWI0NTIyOTRiMDE2IiwKICAgICAgInNpemUiOiAzNTc0MDc5CiAgICB9LAogICAgImFzc2V0cy92aWRlby9uaXJ2YW5hL3NtZWxscy1saWtlLXRlZW4tc3Bpcml0L2JsYWNrLWRvZy1sZWZ0Lm1wNCI6IHsKICAgICAgInNoYTI1NiI6ICIzN2JlYzllZGMwZTczNGU1ZmZlZGZmN2Q1MTM2ZTMyZDk3NGRiNmUxNjFjMjI2ZDA0OWZmZDFjMDE0NGRkMDFiIiwKICAgICAgInNpemUiOiAzNTg2MDQ4CiAgICB9LAogICAgImFzc2V0cy92aWRlby9uaXJ2YW5hL3NtZWxscy1saWtlLXRlZW4tc3Bpcml0L2JsYWNrLWRvZy1yaWdodC5tcDQiOiB7CiAgICAgICJzaGEyNTYiOiAiZTY3OWQ3NGM1M2Y1ZDIyNzljZjRkZDViYzJmYzExMDdlOTc5ZjRkNDlkYmM0ZDAxMzNjNmFiNDUyMjk0YjAxNiIsCiAgICAgICJzaXplIjogMzU3NDA3OQogICAgfSwKICAgICJhc3NldHMvdmlkZW8vcm9sbGluZy1zdG9uZXMvc2F0aXNmYWN0aW9uL2JsYWNrLWRvZy1sZWZ0Lm1wNCI6IHsKICAgICAgInNoYTI1NiI6ICIzN2JlYzllZGMwZTczNGU1ZmZlZGZmN2Q1MTM2ZTMyZDk3NGRiNmUxNjFjMjI2ZDA0OWZmZDFjMDE0NGRkMDFiIiwKICAgICAgInNpemUiOiAzNTg2MDQ4CiAgICB9LAogICAgImFzc2V0cy92aWRlby9yb2xsaW5nLXN0b25lcy9zYXRpc2ZhY3Rpb24vYmxhY2stZG9nLXJpZ2h0Lm1wNCI6IHsKICAgICAgInNoYTI1NiI6ICJlNjc5ZDc0YzUzZjVkMjI3OWNmNGRkNWJjMmZjMTEwN2U5NzlmNGQ0OWRiYzRkMDEzM2M2YWI0NTIyOTRiMDE2IiwKICAgICAgInNpemUiOiAzNTc0MDc5CiAgICB9CiAgfQp9Cg=='))
-          print('RIFFKILLER_ROOT',root.resolve())
-          for relative,meta in plan['files'].items():
-              target=root/relative
-              actual=hashlib.sha256(target.read_bytes()).hexdigest() if target.is_file() else None
-              status='BASELINE_OK' if actual==meta['before'] else ('ALREADY_UPDATED' if actual==meta['after'] else 'DIFFERENT')
-              print('CODE',relative,status)
-          for relative,meta in plan['media'].items():
-              target=root/relative
-              status='MISSING'
-              if target.is_file():
-                  status='MATCH' if hashlib.sha256(target.read_bytes()).hexdigest()==meta['sha256'] else 'DIFFERENT'
-              print('MEDIA',relative,status)
-          if (root/'.git').exists():
-              result=subprocess.run(['git','-C',str(root),'rev-parse','HEAD'],capture_output=True,text=True)
-              print('RIFFKILLER_GIT_HEAD',result.stdout.strip() if result.returncode==0 else 'UNAVAILABLE')
-          for directory in ['/root','/var/backups','/var/www/riffkiller']:
-              result=subprocess.run(['find',directory,'-maxdepth','3','-type','f','-iname','*riff*.zip'],capture_output=True,text=True)
-              for filename in result.stdout.splitlines()[:15]:
-                  print('RECOVERY_ARCHIVE',filename)
-          public=pathlib.Path('/etc/ssh/ssh_host_rsa_key.pub')
-          if public.is_file():
-              pem=subprocess.check_output(['ssh-keygen','-f',str(public),'-e','-m','PKCS8'])
-              print('PUBLIC_TRANSFER_KEY_B64',base64.b64encode(pem).decode())
-          if (root/'.git').exists():
-              remote=subprocess.run(['git','-C',str(root),'remote','get-url','origin'],capture_output=True,text=True)
-              print('RIFF_REMOTE_TYPE','SSH' if remote.stdout.strip().startswith(('git@','ssh:')) else 'HTTPS_OR_OTHER')
-              try:
-                  check=subprocess.run(['git','-C',str(root),'ls-remote','origin','HEAD'],capture_output=True,text=True,timeout=25,env={**__import__('os').environ,'GIT_TERMINAL_PROMPT':'0'})
-                  print('RIFF_GIT_READ_DEFAULT',check.returncode,check.stdout.strip() if check.returncode==0 else '')
-              except subprocess.TimeoutExpired:
-                  print('RIFF_GIT_READ_DEFAULT','TIMEOUT')
-              for key in pathlib.Path('/root/.ssh').glob('*riff*'):
-                  if key.suffix=='.pub' or not key.is_file(): continue
-                  try:
-                      ssh='ssh -i '+str(key)+' -p 443 -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10'
-                      check=subprocess.run(['git','ls-remote','git@ssh.github.com:mike-sabadash/riffkiller-site.git','HEAD'],capture_output=True,text=True,timeout=20,env={**__import__('os').environ,'GIT_TERMINAL_PROMPT':'0','GIT_SSH_COMMAND':ssh})
-                      print('RIFF_GIT_READ_KEY',key.name,check.returncode,check.stdout.strip() if check.returncode==0 else '')
-                  except subprocess.TimeoutExpired:
-                      print('RIFF_GIT_READ_KEY',key.name,'TIMEOUT')
-          print('RIFFKILLER_PREFLIGHT_CONNECTION_OK')
+          stage=pathlib.Path('/root/riffkiller-recovery-20261019')
+          release_sha='a8afdab520fc77fc2475c5025bf69d061c5edc16'
+          media_sha='1f5968358c473e8e114d2416dcc71f9ed15b05dd'
+          env={**os.environ,'GIT_TERMINAL_PROMPT':'0'}
+          def git(*args):
+              result=subprocess.run(['git','-C',str(root),*args],capture_output=True,env=env)
+              if result.returncode:
+                  raise RuntimeError('RiffKiller Git operation failed: '+args[0])
+              return result.stdout
+          fetch=subprocess.run(['git','-C',str(root),'fetch','--no-tags','origin','codex/restore-riffkiller-20261019','recovery/riffkiller-media-20261019'],capture_output=True,env=env,timeout=240)
+          if fetch.returncode:
+              raise RuntimeError('Could not fetch the verified RiffKiller release')
+          for sha in [release_sha,media_sha]:
+              git('cat-file','-e',sha+'^{commit}')
+          plan=json.loads(git('show',release_sha+':tools/recovery-plan.json'))
+          stage.mkdir(mode=0o700,parents=True,exist_ok=True)
+          def extract(commit,names,destination):
+              destination.mkdir(parents=True,exist_ok=True)
+              proc=subprocess.Popen(['git','-C',str(root),'archive',commit,*names],stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,env=env)
+              with tarfile.open(fileobj=proc.stdout,mode='r|') as archive:
+                  for member in archive:
+                      relative=pathlib.PurePosixPath(member.name)
+                      if relative.is_absolute() or '..' in relative.parts or member.issym() or member.islnk():
+                          raise RuntimeError('Unsafe release archive entry')
+                      dest=destination.joinpath(*relative.parts)
+                      if member.isdir():
+                          dest.mkdir(parents=True,exist_ok=True)
+                      elif member.isfile():
+                          dest.parent.mkdir(parents=True,exist_ok=True)
+                          with archive.extractfile(member) as source,dest.open('wb') as output:
+                              shutil.copyfileobj(source,output,1048576)
+              if proc.wait():
+                  raise RuntimeError('Could not extract the verified Git release')
+          source=stage/'release'
+          extract(release_sha,list(plan['files'])+['data/riffs.json','tools/recovery-plan.json','tools/apply_recovery.py'],source)
+          extract(media_sha,['recovery-media'],stage)
+          manifest=json.loads((stage/'recovery-media/manifest.json').read_text())
+          if manifest['files'] != plan['media']:
+              raise RuntimeError('Media manifest does not match the release')
+          archive_path=stage/'media.zip'
+          with zipfile.ZipFile(archive_path,'w',compression=zipfile.ZIP_STORED) as archive:
+              for relative,metadata in plan['media'].items():
+                  sha=metadata['sha256']
+                  entry=manifest['objects'][sha]
+                  checksum=hashlib.sha256();size=0
+                  with archive.open('riffkiller/'+relative,'w',force_zip64=True) as output:
+                      for part in entry['parts']:
+                          path=stage/part
+                          if not path.resolve().is_relative_to((stage/'recovery-media/parts').resolve()):
+                              raise RuntimeError('Unsafe media part path')
+                          with path.open('rb') as item:
+                              while True:
+                                  block=item.read(1048576)
+                                  if not block:break
+                                  checksum.update(block);size+=len(block);output.write(block)
+                  if checksum.hexdigest()!=sha or size!=metadata['size']:
+                      raise RuntimeError('Recovered media failed checksum validation')
+                  print('STAGED_MEDIA',relative,'SHA256_OK')
+          catalog=json.loads((source/'data/riffs.json').read_text())
+          black_dog=next(r for r in catalog if r['id']==1)
+          for segment in black_dog['segments']:
+              path=root/segment['tabImage']
+              if not path.is_file():
+                  raise RuntimeError('Missing Black Dog tab: '+segment['tabImage'])
+          print('BLACK_DOG_TAB_SET_OK')
+          for relative in plan['files']:
+              if relative.endswith('.php'):
+                  result=subprocess.run(['php','-l',str(source/relative)],capture_output=True,text=True)
+                  if result.returncode:
+                      raise RuntimeError('PHP syntax validation failed: '+relative)
+          print('STAGED_PHP_SYNTAX_OK')
+          result=subprocess.run(['python3',str(source/'tools/apply_recovery.py'),'--site-root',str(root),'--archive',str(archive_path)],capture_output=True,text=True)
+          print(result.stdout)
+          if result.returncode:
+              print(result.stderr)
+              raise RuntimeError('Production preflight failed; production was not changed')
+          print('STAGED_RELEASE',release_sha)
+          print('RIFFKILLER_READY_FOR_PRODUCTION_APPROVAL')
           PY
