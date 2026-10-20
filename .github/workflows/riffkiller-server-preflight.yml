@@ -1,4 +1,4 @@
-name: Validate saved RiffKiller Google config
+name: Deploy verified RiffKiller authentication
 on:
   push:
     branches: [codex/riffkiller-server-preflight-20261019]
@@ -22,18 +22,147 @@ jobs:
           printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/server_key
           chmod 600 ~/.ssh/server_key
           ssh-keyscan -T 10 -p 2222 213.182.208.29 >> ~/.ssh/known_hosts
-      - name: Classify existing Google settings without printing values
+      - name: Deploy auth allowlist with backup and full live email session smoke
         run: |
           set -euo pipefail
           ssh -i ~/.ssh/server_key -p 2222 -o BatchMode=yes -o IdentitiesOnly=yes -o ConnectTimeout=15 root@213.182.208.29 'python3 -' <<'PY'
-          import pathlib,re,json
-          path=pathlib.Path('/var/www/riffkiller/.env.example')
-          data={}
-          for line in path.read_text().splitlines():
-           line=line.strip()
-           if line and not line.startswith('#') and '=' in line:
-            key,value=line.split('=',1);data[key.strip()]=value.strip().strip('"').strip("'")
-          cid=data.get('GOOGLE_CLIENT_ID','')
-          secret=data.get('GOOGLE_CLIENT_SECRET','')
-          print('SAVED_GOOGLE_CONFIG_VALIDITY',json.dumps({'client_id_format_valid':bool(re.fullmatch(r'[0-9]+-[a-zA-Z0-9_-]+\.apps\.googleusercontent\.com',cid)),'secret_format_valid':secret.startswith('GOCSPX-') and len(secret)>25,'has_placeholder':any(word in (cid+' '+secret).lower() for word in ['your_','your-','placeholder','xxxx','example'])}))
+          import pathlib,subprocess,hashlib,json,os,tempfile,shutil,datetime,urllib.request,urllib.error,urllib.parse,http.cookiejar,secrets
+          root=pathlib.Path('/var/www/riffkiller')
+          release="2e134ed858b4794013baf9f4a2d899ef60910b73"
+          plan={"api/auth/google-login.php":{"before":"d231eb0f2ad67b2e9c6e7c5ad6de270ae90a77cb43704c80de8acb2b0adb721a","after":"824b70e0ef4d48827ab624d7e2d91da9ddc39ca5f6225ea10cdcdc44e6d74d6f"},"api/auth/google-callback.php":{"before":"63ce44b7dd89179246674ef90bd0e06a667c6735ce2d1e1ded8e25ad5ca56951","after":"0bcca526017eb3daf0790c83a9bf5ee10a8c0c5f2806a15f80a4f37af45e593c"},"config/google-oauth.php":{"before":None,"after":"5f06cc53e82ed9c3e8e9fc97c555239e87ca597a575fd9157f91d57732d5fb6f"},"config/user-store.php":{"before":"6ddcfd356b71d7501278a988d58a6fb2d09edda06d0f40c7b6d729f61f6f789b","after":"3894f21ceebbbed604737ae7e8cf38c4c85299ac0c7b4140e11242bac7f7f60a"},"js/auth-manager.js":{"before":"0946e19adea94f73f6a648285a0f6c0f5c5594bf087a7ec59e7ecfd7d01057e9","after":"a789ffccb8ebf61f3fa9e448de3464256447dedee3be68f284240aad6e4f9b0f"},"patreon-callback.html":{"before":"f406e28648794915a018e8442ea9db197bde84299b030feccee7f03a3e3761c9","after":"9058e5d98d34ee7ffbb62d0ccbc9a73ef217917451e2625821c77d360dc0e788"},"collection.html":{"before":"904cc1bc89bd14894e9789d37925e0c2ba384728b60c8bf7e1bdd3c9a06d11d9","after":"522ead1e97e09c8fd27fcea437849a95fa2a31e7864a265456f09417d35010b9"},"stripe-success.html":{"before":"526eb7011c6127ed565a1e68059386f6619cd3bc7c84b992cb0197a59eb81e10","after":"47ffe1507ecae2c6056d825c9b9b6eb73bee5233e177731c7eae5cea6a238119"},"favorites.html":{"before":"7b32c63711035774368cba1f90b736e3a23ad3f14a9ee0499a53c0241c4f5114","after":"991d92c0b675c9351428dd07a26317e151305e9032914a0cb709793d3ada5fb1"},"app.html":{"before":"a6bc721896fd3d06e44f52944d3a463d2257610cbf7e18178022e24a41dca204","after":"1c6cdcfb1649bc0a2b5f99f7e97db2e505cc7c9e16c55e85605df8506a129edd"},"billing-cryptomus.html":{"before":"9b1e801a2cb59744cac041bbfb110014a69f77a4e71a46500eb01b13f2ab2b3a","after":"c4eea51c2567aacf24a71609166d05224cee83b74a8d6f389f7ef96b9379fd16"},"billing-stripe.html":{"before":"736994480df8fe78a0c22a63dc843a6259f909ef259b8e60ebf619d3e95b82d2","after":"7370a797d444778d7c32336c1d5173edd93d5bf36548708030435be356082110"},"practice.html":{"before":"e5ac0560b77dadb33e0e87d12de03a2b8727d19fbff6b9bb292232d9b04e5553","after":"f96c66476180dee77d66ff575c0bfff8db94a8c1752ad7e35fdb8d4f6ec207e2"},"landing.html":{"before":"f0ccb22452df9abce71429c77130659b9c63ac2ad81882b312d181f636fb73da","after":"c1c179bb3fa4704942bc9f31642232ea8331e7b54045b095ff7f8e09cfcd993d"},"profile.html":{"before":"c67fccd2a7c323e337d46b1a7f73231deb2fe5ad6c2460a57c4106118119ab04","after":"fecfa84b573720ff8edc8e8d62f7173f19504e850b9c5f6e1b18f00de8bd7c5f"},"billing-wallet.html":{"before":"a73bfc8dbeadc390b32d82fe7f17e1a84ba99309ac8049763cf76b29b4d3ee50","after":"334a6560781bb68a2e30c86f2986b44e8aeced6318d3442625305848495b5eb1"},"billing.html":{"before":"04dae219345ce8d4147a9fc87acc346cf748619b7fcc3ca576d208c5336f0459","after":"a9e0a29a6600f9c7ede5fb134711902197d812ed873fc2ebe1eba7d0d4886eaa"},"cryptomus-success.html":{"before":"7b0b16a4ac0fc14100ac9b39f851f06d69d76f97adc008c5d186290cd37a1fa0","after":"ee945cb9ad050ddbf7bbeffe8b1f12435a931953f46a67986d9650fe0a579f54"},"index.html":{"before":"97c74cdce8974a286a281d4781f1f086a7ecf1b8794eae3030b0aeeb9296389f","after":"9a77ff0acea8415656f9262d9f7bd28a94f2c6ca3d6bbe44088e7a961027ab01"}}
+          env={**os.environ,'GIT_TERMINAL_PROMPT':'0'}
+          def git(*args):
+           r=subprocess.run(['git','-C',str(root),*args],capture_output=True,env=env)
+           if r.returncode: raise RuntimeError('Private release Git operation failed: '+args[0])
+           return r.stdout
+          fetch=subprocess.run(['git','-C',str(root),'fetch','--no-tags','origin','codex/google-email-auth-20261020'],capture_output=True,env=env,timeout=180)
+          if fetch.returncode: raise RuntimeError('Could not fetch verified auth release')
+          git('cat-file','-e',release+'^{commit}')
+          stamp=datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%SZ')
+          stage=pathlib.Path('/root/riffkiller-auth-releases')/(stamp+'-'+release[:12])
+          stage.mkdir(mode=0o700,parents=True)
+          def checksum(path): return hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else None
+          def atomic(path,data):
+           path.parent.mkdir(parents=True,exist_ok=True)
+           current=path.stat() if path.exists() else None
+           fd,name=tempfile.mkstemp(dir=path.parent,prefix='.auth-release-')
+           try:
+            with os.fdopen(fd,'wb') as f:f.write(data)
+            os.chmod(name,(current.st_mode&0o777) if current else 0o644)
+            if current:os.chown(name,current.st_uid,current.st_gid)
+            os.replace(name,path)
+           finally:
+            if os.path.exists(name):os.unlink(name)
+          payload={};pending=[]
+          for name,hashes in plan.items():
+           data=git('show',release+':'+name)
+           if hashlib.sha256(data).hexdigest()!=hashes['after']: raise RuntimeError('Release checksum mismatch: '+name)
+           current=checksum(root/name)
+           allowed=[hashes['before'],hashes['after']]
+           if name.endswith('.html'):
+            baseline=git('show','f12338fb7520443925c959d010e980de5c0541b5:'+name).rstrip(b'\n')
+            allowed += [hashlib.sha256(baseline).hexdigest(),hashlib.sha256(baseline+b'\n').hexdigest()]
+           if current not in allowed:raise RuntimeError('Production changed; refusing overwrite: '+name)
+           payload[name]=data
+           if current!=hashes['after']:
+            pending.append(name)
+            if (root/name).exists():
+             backup=stage/'before'/name;backup.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(root/name,backup)
+            if name.endswith('.php'):
+             staged=stage/'release'/name;staged.parent.mkdir(parents=True,exist_ok=True);staged.write_bytes(data)
+             lint=subprocess.run(['php','-l',str(staged)],capture_output=True)
+             if lint.returncode:raise RuntimeError('PHP syntax failed: '+name)
+          protected={}
+          for folder in ['config','data']:
+           for path in (root/folder).rglob('*'):
+            relative=path.relative_to(root).as_posix()
+            if path.is_file() and relative not in plan:protected[relative]=checksum(path)
+          for name in ['.env','.env.example','js/practice.js','js/practice-media.js','js/practice-transport.js','js/riff-dna.js','css/practice.css','css/riff-dna.css','patreon-exchange.php','patreon-validate.php']:
+           protected[name]=checksum(root/name)
+          print('AUTH_PREFLIGHT_OK',len(pending),'files')
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+           def redirect_request(self,*args):return None
+          def response(opener,path,data=None):
+           request=urllib.request.Request('https://riffkiller.fun'+path,data=json.dumps(data).encode() if data is not None else None,headers={'Content-Type':'application/json'})
+           try:return opener.open(request,timeout=30)
+           except urllib.error.HTTPError as e:return e
+          def data(opener,path,body=None,status=200):
+           r=response(opener,path,body)
+           if r.code!=status:raise RuntimeError('Unexpected public auth response '+path+': '+str(r.code))
+           return json.loads(r.read())
+          installed=[]
+          try:
+           order=sorted(pending,key=lambda name:0 if name.startswith('config/') else 1 if name.endswith('.php') else 2)
+           for name in order:
+            atomic(root/name,payload[name]);installed.append(name)
+           for name,expected in protected.items():
+            if checksum(root/name)!=expected:raise RuntimeError('Protected runtime/player file changed: '+name)
+           print('AUTH_PROTECTED_RUNTIME_CONFIG_PLAYER_UNCHANGED')
+           for name,hashes in plan.items():
+            if checksum(root/name)!=hashes['after']:raise RuntimeError('Installed checksum mismatch: '+name)
+            if name.endswith('.html') or name.endswith('.js'):
+             with urllib.request.urlopen('https://riffkiller.fun/'+name+'?release='+release,timeout=30) as r:
+              if r.code!=200 or hashlib.sha256(r.read()).hexdigest()!=hashes['after']:raise RuntimeError('Public release checksum mismatch: '+name)
+           print('AUTH_PUBLIC_STATIC_SHA256_OK')
+           opener=urllib.request.build_opener(NoRedirect())
+           r=response(opener,'/api/auth/google-login.php')
+           if r.code!=302:raise RuntimeError('Google entry did not redirect')
+           location=urllib.parse.urlsplit(r.headers.get('Location',''));params=urllib.parse.parse_qs(location.query)
+           if location.hostname=='accounts.google.com':
+            if not params.get('state') or params.get('redirect_uri')!=['https://riffkiller.fun/api/auth/google-callback.php']:raise RuntimeError('Google redirect state/callback missing')
+            print('GOOGLE_PROVIDER_REDIRECT_READY')
+           elif location.hostname=='riffkiller.fun' and params.get('reason')==['configuration']:
+            print('GOOGLE_BLOCKED_MISSING_SERVER_CREDENTIALS')
+           else:raise RuntimeError('Unexpected Google entry redirect')
+           r=response(opener,'/api/auth/google-callback.php?code=invalid&state=invalid')
+           if r.code!=302 or 'reason=state' not in r.headers.get('Location',''):raise RuntimeError('Invalid callback was not rejected')
+           print('AUTH_GOOGLE_CALLBACK_REJECTION_OK')
+           # Create an isolated QA identity through the real FPM endpoints, then remove only
+           # this generated fixture while retaining every original or concurrently added user.
+           users_path=root/'data/users.json'
+           original=users_path.read_bytes() if users_path.exists() else b'[]'
+           original_users=json.loads(original);original_ids={u['id'] for u in original_users}
+           qa_email='codex-auth-qa-'+secrets.token_hex(12)+'@example.invalid'
+           qa_password=secrets.token_urlsafe(32)
+           jar=http.cookiejar.CookieJar();session=urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
+           try:
+            registration=data(session,'/api/auth/email-register.php',{'email':qa_email,'password':qa_password,'name':'Temporary authentication check'})
+            qa_id=registration.get('user',{}).get('id')
+            if not registration.get('success') or not qa_id or qa_id in original_ids:raise RuntimeError('Live QA registration failed')
+            me=data(session,'/api/me.php')
+            if not me.get('authenticated') or me['user']['id']!=qa_id:raise RuntimeError('Live signup session not restored')
+            data(session,'/api/logout.php',{})
+            if data(session,'/api/me.php').get('authenticated'):raise RuntimeError('Live logout did not clear session')
+            data(session,'/api/auth/email-login.php',{'email':qa_email,'password':'incorrect'},401)
+            login=data(session,'/api/auth/email-login.php',{'email':qa_email,'password':qa_password})
+            if login.get('user',{}).get('id')!=qa_id:raise RuntimeError('Live password login failed')
+            if data(session,'/api/me.php').get('user',{}).get('id')!=qa_id:raise RuntimeError('Live login session not restored')
+            data(session,'/api/logout.php',{})
+            print('AUTH_LIVE_EMAIL_SIGNUP_SESSION_LOGOUT_LOGIN_OK')
+           finally:
+            current=json.loads(users_path.read_bytes())
+            cleaned=[u for u in current if not (u.get('email')==qa_email and u.get('id') not in original_ids)]
+            if len(cleaned)!=len(current):
+             content=original if cleaned==original_users else json.dumps(cleaned,ensure_ascii=False,indent=4).encode()
+             atomic(users_path,content)
+            if any(u.get('email')==qa_email for u in json.loads(users_path.read_bytes())):raise RuntimeError('QA cleanup failed')
+           print('AUTH_TEMPORARY_QA_ACCOUNT_REMOVED')
+           for name,expected in protected.items():
+            if name!='data/users.json' and checksum(root/name)!=expected:raise RuntimeError('Protected state changed after smoke: '+name)
+           php="require '/var/www/riffkiller/config/load-env.php'; echo json_encode(['patreon'=>!!getenv('PATREON_CLIENT_ID') && !!getenv('PATREON_CLIENT_SECRET'),'site'=>!!getenv('SITE_URL'),'google'=>!!getenv('GOOGLE_CLIENT_ID') && !!getenv('GOOGLE_CLIENT_SECRET')]);"
+           check=subprocess.run(['runuser','-u','www-data','--','php','-r',php],capture_output=True,text=True)
+           configured=json.loads(check.stdout)
+           if not configured['patreon'] or not configured['site']:raise RuntimeError('Existing Patreon configuration unavailable to PHP worker')
+           print('AUTH_FPM_CONFIG_PRESERVED',json.dumps(configured))
+           (stage/'deployment.json').write_text(json.dumps({'release':release,'files':plan,'installed':installed,'backup':str(stage/'before'),'google_configured':configured['google']},indent=2)+'\n')
+           print('AUTH_DEPLOYED_RELEASE',release)
+           print('AUTH_BACKUP',str(stage/'before'))
+           print('AUTH_PRODUCTION_SMOKE_SUCCESS')
+          except Exception:
+           for name in reversed(installed):
+            old=stage/'before'/name
+            if old.exists():atomic(root/name,old.read_bytes())
+            elif (root/name).exists():(root/name).unlink()
+           print('AUTH_CODE_ROLLBACK_COMPLETED')
+           raise
           PY
