@@ -1,4 +1,4 @@
-name: Locate existing RiffKiller Google config
+name: Validate saved RiffKiller Google config
 on:
   push:
     branches: [codex/riffkiller-server-preflight-20261019]
@@ -22,40 +22,18 @@ jobs:
           printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/server_key
           chmod 600 ~/.ssh/server_key
           ssh-keyscan -T 10 -p 2222 213.182.208.29 >> ~/.ssh/known_hosts
-      - name: Check project config locations without exposing credentials
+      - name: Classify existing Google settings without printing values
         run: |
           set -euo pipefail
           ssh -i ~/.ssh/server_key -p 2222 -o BatchMode=yes -o IdentitiesOnly=yes -o ConnectTimeout=15 root@213.182.208.29 'python3 -' <<'PY'
-          import pathlib,re,json,zipfile
-          root=pathlib.Path('/var/www/riffkiller')
-          candidates=set()
-          for parent in [root,*pathlib.Path('/root').glob('*riffkiller*'),*pathlib.Path('/var/backups').glob('*riffkiller*'),*pathlib.Path('/var/www').glob('riffkiller*backup*')]:
-           if parent.is_file():
-            candidates.add(parent)
-           elif parent.is_dir():
-            for path in parent.rglob('*'):
-             if path.is_file() and not any(p in {'.git','node_modules','assets','recovery-media'} for p in path.parts) and ('.env' in path.name or re.search(r'google|oauth|credential|secret',path.name,re.I)):
-              candidates.add(path)
-          found=0
-          for path in sorted(candidates):
-           try:
-            if path.stat().st_size>2000000: continue
-            text=path.read_text(errors='replace')
-            has_id=bool(re.search(r'(?m)^\s*GOOGLE_CLIENT_ID\s*=\s*[^\s#]+',text))
-            has_secret=bool(re.search(r'(?m)^\s*GOOGLE_CLIENT_SECRET\s*=\s*[^\s#]+',text))
-            if path.suffix=='.json':
-             try:
-              data=json.loads(text);data=data.get('web',data.get('installed',data))
-              has_id=bool(data.get('client_id'));has_secret=bool(data.get('client_secret'))
-             except (ValueError,AttributeError): pass
-            if has_id or has_secret:
-             print('GOOGLE_CONFIG_CANDIDATE',str(path),'client_id',has_id,'client_secret',has_secret)
-             found+=1
-           except OSError: pass
-          print('GOOGLE_CONFIG_CANDIDATE_COUNT',found)
-          for name in ['data','data/users.json','data/users.json.lock']:
-           p=root/name
-           if p.exists():
-            s=p.stat();print('AUTH_STORE_PERMISSIONS',name,oct(s.st_mode&0o777),s.st_uid,s.st_gid)
-          print('AUTH_CREDENTIAL_SEARCH_DONE')
+          import pathlib,re,json
+          path=pathlib.Path('/var/www/riffkiller/.env.example')
+          data={}
+          for line in path.read_text().splitlines():
+           line=line.strip()
+           if line and not line.startswith('#') and '=' in line:
+            key,value=line.split('=',1);data[key.strip()]=value.strip().strip('"').strip("'")
+          cid=data.get('GOOGLE_CLIENT_ID','')
+          secret=data.get('GOOGLE_CLIENT_SECRET','')
+          print('SAVED_GOOGLE_CONFIG_VALIDITY',json.dumps({'client_id_format_valid':bool(re.fullmatch(r'[0-9]+-[a-zA-Z0-9_-]+\.apps\.googleusercontent\.com',cid)),'secret_format_valid':secret.startswith('GOCSPX-') and len(secret)>25,'has_placeholder':any(word in (cid+' '+secret).lower() for word in ['your_','your-','placeholder','xxxx','example'])}))
           PY
