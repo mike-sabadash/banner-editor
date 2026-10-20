@@ -1,4 +1,4 @@
-name: Inspect current RiffKiller authentication
+name: Locate existing RiffKiller Google config
 on:
   push:
     branches: [codex/riffkiller-server-preflight-20261019]
@@ -22,38 +22,40 @@ jobs:
           printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/server_key
           chmod 600 ~/.ssh/server_key
           ssh-keyscan -T 10 -p 2222 213.182.208.29 >> ~/.ssh/known_hosts
-      - name: Read current auth fingerprints and configuration presence
+      - name: Check project config locations without exposing credentials
         run: |
           set -euo pipefail
           ssh -i ~/.ssh/server_key -p 2222 -o BatchMode=yes -o IdentitiesOnly=yes -o ConnectTimeout=15 root@213.182.208.29 'python3 -' <<'PY'
-          import pathlib,subprocess,hashlib,json,urllib.request,urllib.error,urllib.parse,stat
+          import pathlib,re,json,zipfile
           root=pathlib.Path('/var/www/riffkiller')
-          print('SERVER_GIT_HEAD',subprocess.check_output(['git','-C',str(root),'rev-parse','HEAD'],text=True).strip())
-          files=['index.html','app.html','practice.html','js/practice.js','js/auth-manager.js','js/site-header.js','patreon-callback.html','config/load-env.php','config/session-start.php','config/user-store.php','config/site-url.php','api/auth/google-login.php','api/auth/google-callback.php','api/auth/email-login.php','api/auth/email-register.php','api/patreon-exchange.php']
-          for name in files:
+          candidates=set()
+          for parent in [root,*pathlib.Path('/root').glob('*riffkiller*'),*pathlib.Path('/var/backups').glob('*riffkiller*'),*pathlib.Path('/var/www').glob('riffkiller*backup*')]:
+           if parent.is_file():
+            candidates.add(parent)
+           elif parent.is_dir():
+            for path in parent.rglob('*'):
+             if path.is_file() and not any(p in {'.git','node_modules','assets','recovery-media'} for p in path.parts) and ('.env' in path.name or re.search(r'google|oauth|credential|secret',path.name,re.I)):
+              candidates.add(path)
+          found=0
+          for path in sorted(candidates):
+           try:
+            if path.stat().st_size>2000000: continue
+            text=path.read_text(errors='replace')
+            has_id=bool(re.search(r'(?m)^\s*GOOGLE_CLIENT_ID\s*=\s*[^\s#]+',text))
+            has_secret=bool(re.search(r'(?m)^\s*GOOGLE_CLIENT_SECRET\s*=\s*[^\s#]+',text))
+            if path.suffix=='.json':
+             try:
+              data=json.loads(text);data=data.get('web',data.get('installed',data))
+              has_id=bool(data.get('client_id'));has_secret=bool(data.get('client_secret'))
+             except (ValueError,AttributeError): pass
+            if has_id or has_secret:
+             print('GOOGLE_CONFIG_CANDIDATE',str(path),'client_id',has_id,'client_secret',has_secret)
+             found+=1
+           except OSError: pass
+          print('GOOGLE_CONFIG_CANDIDATE_COUNT',found)
+          for name in ['data','data/users.json','data/users.json.lock']:
            p=root/name
-           print('CURRENT_FILE',name,hashlib.sha256(p.read_bytes()).hexdigest() if p.is_file() else 'MISSING')
-          envfile=root/'.env'
-          print('ENV_FILE',{'exists':envfile.is_file(),'mode':oct(stat.S_IMODE(envfile.stat().st_mode)) if envfile.exists() else None,'uid':envfile.stat().st_uid if envfile.exists() else None,'gid':envfile.stat().st_gid if envfile.exists() else None})
-          php="""require '/var/www/riffkiller/config/load-env.php';$keys=['GOOGLE_CLIENT_ID','GOOGLE_CLIENT_SECRET','PATREON_CLIENT_ID','PATREON_CLIENT_SECRET','SITE_URL'];$out=[];foreach($keys as $k){$v=getenv($k)?:($_ENV[$k]??($GLOBALS['RIFFKILLER_ENV'][$k]??''));$out[$k]=strlen((string)$v)>0;}echo json_encode($out);"""
-          r=subprocess.run(['runuser','-u','www-data','--','php','-r',php],capture_output=True,text=True)
-          print('FPM_USER_ENV_CONFIGURED',r.stdout.strip(),'exit',r.returncode)
-          class NoRedirect(urllib.request.HTTPRedirectHandler):
-           def redirect_request(self,req,fp,code,msg,headers,newurl): return None
-          opener=urllib.request.build_opener(NoRedirect())
-          for path in ['/api/auth/google-login.php','/api/me.php','/api/auth/email-login.php','/api/auth/email-register.php']:
-           request=urllib.request.Request('https://riffkiller.fun'+path)
-           if 'email-' in path:
-            request=urllib.request.Request('https://riffkiller.fun'+path,data=b'{}',headers={'Content-Type':'application/json'})
-           try: response=opener.open(request,timeout=25)
-           except urllib.error.HTTPError as e: response=e
-           location=response.headers.get('Location','')
-           parts=urllib.parse.urlsplit(location)
-           params=urllib.parse.parse_qs(parts.query)
-           print('ENDPOINT',path,'status',response.code,'redirect',{'host':parts.hostname,'path':parts.path,'keys':list(params),'callback':params.get('redirect_uri'),'has_state':bool(params.get('state'))})
-           if response.code>=400:
-            body=response.read(600).decode(errors='replace')
-            if 'Google OAuth not configured' in body: print('GOOGLE_CONFIGURATION_MISSING')
-            elif path.endswith('email-login.php') or path.endswith('email-register.php'): print('EMAIL_VALIDATION_RESPONSE',body)
-          print('OAUTH_READONLY_DIAGNOSIS_DONE')
+           if p.exists():
+            s=p.stat();print('AUTH_STORE_PERMISSIONS',name,oct(s.st_mode&0o777),s.st_uid,s.st_gid)
+          print('AUTH_CREDENTIAL_SEARCH_DONE')
           PY
